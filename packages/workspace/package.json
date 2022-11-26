@@ -1,0 +1,10 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-workspace",
+  "license": "BSD-3-Clause",
+  "author": "TonyGermaneri@gmail.com",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Graph Editor Workspace plugin for Plastic-IO JavaScript graph programming language.",
+  "main": "./main.ts",
+  "files": []
+}
