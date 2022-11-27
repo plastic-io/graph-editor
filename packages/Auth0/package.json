@@ -1,10 +1,10 @@
 {
-  "name": "@plastic-io/graph-editor-vue3-system-bar",
+  "name": "@plastic-io/graph-editor-vue3-auth0",
   "license": "BSD-3-Clause",
   "author": "TonyGermaneri@gmail.com",
   "version": "1.0.0",
   "private": false,
-  "description": "Info bar for graph editor workspace.",
+  "description": "Auth0 auth provider for graph editor IDE.",
   "main": "./main.ts",
   "files": []
 }

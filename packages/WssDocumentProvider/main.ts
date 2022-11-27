@@ -1,8 +1,8 @@
 import type {App} from "vue";
 import type {Router} from "vue-router";
-import SystemBar from "./SystemBar.vue";
+import WssDocumentProviderInfo from "./WssDocumentProviderInfo.vue";
 export default {
   install(app: App<Element>, hostRouter: Router) {
-    app.component('system-bar', SystemBar);
+    app.component('wss-document-provider-info', WssDocumentProviderInfo);
   }
 };

@@ -1,8 +1,8 @@
 import type {App} from "vue";
 import type {Router} from "vue-router";
-import SystemBar from "./SystemBar.vue";
+import SharedMouse from "./SharedMouse.vue";
 export default {
   install(app: App<Element>, hostRouter: Router) {
-    app.component('system-bar', SystemBar);
+    app.component('shared-mouse', SharedMouse);
   }
 };
