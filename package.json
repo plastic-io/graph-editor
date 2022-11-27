@@ -17,8 +17,6 @@
     "pinia": "^2.0.26",
     "vue": "^3.2.45",
     "vue-router": "^4.1.6",
-    "@plastic-io/workspace": "file:./packages/Workspace",
-    "@plastic-io/system-bar": "file:./packages/SystemBar",
     "@plastic-io/graph-editor-vue3-shared-mouse": "file:./packages/SharedMouse",
     "@plastic-io/graph-editor-vue3-app-bar": "file:./packages/AppBar",
     "@plastic-io/graph-editor-vue3-local-storage-document-provider": "file:./packages/LocalStorageDocumentProvider",

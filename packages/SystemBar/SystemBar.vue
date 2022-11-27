@@ -1,5 +1,5 @@
 <script lang="ts">
-import {useStore} from "@plastic-io/workspace";
+import {useStore} from "@plastic-io/graph-editor-vue3-workspace";
 export default {
   name: 'system-bar',
   data: () => {

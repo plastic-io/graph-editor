@@ -6,3 +6,4 @@ export default {
     app.component('node-edge-properties-panel', NodeEdgePropertiesPanel);
   }
 };
+
