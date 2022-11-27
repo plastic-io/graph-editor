@@ -1,6 +1,6 @@
 {
-  "name": "graph-editor-temp",
-  "version": "0.0.0",
+  "name": "graph-editor",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -17,7 +17,8 @@
     "pinia": "^2.0.26",
     "vue": "^3.2.45",
     "vue-router": "^4.1.6",
-    "@plastic-io/workspace": "file:./packages/workspace"
+    "@plastic-io/workspace": "file:./packages/Workspace",
+    "@plastic-io/system-bar": "file:./packages/SystemBar"
   },
   "devDependencies": {
     "@rushstack/eslint-patch": "^1.1.4",
