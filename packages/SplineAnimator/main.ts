@@ -1,8 +1,10 @@
 import type {App} from "vue";
 import type {Router} from "vue-router";
-import SplineAnimator from "./SplineAnimator.vue";
-export default {
-  install(app: App<Element>, hostRouter: Router) {
-    app.component('spline-animator', SplineAnimator);
+import _SplineAnimator from "./SplineAnimator.vue";
+import GraphEditorModule from "@plastic-io/graph-editor-vue3-graph-editor-module";
+export default class SplineAnimator extends GraphEditorModule {
+  constructor(config: Record<string, any>, app: App<Element>, hostRouter: Router) {
+    super();
+    app.component('spline-animator', _SplineAnimator);
   }
 };

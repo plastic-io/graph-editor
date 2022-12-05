@@ -1,8 +1,10 @@
 import type {App} from "vue";
 import type {Router} from "vue-router";
-import ErrorInterstitial from "./ErrorInterstitial.vue";
-export default {
-  install(app: App<Element>, hostRouter: Router) {
-    app.component('error-interstitial', ErrorInterstitial);
+import _ErrorInterstitial from "./ErrorInterstitial.vue";
+import GraphEditorModule from "@plastic-io/graph-editor-vue3-graph-editor-module";
+export default class ErrorInterstitial extends GraphEditorModule {
+  constructor(config: Record<string, any>, app: App<Element>, hostRouter: Router) {
+    super();
+    app.component('error-interstitial', _ErrorInterstitial);
   }
 };

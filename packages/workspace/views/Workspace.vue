@@ -1,16 +1,12 @@
+<template>
+    <div>
+        <workspace/>
+    </div>
+</template>
 <script lang="ts">
-import workspace from "../components/workspace.vue";
 export default {
-  components: { workspace },
-  name: 'empty',
+    name: "workspace-view",
+    props: {},
+    components: {},
 }
 </script>
-<template>
-  <div>
-    <workspace/>
-    <system-bar/>
-  </div>
-</template>
-<style scoped>
-
-</style>

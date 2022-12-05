@@ -4,7 +4,15 @@ import { createPinia, defineStore } from "pinia";
 import App from "./App.vue";
 import router from "./router";
 import "./assets/main.css";
+
+// Vuetify
+import 'vuetify/styles'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+
 // plugins
+import type GraphEditorModule from "@plastic-io/graph-editor-vue3-graph-editor-module";
 import AppBar from "@plastic-io/graph-editor-vue3-app-bar"
 import Auth0 from "@plastic-io/graph-editor-vue3-auth0";
 import ConnectorInfo from "@plastic-io/graph-editor-vue3-connector-info";
@@ -13,6 +21,7 @@ import ErrorInterstitial from "@plastic-io/graph-editor-vue3-error-interstitial"
 import EventLoggerPanel from "@plastic-io/graph-editor-vue3-event-logger-panel";
 import GraphCanvas from "@plastic-io/graph-editor-vue3-graph-canvas";
 import GraphManager from "@plastic-io/graph-editor-vue3-graph-manager";
+import GraphOrchestrator from "@plastic-io/graph-editor-vue3-graph-orchestrator";
 import GraphPresentation from "@plastic-io/graph-editor-vue3-graph-presentation";
 import GraphPresentationPanel from "@plastic-io/graph-editor-vue3-graph-presentation-panel";
 import GraphPropertiesPanel from "@plastic-io/graph-editor-vue3-graph-properties";
@@ -22,6 +31,7 @@ import HistoryPanel from "@plastic-io/graph-editor-vue3-history-panel";
 import ImportPanel from "@plastic-io/graph-editor-vue3-import-panel";
 import Input from "@plastic-io/graph-editor-vue3-input";
 import LocalStorageDocumentProvider from "@plastic-io/graph-editor-vue3-local-storage-document-provider";
+import LocalUserPreferences from "@plastic-io/graph-editor-vue3-graph-local-user-preferences";
 import MiniMapInfo from "@plastic-io/graph-editor-vue3-mini-map-info";
 import NavigationDrawer from "@plastic-io/graph-editor-vue3-navigation-drawer";
 import Node from "@plastic-io/graph-editor-vue3-node";
@@ -42,51 +52,65 @@ import WorkspaceControlPanel from "@plastic-io/graph-editor-vue3-workspace-contr
 import WssDocumentProvider from "@plastic-io/graph-editor-vue3-wss-document-provider-info";
 
 // must come before plugin install
-const app = createApp(App);
 const pinia = createPinia();
+
+const vuetify = createVuetify({
+  components,
+  directives,
+});
+
+const app = createApp(App);
 app.use(pinia);
+app.use(vuetify);
 
 // install plugins
 const plugins = [
-  AppBar, 
-  Auth0, 
-  ConnectorInfo, 
-  EndpointListPanel, 
-  ErrorInterstitial, 
-  EventLoggerPanel, 
-  GraphCanvas, 
-  GraphManager, 
-  GraphPresentation, 
-  GraphPresentationPanel, 
-  GraphPropertiesPanel, 
-  GraphRewind, 
-  HelpOverlay, 
-  HistoryPanel, 
-  ImportPanel, 
-  Input, 
-  LocalStorageDocumentProvider, 
-  MiniMapInfo, 
-  NavigationDrawer, 
-  Node, 
-  NodeEdgeConnector, 
-  NodeEdgePropertiesPanel, 
-  NodeListPanel, 
-  NodePropertiesPanel, 
-  ProviderSettings, 
-  SetEditor, 
-  SharedMouse, 
-  SharedUsers, 
-  SplineAnimator, 
-  SystemBar, 
-  TemplateEditor, 
-  UserPanel, 
-  Workspace, 
-  WorkspaceControlPanel, 
-  WssDocumentProvider, 
-];
-plugins.forEach((plugin: Record<string, any>) => {
-  plugin.install(app, router, pinia);
+  // GraphOrchestrator needs to come before a lot of the other
+  // modules because it provides a common store to share state
+  GraphOrchestrator,
+  AppBar,
+  Auth0,
+  ConnectorInfo,
+  EndpointListPanel,
+  ErrorInterstitial,
+  EventLoggerPanel,
+  GraphCanvas,
+  GraphManager,
+  GraphPresentation,
+  GraphPresentationPanel,
+  GraphPropertiesPanel,
+  GraphRewind,
+  HelpOverlay,
+  HistoryPanel,
+  ImportPanel,
+  Input,
+  LocalStorageDocumentProvider,
+  LocalUserPreferences,
+  MiniMapInfo,
+  NavigationDrawer,
+  Node,
+  NodeEdgeConnector,
+  NodeEdgePropertiesPanel,
+  NodeListPanel,
+  NodePropertiesPanel,
+  ProviderSettings,
+  SetEditor,
+  SharedMouse,
+  SharedUsers,
+  SplineAnimator,
+  SystemBar,
+  TemplateEditor,
+  UserPanel,
+  Workspace,
+  WorkspaceControlPanel,
+  WssDocumentProvider,
+] as GraphEditorModule[];
+const pluginInstances = {} as Record<string, GraphEditorModule>;
+plugins.forEach((_Plugin: GraphEditorModule) => {
+  const plugin = new _Plugin({}, app, router, pinia);
+  pluginInstances[plugin.name] = plugin;
 });
+
 
 app.use(router);
 
