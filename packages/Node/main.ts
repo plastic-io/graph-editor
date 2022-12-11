@@ -1,6 +1,7 @@
 import type {App} from "vue";
 import type {Router} from "vue-router";
 import _Node from "./Node.vue";
+import type {Graph, Node as CoreNode} from "@plastic-io/plastic-io";
 import GraphEditorModule from "@plastic-io/graph-editor-vue3-graph-editor-module";
 export default class Node extends GraphEditorModule {
   constructor(config: Record<string, any>, app: App<Element>, hostRouter: Router) {
@@ -17,4 +18,7 @@ export class NodeLocation {
     this.y = y;
     this.z = z;
   }
+}
+export class GraphEditorNode {
+
 }

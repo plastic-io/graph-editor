@@ -10,6 +10,10 @@ export default class GraphCanvas extends GraphEditorModule {
   }
 };
 
+export class GraphNode extends Node {
+
+}
+
 export class ConnectorAppearance {
   dragDeadZone: number;
   controlFillStyle: string;
@@ -40,11 +44,11 @@ export class Appearance {
   boundingRectColor: string;
   connectors: ConnectorAppearance;
   constructor() {
-    this.theme = "dark",
-    this.helpColor = "blue",
-    this.showGrid = true,
-    this.selectionRectColor = "lightBlue",
-    this.boundingRectColor = "shades",
+    this.theme = "dark";
+    this.helpColor = "blue";
+    this.showGrid = true;
+    this.selectionRectColor = "lightBlue";
+    this.boundingRectColor = "shades";
     this.connectors = new ConnectorAppearance();
   }
 }

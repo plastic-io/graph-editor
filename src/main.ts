@@ -60,6 +60,7 @@ const vuetify = createVuetify({
 });
 
 const app = createApp(App);
+(window as any).plastic_app = app;
 app.use(pinia);
 app.use(vuetify);
 

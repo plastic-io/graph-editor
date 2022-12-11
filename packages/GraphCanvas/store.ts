@@ -3,15 +3,23 @@ import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import type {Graph, Node} from "@plastic-io/plastic-io";
 import {useStore as useGraphManagerStore} from "@plastic-io/graph-editor-vue3-graph-manager";
 import {useStore as useGraphOrchestratorStore} from "@plastic-io/graph-editor-vue3-graph-orchestrator";
+import {template, set} from "@plastic-io/graph-editor-vue3-help-overlay";
 export const useStore = defineStore('graph-canvas', {
   state: () => ({
     hoveredNode: null,
     hoveredPort: null,
+    selectedNodes: [],
     view: {x: 0, y: 0, k: 1},
     selectionRect: {x: 0, y: 0, h: 0, w: 0},
     graph: null as Graph | null,
   }),
   actions: {
+    clearSchedulerErrorItem() {},
+    clearSchedulerError() {},
+    setArtifact() {},
+    updateNodeData() {},
+    clearArtifact() {},
+    getNodeById(nodeId: string): any {},
     async open(graphId: string) {
       const graphManager = useGraphManagerStore();
       const graphOrchestrator = useGraphOrchestratorStore();
@@ -26,6 +34,7 @@ export const useStore = defineStore('graph-canvas', {
         graph = graphManager.createGraph("");
       }
       this.graph = graph;
+      graphOrchestrator.createScheduler();
     },
     setView(e: {x: number, y: number, k: number}) {
       this.view = e;
@@ -68,11 +77,11 @@ export const useStore = defineStore('graph-canvas', {
               },
           },
           template: {
-              set: graphOrchestrator.preferences!.newNodeHelp ? helpTemplate.set : state.preferences.defaultNewSetTemplate,
-              vue: graphOrchestrator.preferences!.newNodeHelp ? helpTemplate.template : state.preferences.defaultNewVueTemplate,
+              set: graphOrchestrator.preferences!.newNodeHelp ? set : graphOrchestrator.preferences!.defaultNewSetTemplate,
+              vue: graphOrchestrator.preferences!.newNodeHelp ? template : graphOrchestrator.preferences!.defaultNewVueTemplate,
           },
       };
-      state.graphSnapshot.nodes.push(node);
+      this.graph!.nodes.push(node as any);
     }
   },
 });

@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia';
 import type {Graph, Node} from "@plastic-io/plastic-io";
+import Scheduler from "@plastic-io/plastic-io";
 import getRandomName from "@plastic-io/graph-editor-names";
 import {helpTopics} from "@plastic-io/graph-editor-vue3-help-overlay";
 import type DocumentProvider from "@plastic-io/graph-editor-vue3-document-provider";
 import type PreferencesProvider from "@plastic-io/graph-editor-vue3-preferences-provider";
 import type {UserPreferences} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import GraphEditorModule from "@plastic-io/graph-editor-vue3-graph-editor-module";
+import {useStore as useGraphCanvasStore} from "@plastic-io/graph-editor-vue3-graph-canvas";
 export default class GraphManager extends GraphEditorModule {
   constructor(config: Record<string, any>) {
     super();
@@ -96,7 +98,7 @@ export const useStore = defineStore('graph-orchestrator', {
     scheduler: {
         state: {},
         errors: {},
-        instance: null,
+        instance: null as Scheduler | null,
     },
     presentation: false,
     locked: false,
@@ -159,6 +161,10 @@ export const useStore = defineStore('graph-orchestrator', {
     selectedNodes: [] as Node[],
   }),
   actions: {
+    createScheduler() {
+        const graphCanvasStore = useGraphCanvasStore();
+        this.scheduler.instance = new Scheduler(graphCanvasStore.graph!, this, this.scheduler.state, console);
+    },
     clearInfo() {},
     undo() {},
     redo() {},

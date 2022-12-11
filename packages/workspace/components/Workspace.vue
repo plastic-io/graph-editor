@@ -692,10 +692,16 @@ export default {
 };
 </script>
 <style>
-.graph-container {
+.graph-container, .graph-editor {
     position: fixed;
     top: 0;
     left: 0;
+    height: 100vh;
+    width: 100vw;
+}
+.graph-container {
+    top: 25px;
+    height: calc(100vh - 25px);
 }
 .error-close-btn.v-icon.v-icon:after,
 .bottom-system-bar .v-icon.v-icon:after,

@@ -1,0 +1,10 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-compile-template",
+  "license": "BSD-3-Clause",
+  "author": "TonyGermaneri@gmail.com",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Connector info for graph editor workspace.",
+  "main": "./main.ts",
+  "files": []
+}

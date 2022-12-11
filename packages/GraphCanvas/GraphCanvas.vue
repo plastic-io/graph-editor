@@ -1,5 +1,5 @@
 <template>
-    <div :style="graphCanvasStyle" v-if="graph" @drop="drop($event)" @dragover="dragOver($event)" :key="graph.version">
+    <div x-graph-canvas :style="graphCanvasStyle" v-if="graph" @drop="drop($event)" @dragover="dragOver($event)" :key="graph.version">
         <div
             :style="preferences.appearance.theme === 'dark' ? '' : 'filter: invert(1);'"
             :class="graphCanvasClasses"
@@ -20,7 +20,7 @@
                 :presentation="false"
             />
         </template>
-        <graph-presentation v-if="presentation"/>
+        <!-- <graph-presentation v-if="presentation"/> -->
         <div v-if="selectionRect.visible && !presentation" class="selection-rect" :style="selectionRectStyle"></div>
         <div v-if="selectedNodes.length > 0 && !presentation" class="bounding-rect" :style="boundingRectStyle"></div>
     </div>
@@ -39,8 +39,8 @@ export default {
     }
   },
   computed: {
-    ...mapWritableState(useGraphCanvasStore, ['view', 'selectionRect']),
-    ...mapWritableState(useOrchestratorStore, ['graph', 'translating', 'selectedNodes', 'preferences']),
+    ...mapWritableState(useGraphCanvasStore, ['graph', 'view', 'selectionRect']),
+    ...mapWritableState(useOrchestratorStore, ['translating', 'selectedNodes', 'preferences']),
     connectors: function () {
         let connectors = [];
         this.graph.nodes.forEach((node) => {
