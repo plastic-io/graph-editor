@@ -14,6 +14,7 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
   },
   "dependencies": {
+    "@plastic-io/graph-editor-vue3-graph-shortcut-icons": "file:./packages/GraphShortcutIcons",
     "@plastic-io/graph-editor-names": "file:./packages/Names",
     "@plastic-io/graph-editor-vue3-app-bar": "file:./packages/AppBar",
     "@plastic-io/graph-editor-vue3-auth0": "file:./packages/Auth0",

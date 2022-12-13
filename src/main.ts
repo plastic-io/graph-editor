@@ -26,6 +26,7 @@ import GraphPresentation from "@plastic-io/graph-editor-vue3-graph-presentation"
 import GraphPresentationPanel from "@plastic-io/graph-editor-vue3-graph-presentation-panel";
 import GraphPropertiesPanel from "@plastic-io/graph-editor-vue3-graph-properties";
 import GraphRewind from "@plastic-io/graph-editor-vue3-graph-rewind";
+import GraphShortcutIcons from "@plastic-io/graph-editor-vue3-graph-shortcut-icons";
 import HelpOverlay from "@plastic-io/graph-editor-vue3-help-overlay";
 import HistoryPanel from "@plastic-io/graph-editor-vue3-history-panel";
 import ImportPanel from "@plastic-io/graph-editor-vue3-import-panel";
@@ -81,6 +82,7 @@ const plugins = [
   GraphPresentationPanel,
   GraphPropertiesPanel,
   GraphRewind,
+  GraphShortcutIcons,
   HelpOverlay,
   HistoryPanel,
   ImportPanel,
@@ -102,9 +104,9 @@ const plugins = [
   SystemBar,
   TemplateEditor,
   UserPanel,
-  Workspace,
   WorkspaceControlPanel,
   WssDocumentProvider,
+  Workspace,
 ] as GraphEditorModule[];
 const pluginInstances = {} as Record<string, GraphEditorModule>;
 plugins.forEach((_Plugin: GraphEditorModule) => {

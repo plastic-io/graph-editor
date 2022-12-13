@@ -6,7 +6,7 @@ import {helpTopics} from "@plastic-io/graph-editor-vue3-help-overlay";
 import type DocumentProvider from "@plastic-io/graph-editor-vue3-document-provider";
 import type PreferencesProvider from "@plastic-io/graph-editor-vue3-preferences-provider";
 import type {UserPreferences} from "@plastic-io/graph-editor-vue3-preferences-provider";
-import GraphEditorModule from "@plastic-io/graph-editor-vue3-graph-editor-module";
+import GraphEditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-graph-editor-module";
 import {useStore as useGraphCanvasStore} from "@plastic-io/graph-editor-vue3-graph-canvas";
 export default class GraphManager extends GraphEditorModule {
   constructor(config: Record<string, any>) {
@@ -16,13 +16,11 @@ export default class GraphManager extends GraphEditorModule {
 export const useStore = defineStore('graph-orchestrator', {
   state: () => ({
     token: null,
-    plugins: {
-        graphProperties: [],
-        nodeProperties: [],
-    },
+    plugins: [] as Plugin[],
     authProvider: null,
     identity: {},
     notFound: null,
+    navWidth: 450,
     buttonMap: {
         "0": "lmb",
         "2": "rmb",
@@ -45,6 +43,7 @@ export const useStore = defineStore('graph-orchestrator', {
     graphUserMouse: {},
     graphUserChat: {},
     graphUsers: {},
+    showConnectorView: false,
     connectionState: "closed",
     createdGraphId: null,
     helpTopics,
@@ -139,13 +138,6 @@ export const useStore = defineStore('graph-orchestrator', {
     hoveredConnector: null,
     hoveredVector: null,
     hoveredPort: null,
-    mouse: {
-        lmb: false,
-        rmb: false,
-        mmb: false,
-        x: 0,
-        y: 0
-    },
     luts: {},
     translating: {},
     keys: {},
@@ -161,6 +153,16 @@ export const useStore = defineStore('graph-orchestrator', {
     selectedNodes: [] as Node[],
   }),
   actions: {
+    getPluginsByType(type: string) {
+      return this.plugins.filter(p => p.type === type);
+    },
+    addPlugin(plugin: Plugin) {
+        console.info('adding plugin', plugin);
+        this.plugins.push(plugin);
+    },
+    graphUrl(url: string) {
+        
+    },
     createScheduler() {
         const graphCanvasStore = useGraphCanvasStore();
         this.scheduler.instance = new Scheduler(graphCanvasStore.graph!, this, this.scheduler.state, console);
