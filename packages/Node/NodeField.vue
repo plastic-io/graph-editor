@@ -26,19 +26,22 @@ import {mapWritableState, mapActions, mapState} from "pinia";
 
 import {Node} from "@plastic-io/plastic-io";
 
-import {useStore as useGraphOrchestratorStore} from "@plastic-io/graph-editor-vue3-graph-orchestrator";
-import {useStore as useGraphCanvasStore} from "@plastic-io/graph-editor-vue3-graph-canvas";
+import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
 
 export default {
     name: "node-field",
     computed: {
-        ...mapWritableState(useGraphCanvasStore, [
+        ...mapWritableState(usePreferencesStore, [
+            'preferences',
+        ]),
+        ...mapWritableState(useCanvasStore, [
             'hoveredPort',
         ]),
-        ...mapState(useGraphOrchestratorStore, [
+        ...mapState(useOrchestratorStore, [
             'connectorWarn',
             'presentation',
-            'preferences',
         ]),
         isHovered() {
             return this.hoveredPort && this.hoveredPort.node.id === this.node.id

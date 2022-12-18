@@ -12,27 +12,27 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 
 // plugins
-import type GraphEditorModule from "@plastic-io/graph-editor-vue3-graph-editor-module";
+import type GraphEditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 import AppBar from "@plastic-io/graph-editor-vue3-app-bar"
 import Auth0 from "@plastic-io/graph-editor-vue3-auth0";
 import ConnectorInfo from "@plastic-io/graph-editor-vue3-connector-info";
 import EndpointListPanel from "@plastic-io/graph-editor-vue3-endpoint-list-panel";
 import ErrorInterstitial from "@plastic-io/graph-editor-vue3-error-interstitial";
 import EventLoggerPanel from "@plastic-io/graph-editor-vue3-event-logger-panel";
-import GraphCanvas from "@plastic-io/graph-editor-vue3-graph-canvas";
-import GraphManager from "@plastic-io/graph-editor-vue3-graph-manager";
-import GraphOrchestrator from "@plastic-io/graph-editor-vue3-graph-orchestrator";
-import GraphPresentation from "@plastic-io/graph-editor-vue3-graph-presentation";
-import GraphPresentationPanel from "@plastic-io/graph-editor-vue3-graph-presentation-panel";
-import GraphPropertiesPanel from "@plastic-io/graph-editor-vue3-graph-properties";
-import GraphRewind from "@plastic-io/graph-editor-vue3-graph-rewind";
-import GraphShortcutIcons from "@plastic-io/graph-editor-vue3-graph-shortcut-icons";
+import GraphCanvas from "@plastic-io/graph-editor-vue3-canvas";
+import GraphManager from "@plastic-io/graph-editor-vue3-manager";
+import GraphOrchestrator from "@plastic-io/graph-editor-vue3-orchestrator";
+import GraphPresentation from "@plastic-io/graph-editor-vue3-presentation";
+import GraphPresentationPanel from "@plastic-io/graph-editor-vue3-presentation-panel";
+import GraphPropertiesPanel from "@plastic-io/graph-editor-vue3-properties";
+import GraphRewind from "@plastic-io/graph-editor-vue3-rewind";
+import GraphShortcutIcons from "@plastic-io/graph-editor-vue3-shortcut-icons";
 import HelpOverlay from "@plastic-io/graph-editor-vue3-help-overlay";
 import HistoryPanel from "@plastic-io/graph-editor-vue3-history-panel";
 import ImportPanel from "@plastic-io/graph-editor-vue3-import-panel";
 import Input from "@plastic-io/graph-editor-vue3-input";
 import LocalStorageDocumentProvider from "@plastic-io/graph-editor-vue3-local-storage-document-provider";
-import LocalUserPreferences from "@plastic-io/graph-editor-vue3-graph-local-user-preferences";
+import LocalUserPreferences from "@plastic-io/graph-editor-vue3-local-user-preferences";
 import MiniMapInfo from "@plastic-io/graph-editor-vue3-mini-map-info";
 import NavigationDrawer from "@plastic-io/graph-editor-vue3-navigation-drawer";
 import Node from "@plastic-io/graph-editor-vue3-node";

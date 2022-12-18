@@ -81,8 +81,9 @@
 <script lang="typescript">
 import {mapWritableState, mapActions, mapState} from "pinia";
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
-import {useStore as useGraphCanvasStore} from "@plastic-io/graph-editor-vue3-graph-canvas";
-import {useStore as useGraphOrchestratorStore} from "@plastic-io/graph-editor-vue3-graph-orchestrator";
+import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 
 export default {
     name: "bottom-shortcut-icons",
@@ -95,19 +96,21 @@ export default {
             'keys',
             'buttonMap',
         ]),
-        ...mapWritableState(useGraphCanvasStore, [
+        ...mapWritableState(useCanvasStore, [
             'graph',
             'view',
             'selectionRect',
             'hoveredNode',
             'hoveredPort',
-        ]),
-        ...mapWritableState(useGraphOrchestratorStore, [
-            'translating',
             'selectedNodes',
+        ]),
+        ...mapWritableState(usePreferencesStore, [
             'preferences',
         ]),
-        ...mapState(useGraphOrchestratorStore, [
+        ...mapWritableState(useOrchestratorStore, [
+            'translating',
+        ]),
+        ...mapState(useOrchestratorStore, [
             'showConnectorView',
             'notFound',
             'inRewindMode',
@@ -130,20 +133,19 @@ export default {
             'primaryGroup',
             'groupNodes',
             'boundingRect',
-            'selectionRect',
             'selectedConnectors',
             'hoveredConnector',
         ]),
     },
     methods: {
-        ...mapActions(useGraphCanvasStore, [
+        ...mapActions(useCanvasStore, [
             'open',
             'createNewNode',
             'zoomOut',
             'zoomIn',
             'zoomReset',
         ]),
-        ...mapActions(useGraphCanvasStore, [
+        ...mapActions(useCanvasStore, [
             'open',
             'createNewNode',
         ]),
@@ -151,7 +153,7 @@ export default {
             'keydown',
             'keyup',
         ]),
-        ...mapActions(useGraphOrchestratorStore, [
+        ...mapActions(useOrchestratorStore, [
             'clearInfo',
             'getPluginsByType',
             'undo',

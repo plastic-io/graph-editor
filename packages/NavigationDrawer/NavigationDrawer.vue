@@ -3,7 +3,7 @@
         disable-resize-watcher
         permanent
         :style="navStyle"
-        class="nav-drawer"
+        class="graph-nav-drawer"
         ref="nav"
         app
         flat
@@ -22,7 +22,7 @@
               </v-tab>
             </v-tabs>
             <v-window v-model="panelTopTabs">
-              <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-top-tabs')" :value="plugin.name">
+              <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-top-tabs')" :value="plugin.name"  style="height: calc(100vh - 148px);">
                 <component :is="plugin.component"/>
               </v-window-item>
             </v-window>
@@ -50,8 +50,9 @@
 <script lang="typescript">
 import {mapWritableState, mapActions, mapState} from "pinia";
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
-import {useStore as useGraphCanvasStore} from "@plastic-io/graph-editor-vue3-graph-canvas";
-import {useStore as useGraphOrchestratorStore} from "@plastic-io/graph-editor-vue3-graph-orchestrator";
+import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 export default {
     name: "control-panel",
     watch: {
@@ -61,6 +62,11 @@ export default {
         "mouse.x"() {
             this.mouseTranslate();
         },
+        panelTopTabs() {
+            if (!this.navWidths[this.panelTopTabs]) {
+                this.navWidths[this.panelTopTabs] = 400;
+            }
+        },
         graph: {
             handler: function() {
                 this.localGraph = this.graph;
@@ -69,19 +75,21 @@ export default {
         },
     },
     computed: {
-        ...mapWritableState(useGraphOrchestratorStore, [
+        ...mapWritableState(usePreferencesStore, [
+          'preferences',
+        ]),
+        ...mapWritableState(useOrchestratorStore, [
           'navWidth',
         ]),
-        ...mapState(useGraphOrchestratorStore, [
+        ...mapState(useOrchestratorStore, [
           'log',
           'showHelp',
           'historyPosition',
           'events',
           'plugins',
-          'preferences',
           'panelPlugins',
         ]),
-        ...mapState(useGraphCanvasStore, [
+        ...mapState(useCanvasStore, [
           'selectRect',
           'selectedConnectors',
           'selectedNode',
@@ -101,19 +109,13 @@ export default {
             };
         },
         navStyle: function() {
-            let navWidth = this.navWidths[this.panelTopTabs];
-            if (!navWidth) {
-                navWidth = this.navWidth + "px";
-            }
             return {
-                // zIndex: this.showHelp ? 5 : undefined,
-                width: this.panel ? navWidth : "250px",
-                transition: 'none !important',
+                width: this.panel ? (this.navWidths[this.panelTopTabs] + "px") : "250px",
             };
         }
     },
     methods: {
-        ...mapActions(useGraphOrchestratorStore, [
+        ...mapActions(useOrchestratorStore, [
           'getPluginsByType',
         ]),
         mousemove(e) {
@@ -122,21 +124,29 @@ export default {
         },
         mouseTranslate() {
             if (this.panelDragging) {
-                // this.$refs.nav.$el.style.transition = "none";
-                this.navWidth =
+                this.navWidths[this.panelTopTabs] =
                     this.panelDragging.w +
                     (this.mouse.x - this.panelDragging.x);
-                // this.$refs.nav.$el.style.transition = undefined;
             }
         },
         startPanelDrag() {
+            const el = document.getElementsByClassName('graph-nav-drawer')[0];
+            el.style.transition = 'none';
             this.panelDragging = {
                 x: this.mouse.x,
                 y: this.mouse.y,
-                w: this.navWidth
+                w: this.navWidths[this.panelTopTabs]
             };
             const dragEnd = () => {
                 this.panelDragging = false;
+                el.style.transition = undefined;
+                usePreferencesStore().$patch({
+                    preferences: {
+                        uiSize: {
+                            [this.panelTopTabs]: this.navWidths[this.panelTopTabs],
+                        },
+                    },
+                });
                 document.removeEventListener("mouseup", dragEnd);
             };
             document.addEventListener("mouseup", dragEnd);
@@ -152,6 +162,7 @@ export default {
     },
     mounted() {
         this.localGraph = this.graph;
+        this.navWidths = JSON.parse(JSON.stringify(this.preferences.uiSize));
         document.onmousemove = this.mousemove;
     },
     data: () => {
@@ -182,10 +193,6 @@ export default {
 }
 .icon-nav .v-icon.v-icon:after {
     display: none;
-}
-.nav-drawer {
-/*    margin-top: 24px;*/
-/*    transition: width 0.25s;*/
 }
 .icon-nav {
     border: solid 1px black;

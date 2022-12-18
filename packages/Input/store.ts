@@ -1,14 +1,18 @@
 import { defineStore } from 'pinia';
-import {useStore as useGraphManagerStore} from "@plastic-io/graph-editor-vue3-graph-manager";
-import {useStore as useGraphOrchestratorStore} from "@plastic-io/graph-editor-vue3-graph-orchestrator";
-import {useStore as useGraphCanvasStore} from "@plastic-io/graph-editor-vue3-graph-canvas";
+import {useStore as useGraphManagerStore} from "@plastic-io/graph-editor-vue3-manager";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
+import {newId} from "@plastic-io/graph-editor-vue3-utils";
+import {keys} from "./keys";
+import MouseAction from "./mouse";
 export const useStore = defineStore('input', {
   state: () => ({
+    mouseAction: new MouseAction(),
     name: 'input',
-    keys: {} as Record<string, string>,
-    orchistratorStore: useGraphOrchestratorStore(),
+    keys: {} as Record<string, boolean>,
+    orchistratorStore: useOrchestratorStore(),
     graphManagerStore: useGraphManagerStore(),
-    graphCanvasStore: useGraphCanvasStore(),
+    graphCanvasStore: useCanvasStore(),
     mouse: {
       lmb: false,
       rmb: false,
@@ -24,9 +28,29 @@ export const useStore = defineStore('input', {
     },
   }),
   actions: {
+    keyup(e: UIEvent) {
+        this.keys[e.keyCode] = false;
+        keys(this, e);
+    },
+    keydown(e: UIEvent) {
+        this.keys[e.keyCode] = true;
+        keys(this, e);
+    },
+    updateMouse(mouse: any) {
+        this.mouseAction.mouse(mouse);
+    },
+    onwheel(e: MouseEvent) {
+        if (!this.graphCanvasStore.isGraphTarget(e)) {
+            return;
+        }
+        this.graphCanvasStore.scale(e);
+    },
     mousemove(e: MouseEvent) {
-        console.log('mousemove');
         if (this.orchistratorStore.showHelp || this.orchistratorStore.inRewindMode) {
+            return;
+        }
+        // do not track control panel inputs
+        if (!this.graphCanvasStore.isGraphTarget(e)) {
             return;
         }
         const mouse = this.getMousePosFromEvent(e);
@@ -39,17 +63,20 @@ export const useStore = defineStore('input', {
         if (!item.port) {
             this.graphCanvasStore.hoveredPort = null;
         }
-        this.mouse.event = e;
-        this.mouse.x = mouse.x;
-        this.mouse.y = mouse.y;
+        this.updateMouse({
+            ...this.mouse,
+            x: mouse.x,
+            y: mouse.y,
+            event: e,
+        });
     },
     dblclick(e: MouseEvent) {
         if (!/graph-canvas-container/.test(e.target.className)) {
             return;
         }
         this.graphCanvasStore.createNewNode({
-            x: e.clientX,
-            y: e.clientY,
+            x: this.mouse.x,
+            y: this.mouse.y,
         });
     },
     mousedown(e: MouseEvent) {
@@ -92,34 +119,31 @@ export const useStore = defineStore('input', {
             }),
         };
         this.graphCanvasStore.translating = translating;
-        this.mouse = {
+        this.updateMouse({
             ...this.mouse,
             event: e,
             [this.buttonMap[e.button]]: true,
-        };
+        });
     },
     mouseup(e) {
-        this.mouse = {
+        this.updateMouse({
             ...this.mouse,
             event: e,
             [this.buttonMap[e.button]]: false,
-        };
+        });
     },
     getMousePosFromEvent(e: MouseEvent) {
-        if (!this.graphCanvasStore.el) {
+        if (!this.graphCanvasStore.workspaceElement) {
             return {
                 x: 0,
                 y: 0
             };
         }
-        const rect = this.graphCanvasStore.el.getBoundingClientRect();
+        const rect = this.graphCanvasStore.workspaceElement.getBoundingClientRect();
         return {
             x: e.clientX - rect.left,
             y: e.clientY - rect.top
         };
-    },
-    setMouse(e: any) {
-      this.mouse = e;
     },
   },
 });

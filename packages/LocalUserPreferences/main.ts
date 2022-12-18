@@ -1,25 +1,30 @@
-import PreferencesProvider, {UserPreferences} from "@plastic-io/graph-editor-vue3-preferences-provider";
-import {useStore as useOrchistratorStore} from "@plastic-io/graph-editor-vue3-graph-orchestrator";
-import {Appearance} from "@plastic-io/graph-editor-vue3-graph-canvas";
-import GraphEditorModule from "@plastic-io/graph-editor-vue3-graph-editor-module";
+import PreferencesProvider, {UserPreferences, useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
+import EditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 const STORE_KEY = 'plastic-user-preferences';
-export default class LocalStorageDocumentProvider extends GraphEditorModule {
+export default class LocalStoragePreferencesProvider extends EditorModule {
   constructor(config: Record<string, any>) {
     super();
     const localPreferencesProvider = new LocalPreferencesProvider();
-    const orchistratorStore = useOrchistratorStore();
-    orchistratorStore.dataProviders.preferences = localPreferencesProvider;
+    const preferencesStore = usePreferencesStore();
     localPreferencesProvider.get().then((userPreferences: UserPreferences) => {
-      orchistratorStore.preferences = userPreferences;
+      if (!userPreferences) {
+        userPreferences = new UserPreferences();
+      }
+      preferencesStore.preferences = userPreferences;
     });
   }
 };
 class LocalPreferencesProvider extends PreferencesProvider {
   asyncUpdate: boolean;
-  defaultPreferences: UserPreferences;
   constructor() {
     super();
     this.asyncUpdate = false;
+    const preferencesStore = usePreferencesStore();
+    console.log("subscribe to state");
+    preferencesStore.$subscribe((mutation, state) => {
+      console.log('preferencesStore mutation', mutation);
+      this.set(state.preferences as UserPreferences);
+    }, { detached: true });
   }
   async get(): Promise<UserPreferences> {
     let item: string = localStorage.getItem(STORE_KEY) ||
@@ -27,15 +32,16 @@ class LocalPreferencesProvider extends PreferencesProvider {
     return JSON.parse(item);
   }
   async set(value: UserPreferences): Promise<void> {
-    localStorage.setItem(STORE_KEY, value);
+    console.log('set', JSON.stringify(value.uiSize));
+    localStorage.setItem(STORE_KEY, JSON.stringify(value));
   }
   async delete(): Promise<void> {
     localStorage.removeItem(STORE_KEY);
   }
   async subscribe(callback: (e: Event, prefs: UserPreferences) => void): Promise<void> {
-    window.addEventListener('storage', (event) => {
+    window.addEventListener('storage', async (event) => {
       if (event.storageArea === localStorage && event.key === STORE_KEY) {
-        callback(event, this.get());
+        callback(event, await this.get());
       }
     });
   };

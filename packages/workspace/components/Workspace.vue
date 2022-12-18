@@ -27,7 +27,6 @@
             <v-system-bar
                 v-if="!presentation && panelVisibility"
                 ref="bottomBar"
-                style="position: absolute; z-index: 2; left: 0;bottom: 0; width: 100vw; top: inherit !important;"
                 class="no-select bottom-system-bar"
             >
                 <template
@@ -44,35 +43,38 @@
 import {mapWritableState, mapActions, mapState} from "pinia";
 import GraphMap from "@plastic-io/graph-editor-vue3-mini-map-info";
 import ErrorPage from "@plastic-io/graph-editor-vue3-error-interstitial";
-import GraphRewind from "@plastic-io/graph-editor-vue3-graph-rewind";
+import GraphRewind from "@plastic-io/graph-editor-vue3-rewind";
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
-import {useStore as useGraphCanvasStore} from "@plastic-io/graph-editor-vue3-graph-canvas";
-import {useStore as useGraphOrchestratorStore} from "@plastic-io/graph-editor-vue3-graph-orchestrator";
-import { useTheme } from 'vuetify';
+import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
+import {useTheme} from 'vuetify';
 export default {
     name: "GraphEditor",
     props: {
         route: Object,
     },
     computed: {
-        ...mapWritableState(useGraphOrchestratorStore, [
+        ...mapWritableState(usePreferencesStore, [
+          'preferences',
+        ]),
+        ...mapWritableState(useOrchestratorStore, [
             'translating',
             'selectedNodes',
-            'preferences',
         ]),
         ...mapWritableState(useInputStore, [
             'mouse',
             'keys',
             'buttonMap',
         ]),
-        ...mapWritableState(useGraphCanvasStore, [
+        ...mapWritableState(useCanvasStore, [
             'graph',
-            'view',
             'selectionRect',
             'hoveredNode',
             'hoveredPort',
+            'workspaceElement',
         ]),
-        ...mapState(useGraphOrchestratorStore, [
+        ...mapState(useOrchestratorStore, [
             'notFound',
             'inRewindMode',
             'rewindVisible',
@@ -114,7 +116,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions(useGraphCanvasStore, [
+        ...mapActions(useCanvasStore, [
             'scale',
             'open',
             'createNewNode',
@@ -123,6 +125,7 @@ export default {
             'evCopy',
         ]),
         ...mapActions(useInputStore, [
+            'onwheel',
             'keydown',
             'keyup',
             'mousedown',
@@ -130,7 +133,7 @@ export default {
             'mouseup',
             'mousemove',
         ]),
-        ...mapActions(useGraphOrchestratorStore, [
+        ...mapActions(useOrchestratorStore, [
             'clearInfo',
             'getPluginsByType',
             'undo',
@@ -152,8 +155,9 @@ export default {
         this.bgColor = isDark ? "#000000" : "#FFFFFF";
     },
     mounted() {
+        this.workspaceElement = this.$el;
         window.onwheel = e => {
-            this.scale(e);
+            this.onwheel(e);
         };
         document.oncut = this.evCut;
         document.onpaste = this.evPaste;
@@ -164,6 +168,7 @@ export default {
         window.onmousemove = this.mousemove;
         window.onkeyup = this.keyup;
         window.onkeydown = this.keydown;
+
         const graphId = window.location.pathname.substring(1);
         this.open(graphId);
     },
@@ -189,11 +194,9 @@ export default {
     position: fixed;
     top: 0;
     left: 0;
-    height: 100vh;
-    width: 100vw;
 }
 .graph-container {
-    top: 25px;
+    top: 0px;
     height: calc(100vh - 25px);
 }
 .error-close-btn.v-icon.v-icon:after,
@@ -202,7 +205,14 @@ export default {
     display: none;
 }
 .bottom-system-bar {
+    bottom: 0;
     white-space: nowrap;
+    position: absolute;
+    z-index: 2;
+    left: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    top: inherit !important;
 }
 .no-pointer-events {
     pointer-events: none;

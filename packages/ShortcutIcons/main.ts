@@ -2,15 +2,15 @@ import type {App} from "vue";
 import type {Router} from "vue-router";
 import TopShortcutIcons from "./TopShortcutIcons.vue";
 import BottomShortcutIcons from "./BottomShortcutIcons.vue";
-import GraphEditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-graph-editor-module";
-import {useStore as useGraphOrchestratorStore} from "@plastic-io/graph-editor-vue3-graph-orchestrator";
+import EditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-editor-module";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 
-export default class ShortcutIcons extends GraphEditorModule {
+export default class ShortcutIcons extends EditorModule {
   constructor(config: Record<string, any>, app: App<Element>, hostRouter: Router) {
     super();
     app.component('top-shortcut-icons', TopShortcutIcons);
     app.component('bottom-shortcut-icons', BottomShortcutIcons);
-    const graphOrchestratorStore =  useGraphOrchestratorStore();
+    const graphOrchestratorStore =  useOrchestratorStore();
     const topIcons = new Plugin({
       name: 'Top Shortcut Icons',
       component: 'top-shortcut-icons',

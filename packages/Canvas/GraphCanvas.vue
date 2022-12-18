@@ -13,7 +13,7 @@
         />
         <template v-if="!presentation">
             <node
-                v-for="node in graph.nodes"
+                v-for="node in graphSnapshot.nodes"
                 :key="node.id"
                 :node="node"
                 :graph="graph"
@@ -27,8 +27,10 @@
 </template>
 <script lang="ts">
 import {mapWritableState, mapActions} from "pinia";
-import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-graph-orchestrator";
-import {useStore as useGraphCanvasStore} from "./store";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+import {useStore as useCanvasStore} from "./store";
+import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
+import colors from "vuetify/lib/util/colors";
 export default {
   name: 'graph-canvas',
   data: () => {
@@ -39,8 +41,9 @@ export default {
     }
   },
   computed: {
-    ...mapWritableState(useGraphCanvasStore, ['graph', 'view', 'selectionRect']),
-    ...mapWritableState(useOrchestratorStore, ['translating', 'selectedNodes', 'preferences']),
+    ...mapWritableState(usePreferencesStore, ['preferences']),
+    ...mapWritableState(useCanvasStore, ['graph', 'graphSnapshot', 'view', 'selectionRect', 'selectedNodes', 'el', 'boundingRect']),
+    ...mapWritableState(useOrchestratorStore, ['translating']),
     connectors: function () {
         let connectors = [];
         this.graph.nodes.forEach((node) => {
@@ -62,6 +65,26 @@ export default {
             });
         }
         return connectors;
+    },
+    selectionRectStyle: function() {
+        return {
+            borderWidth: 0.5 / this.view.k + "px",
+            left: this.selectionRect.x + "px",
+            top: this.selectionRect.y + "px",
+            width: this.selectionRect.width + "px",
+            height: this.selectionRect.height + "px",
+            borderColor: colors[this.preferences.appearance.selectionRectColor].base,
+        };
+    },
+    boundingRectStyle: function() {
+        return {
+            borderWidth: 0.5 / this.view.k + "px",
+            left: this.boundingRect.x + "px",
+            top: this.boundingRect.y + "px",
+            width: this.boundingRect.width + "px",
+            height: this.boundingRect.height + "px",
+            borderColor: colors[this.preferences.appearance.boundingRectColor].base,
+        };
     },
     graphCanvasClasses: function () {
         const classes = [];

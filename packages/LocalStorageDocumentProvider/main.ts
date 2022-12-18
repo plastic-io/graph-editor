@@ -1,9 +1,9 @@
 import type {Node, Graph} from "@plastic-io/plastic-io";
 import type {Toc, TocItem, GraphDiff, NodeArtifact, GraphArtifact} from "@plastic-io/graph-editor-vue3-document-provider";
-import {useStore as useOrchistratorStore} from "@plastic-io/graph-editor-vue3-graph-orchestrator";
-import GraphEditorModule from "@plastic-io/graph-editor-vue3-graph-editor-module";
+import {useStore as useOrchistratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+import EditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 import DocumentProvider from "@plastic-io/graph-editor-vue3-document-provider";
-import {Appearance} from "@plastic-io/graph-editor-vue3-graph-canvas";
+import {Appearance} from "@plastic-io/graph-editor-vue3-appearance";
 import {applyChange} from "deep-diff";
 import Hashes from "jshashes";
 const preferencesKey = "preferences";
@@ -15,7 +15,7 @@ const artifactsPrefix = "artifacts/";
 // what it would look like to implement an async data provider which are far
 // more typical than sync providers like local store.
 
-export default class LocalStorageDocumentProvider extends GraphEditorModule {
+export default class LocalStorageDocumentProvider extends EditorModule {
   constructor(config: Record<string, any>) {
     super();
     const orchistratorStore = useOrchistratorStore();

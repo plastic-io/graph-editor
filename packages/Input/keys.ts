@@ -25,16 +25,14 @@ interface UIEvent {
     keyCode: number;
     preventDefault: Function;
 }
-function keys(store: any, keys: {
-        [key: string]: any; // tslint:disable-line
-    }, e: UIEvent) {
-    const state = store.state;
+export const keys = (store: any, e: UIEvent) => {
+    const keys = store.keys;
     const ctrl = e.ctrlKey || e.metaKey;
     const shift = e.shiftKey;
     const alt = e.altKey;
-    const locked = state.presentation || state.locked;
+    const locked = store.presentation || store.locked;
     if (keys[graveKeyCode] && alt) {
-        store.togglePresentation(state);
+        store.graphCanvasStore.togglePresentation();
     }
     if (locked) {
         // keyboard shortcuts are disabled in presentation/locked mode
@@ -44,75 +42,67 @@ function keys(store: any, keys: {
     // BUG in chrome?: in key interface. - and + do not "keyup" when command is held down
     if (keys[equalKeyCode] && ctrl) {
         e.preventDefault();
-        store.zoom(state, 0.10);
+        store.graphCanvasStore.zoom(0.10);
         keys[equalKeyCode] = false;
     }
     if (keys[dashKeyCode] && ctrl) {
         e.preventDefault();
-        store.zoom(state, -0.10);
+        store.graphCanvasStore.zoom(-0.10);
         keys[dashKeyCode] = false;
     }
     if (keys[backslashKeyCode]) {
-        store.toggleSelectedVectorPresentationMode(state);
+        store.graphCanvasStore.toggleSelectedNodePresentationMode();
     }
     // nudges
     if (keys[arrowUp]) {
-        store.nudgeUp(state, shift ? 50 : 10);
+        store.graphCanvasStore.nudgeUp(shift ? 50 : 10);
     }
     if (keys[arrowDown]) {
-        store.nudgeDown(state, shift ? 50 : 10);
+        store.graphCanvasStore.nudgeDown(shift ? 50 : 10);
     }
     if (keys[arrowLeft]) {
-        store.nudgeLeft(state, shift ? 50 : 10);
+        store.graphCanvasStore.nudgeLeft(shift ? 50 : 10);
     }
     if (keys[arrowRight]) {
-        store.nudgeRight(state, shift ? 50 : 10);
+        store.graphCanvasStore.nudgeRight(shift ? 50 : 10);
     }
     // move z
     if (keys[closeBraceKeyCode] && ctrl && shift) {
-        store.bringToFront(state);
+        store.graphCanvasStore.bringToFront();
     } else if (keys[closeBraceKeyCode] && ctrl) {
-        store.bringForward(state);
+        store.graphCanvasStore.bringForward();
     }
     if (keys[openBraceKeyCode] && ctrl && shift) {
-        store.sendToBack(state);
+        store.graphCanvasStore.sendToBack();
     } else if (keys[openBraceKeyCode] && ctrl) {
-        store.sendBackward(state);
+        store.graphCanvasStore.sendBackward();
     }
     // delete
     if (keys[deleteKey]) {
-        store.deleteSelected(state);
+        store.graphCanvasStore.deleteSelected();
     }
     // group ungroup
     if (keys[gKeyCode] && ctrl && shift) {
-        store.ungroupSelected(state);
+        store.graphCanvasStore.ungroupSelected();
     } else if (keys[gKeyCode] && ctrl) {
-        store.groupSelected(state);
+        store.graphCanvasStore.groupSelected();
     }
     // undo / redo
     // BUG in chrome?: in key interface.  Z does not "keyup" when command is held down
     if (keys[zKeyCode] && ctrl && shift) {
-        store.redo(state);
-        state.keys[zKeyCode] = false;
+        store.graphCanvasStore.redo();
+        store.keys[zKeyCode] = false;
     } else if (keys[zKeyCode] && ctrl) {
-        store.undo(state);
-        state.keys[zKeyCode] = false;
+        store.graphCanvasStore.undo();
+        store.keys[zKeyCode] = false;
     }
     // duplicate
     if (keys[dKeyCode] && ctrl && shift) {
         e.preventDefault();
-        store.duplicateSelection(state);
+        store.graphCanvasStore.duplicateSelection();
     }
     if (keys[tabKeyCode]) {
         e.preventDefault();
-        store.togglePanelVisibility(state);
+        store.graphCanvasStore.togglePanelVisibility();
     }
-}
-export function keyup(store: any, e: UIEvent) {
-    store.state.keys[e.keyCode] = false;
-    keys(store, store.state.keys, e);
-}
-export function keydown(store: any, e: UIEvent) {
-    store.state.keys[e.keyCode] = true;
-    keys(store, store.state.keys, e);
 }

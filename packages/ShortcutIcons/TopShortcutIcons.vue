@@ -74,8 +74,9 @@
 <script lang="typescript">
 import {mapWritableState, mapActions, mapState} from "pinia";
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
-import {useStore as useGraphCanvasStore} from "@plastic-io/graph-editor-vue3-graph-canvas";
-import {useStore as useGraphOrchestratorStore} from "@plastic-io/graph-editor-vue3-graph-orchestrator";
+import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 
 export default {
     name: "top-shortcut-icons",
@@ -83,19 +84,19 @@ export default {
         route: Object,
     },
     computed: {
-        ...mapWritableState(useGraphOrchestratorStore, [
+        ...mapWritableState(usePreferencesStore, ['preferences']),
+        ...mapWritableState(useOrchestratorStore, [
             'translating',
-            'selectedNodes',
-            'preferences',
         ]),
-        ...mapWritableState(useGraphCanvasStore, [
+        ...mapWritableState(useCanvasStore, [
             'graph',
             'view',
+            'selectedNodes',
             'selectionRect',
             'hoveredNode',
             'hoveredPort',
         ]),
-        ...mapState(useGraphOrchestratorStore, [
+        ...mapState(useOrchestratorStore, [
             'notFound',
             'inRewindMode',
             'rewindVisible',
@@ -126,11 +127,11 @@ export default {
         },
     },
     methods: {
-        ...mapActions(useGraphCanvasStore, [
+        ...mapActions(useCanvasStore, [
             'open',
             'createNewNode',
         ]),
-        ...mapActions(useGraphCanvasStore, [
+        ...mapActions(useCanvasStore, [
             'open',
             'createNewNode',
         ]),
@@ -138,7 +139,7 @@ export default {
             'keydown',
             'keyup',
         ]),
-        ...mapActions(useGraphOrchestratorStore, [
+        ...mapActions(useOrchestratorStore, [
             'clearInfo',
             'getPluginsByType',
             'undo',

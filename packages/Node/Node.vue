@@ -81,8 +81,8 @@
 import compileTemplate from "@plastic-io/graph-editor-vue3-compile-template";
 
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
-import {useStore as useGraphOrchestratorStore} from "@plastic-io/graph-editor-vue3-graph-orchestrator";
-import {useStore as useGraphCanvasStore} from "@plastic-io/graph-editor-vue3-graph-canvas";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
 
 import {useStore} from "./store"; // eslint-disable-line
 
@@ -197,7 +197,7 @@ export default {
         ...mapActions(useStore, [
             "replacer",
         ]),
-        ...mapActions(useGraphCanvasStore, [
+        ...mapActions(useCanvasStore, [
             "getNodeById",
             "clearSchedulerErrorItem",
             "clearSchedulerError",
@@ -298,11 +298,11 @@ export default {
         ...mapWritableState(useInputStore, [
             'mouse',
         ]),
-        ...mapState(useGraphOrchestratorStore, [
+        ...mapState(useOrchestratorStore, [
             'dataProviders',
             'scheduler',
         ]),
-        ...mapState(useGraphCanvasStore, [
+        ...mapState(useCanvasStore, [
             'hoveredNode',
             'selectedNodes',
             'translating',
@@ -328,18 +328,18 @@ export default {
             return this.localNode.properties.outputs;
         },
         nodeStyle: function () {
-            const hovered = this.localHoveredNode && this.localHoveredNode.id === this.localNode.id;
-            const selected = !!this.localSelectedNodes.find(v => v.id === this.localNode.id);
+            const hovered = this.hoveredNode && this.hoveredNode.id === this.localNode.id;
+            const selected = !!this.selectedNodes.find(v => v.id === this.localNode.id);
             const hoveredAndSelected = hovered && selected;
             let borderColor = "transparent";
             if (this.presentation) {
                 borderColor = "transparent";
             } else if (hoveredAndSelected) {
-                borderColor = "var(--v-info-lighten4)";
+                borderColor = "var(--vt-c-text-dark-1)";
             } else if (selected) {
-                borderColor = "var(--v-info-lighten3)";
+                borderColor = "var(--vt-c-text-dark-2)";
             } else if (hovered) {
-                borderColor = "var(--v-info-lighten2)";
+                borderColor = "var(--vt-c-text-dark-2)";
             }
             if (this.presentation || this.hostNode) {
                 if (this.localNode.properties.positionAbsolute) {

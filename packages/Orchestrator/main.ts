@@ -4,18 +4,17 @@ import Scheduler from "@plastic-io/plastic-io";
 import getRandomName from "@plastic-io/graph-editor-names";
 import {helpTopics} from "@plastic-io/graph-editor-vue3-help-overlay";
 import type DocumentProvider from "@plastic-io/graph-editor-vue3-document-provider";
-import type PreferencesProvider from "@plastic-io/graph-editor-vue3-preferences-provider";
-import type {UserPreferences} from "@plastic-io/graph-editor-vue3-preferences-provider";
-import GraphEditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-graph-editor-module";
-import {useStore as useGraphCanvasStore} from "@plastic-io/graph-editor-vue3-graph-canvas";
+import GraphEditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-editor-module";
+import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
 export default class GraphManager extends GraphEditorModule {
   constructor(config: Record<string, any>) {
     super();
   }
 };
-export const useStore = defineStore('graph-orchestrator', {
+export const useStore = defineStore('orchestrator', {
   state: () => ({
     token: null,
+    mapScale: 1,
     plugins: [] as Plugin[],
     authProvider: null,
     identity: {},
@@ -89,7 +88,6 @@ export const useStore = defineStore('graph-orchestrator', {
         publish: null as DocumentProvider | null,
         notification: null,
         graph: null as DocumentProvider | null,
-        preferences: null as PreferencesProvider | null,
     },
     error: null,
     showError: false,
@@ -104,20 +102,6 @@ export const useStore = defineStore('graph-orchestrator', {
     historyPosition: 0,
     nodeZCounter: 0,
     selectedGroups: [],
-    boundingRect: {
-        visible: false,
-        x: 0,
-        y: 0,
-        height: 0,
-        width: 0
-    },
-    selectionRect: {
-        visible: false,
-        x: 0,
-        y: 0,
-        height: 0,
-        width: 0
-    },
     groupBounds: {
         minX: 0,
         minY: 0,
@@ -139,18 +123,9 @@ export const useStore = defineStore('graph-orchestrator', {
     hoveredVector: null,
     hoveredPort: null,
     luts: {},
-    translating: {},
     keys: {},
-    view: {
-        x: 0,
-        y: 0,
-        k: 1
-    },
     toc: null,
     events: [],
-    preferences: null as null | UserPreferences,
-    originalPreferences: null as null | UserPreferences,
-    selectedNodes: [] as Node[],
   }),
   actions: {
     getPluginsByType(type: string) {
@@ -164,7 +139,7 @@ export const useStore = defineStore('graph-orchestrator', {
         
     },
     createScheduler() {
-        const graphCanvasStore = useGraphCanvasStore();
+        const graphCanvasStore = useCanvasStore();
         this.scheduler.instance = new Scheduler(graphCanvasStore.graph!, this, this.scheduler.state, console);
     },
     clearInfo() {},

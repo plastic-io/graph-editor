@@ -1,7 +1,7 @@
+import { defineStore } from 'pinia';
 import getRandomName from "@plastic-io/graph-editor-names"
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
-import {Appearance} from "@plastic-io/graph-editor-vue3-graph-canvas"; 
-import {NodeLocation} from "@plastic-io/graph-editor-vue3-node"; 
+import {Appearance} from "@plastic-io/graph-editor-vue3-appearance"
 const defaultNewSetTemplate = "console.info(value)";
 const defaultNewVueTemplate = `<template>
     <div>
@@ -50,13 +50,14 @@ export class UserPreferences {
     useLocalStorage: boolean;
     showRemoteMouseMovements: boolean;
     maxConnectorActivity: number;
-    newNodeOffset: NodeLocation;
+    newNodeOffset: {x: number, y: number, z: number};
     defaultNewGraphTemplate: string;
     defaultNewSetTemplate: string;
     defaultNewVueTemplate: string;
     snapToGrid: boolean;
     gridSize: number;
     appearance: Appearance;
+    uiSize: Record<string, number>;
     constructor() {
         this.userName = getRandomName();
         this.email = "";
@@ -70,24 +71,32 @@ export class UserPreferences {
         this.useLocalStorage = true;
         this.showRemoteMouseMovements = true;
         this.maxConnectorActivity = 100;
-        this.newNodeOffset = new NodeLocation(100, 100, 0);
+        this.newNodeOffset = {x: 100, y: 100, z: 0};
         this.defaultNewGraphTemplate = defaultNewGraphTemplate;
         this.defaultNewSetTemplate = defaultNewSetTemplate;
         this.defaultNewVueTemplate = defaultNewVueTemplate;
         this.snapToGrid = true;
         this.gridSize = 10;
         this.appearance = new Appearance();
+        this.uiSize = {};
     }
 }
 export default abstract class PreferencesProvider {
   asyncUpdate: boolean;
-  defaultPreferences: UserPreferences;
   constructor() {
       this.asyncUpdate = false;
-      this.defaultPreferences = new UserPreferences();
   }
   abstract subscribe(callback: (e: Event, prefs: UserPreferences) => void): Promise<void>;
   abstract get(): Promise<UserPreferences>;
   abstract set(value: UserPreferences): Promise<void>;
   abstract delete(): Promise<void>;
 }
+
+export const useStore = defineStore('UserPreferences', {
+  state: () => ({
+    preferences: null as null | UserPreferences,
+    originalPreferences: null as null | UserPreferences,
+  }),
+});
+
+

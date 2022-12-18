@@ -2,37 +2,61 @@ import { defineStore } from 'pinia';
 import type Pinia from 'pinia';
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import type {Graph, Node} from "@plastic-io/plastic-io";
-import {useStore as useGraphManagerStore} from "@plastic-io/graph-editor-vue3-graph-manager";
+import {useStore as useGraphManagerStore} from "@plastic-io/graph-editor-vue3-manager";
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
-import {useStore as useGraphOrchestratorStore} from "@plastic-io/graph-editor-vue3-graph-orchestrator";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {template, set} from "@plastic-io/graph-editor-vue3-help-overlay";
-export const useStore: any = defineStore('graph-canvas', {
+import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
+export const useStore: any = defineStore('canvas', {
   state: () => ({
+    mapScale: 1,
     hoveredNode: null as Node | null,
     hoveredPort: null,
     locked: null,
+    groupNodes: [],
+    movingNodes: [],
     inputStore: useInputStore(),
     graphManagerStore: useGraphManagerStore(),
-    graphOrchestratorStore: useGraphOrchestratorStore(),
+    graphOrchestratorStore: useOrchestratorStore(),
+    preferencesStore: usePreferencesStore(),
     keys: {} as Record<string, string>,
     buttonMap: {
       "0": "lmb",
       "2": "rmb",
       "1": "mmb"
     },
-    el: null as null | Element,
-    selectedNodes: [],
+    workspaceElement: null as null | Element,
+    selectedNodes: [] as Node[],
+    selectedNode: null,
     view: {x: 0, y: 0, k: 1},
-    selectionRect: {x: 0, y: 0, h: 0, w: 0},
+    boundingRect: {
+        visible: false,
+        x: 0,
+        y: 0,
+        height: 0,
+        width: 0
+    },
+    selectionRect: {
+        visible: false,
+        x: 0,
+        y: 0,
+        height: 0,
+        width: 0
+    },
     presentation: false,
     graph: null as Graph | null,
+    graphSnapshot: null as Graph | null,
     showHelp: false,
     inRewindMode: false,
-    translating: null as any,
+    translating: {} as any,
   }),
   actions: {
+    updateGraphFromSnapshot(description: string) {
+        this.graph = JSON.parse(JSON.stringify(this.graphSnapshot));
+    },
     isGraphTarget(e): boolean {
         let parentNode = e.target;
+        const navEl = document.getElementsByClassName('graph-nav-drawer')[0];
         if (this.locked) {
             while (parentNode) {
                 if (parentNode.className === "node") {
@@ -40,6 +64,9 @@ export const useStore: any = defineStore('graph-canvas', {
                 }
                 parentNode = parentNode.parentNode;
             }
+        }
+        if (navEl && navEl.contains(e.target)) {
+            return false;
         }
         return (!/^(no-graph-target|v-list|v-menu)/.test(e.target.className));
     },
@@ -206,6 +233,24 @@ export const useStore: any = defineStore('graph-canvas', {
             k: 1,
         };
     },
+    togglePresentation() {},
+    zoom() {},
+    toggleSelectedNodePresentationMode() {},
+    nudgeUp() {},
+    nudgeDown() {},
+    nudgeLeft() {},
+    nudgeRight() {},
+    bringToFront() {},
+    bringForward() {},
+    sendToBack() {},
+    sendBackward() {},
+    deleteSelected() {},
+    ungroupSelected() {},
+    groupSelected() {},
+    redo() {},
+    undo() {},
+    duplicateSelection() {},
+    togglePanelVisibility() {},
     clearSchedulerErrorItem() {},
     clearSchedulerError() {},
     setArtifact() {},
@@ -214,7 +259,7 @@ export const useStore: any = defineStore('graph-canvas', {
     getNodeById(nodeId: string): any {},
     async open(graphId: string) {
       const graphManager = useGraphManagerStore();
-      const graphOrchestrator = useGraphOrchestratorStore();
+      const graphOrchestrator = useOrchestratorStore();
       if (!graphOrchestrator.dataProviders.graph) {
         throw new Error('No data providers to open a graph with.');
         return;
@@ -226,13 +271,13 @@ export const useStore: any = defineStore('graph-canvas', {
         graph = graphManager.createGraph("");
       }
       this.graph = graph;
+      this.graphSnapshot = JSON.parse(JSON.stringify(graph));
       graphOrchestrator.createScheduler();
     },
     setView(e: {x: number, y: number, k: number}) {
       this.view = e;
     },
     createNewNode(e: {x: number, y: number}) {
-      const graphOrchestrator = useGraphOrchestratorStore();
       const pos = {
           x: (e.x - this.view.x) / this.view.k,
           y: (e.y - this.view.y) / this.view.k,
@@ -261,19 +306,20 @@ export const useStore: any = defineStore('graph-canvas', {
               appearsInExport: false,
               x: pos.x,
               y: pos.y,
-              z: 0 + graphOrchestrator.preferences!.newNodeOffset.z,
+              z: 0 + this.preferencesStore.preferences!.newNodeOffset.z,
               presentation: {
                   x: pos.x,
                   y: pos.y,
-                  z: 0 + graphOrchestrator.preferences!.newNodeOffset.z,
+                  z: 0 + this.preferencesStore.preferences!.newNodeOffset.z,
               },
           },
           template: {
-              set: graphOrchestrator.preferences!.newNodeHelp ? set : graphOrchestrator.preferences!.defaultNewSetTemplate,
-              vue: graphOrchestrator.preferences!.newNodeHelp ? template : graphOrchestrator.preferences!.defaultNewVueTemplate,
+              set: this.preferencesStore.preferences!.newNodeHelp ? set : this.preferencesStore.preferences!.defaultNewSetTemplate,
+              vue: this.preferencesStore.preferences!.newNodeHelp ? template : this.preferencesStore.preferences!.defaultNewVueTemplate,
           },
       };
-      this.graph!.nodes.push(node as any);
+      this.graphSnapshot!.nodes.push(node as any);
+      this.updateGraphFromSnapshot('Create New Node');
     }
   },
 });
