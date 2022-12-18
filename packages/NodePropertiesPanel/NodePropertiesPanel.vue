@@ -152,7 +152,7 @@
 </template>
 <script>
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
-import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
+import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as useGraphManagerStore} from "@plastic-io/graph-editor-vue3-manager";
 
@@ -230,12 +230,12 @@ export default {
         console.log(this.node);
     },
     computed: {
-        ...mapState(useCanvasStore, [
+        ...mapState(useGraphStore, [
           'tags',
           'historyPosition',
           'events',
         ]),
-        ...mapState(useCanvasStore, [
+        ...mapState(useGraphStore, [
           'graph',
           'selectedNode',
           'selectedNodes',

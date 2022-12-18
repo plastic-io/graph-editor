@@ -28,7 +28,7 @@
 <script lang="ts">
 import {mapWritableState, mapActions} from "pinia";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
-import {useStore as useCanvasStore} from "./store";
+import {useStore as useGraphStore} from "./store";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import colors from "vuetify/lib/util/colors";
 export default {
@@ -42,7 +42,7 @@ export default {
   },
   computed: {
     ...mapWritableState(usePreferencesStore, ['preferences']),
-    ...mapWritableState(useCanvasStore, ['graph', 'graphSnapshot', 'view', 'selectionRect', 'selectedNodes', 'el', 'boundingRect']),
+    ...mapWritableState(useGraphStore, ['graph', 'graphSnapshot', 'view', 'selectionRect', 'selectedNodes', 'el', 'boundingRect']),
     ...mapWritableState(useOrchestratorStore, ['translating']),
     connectors: function () {
         let connectors = [];

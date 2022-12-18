@@ -45,7 +45,7 @@ import GraphMap from "@plastic-io/graph-editor-vue3-mini-map-info";
 import ErrorPage from "@plastic-io/graph-editor-vue3-error-interstitial";
 import GraphRewind from "@plastic-io/graph-editor-vue3-rewind";
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
-import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
+import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import {useTheme} from 'vuetify';
@@ -67,7 +67,7 @@ export default {
             'keys',
             'buttonMap',
         ]),
-        ...mapWritableState(useCanvasStore, [
+        ...mapWritableState(useGraphStore, [
             'graph',
             'selectionRect',
             'hoveredNode',
@@ -116,7 +116,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions(useCanvasStore, [
+        ...mapActions(useGraphStore, [
             'scale',
             'open',
             'createNewNode',

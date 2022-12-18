@@ -7,7 +7,7 @@ import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {template, set} from "@plastic-io/graph-editor-vue3-help-overlay";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
-export const useStore: any = defineStore('canvas', {
+export const useStore: any = defineStore('graph', {
   state: () => ({
     mapScale: 1,
     hoveredNode: null as Node | null,
@@ -16,7 +16,7 @@ export const useStore: any = defineStore('canvas', {
     groupNodes: [],
     movingNodes: [],
     inputStore: useInputStore(),
-    graphManagerStore: useGraphManagerStore(),
+    managerStore: useGraphManagerStore(),
     graphOrchestratorStore: useOrchestratorStore(),
     preferencesStore: usePreferencesStore(),
     keys: {} as Record<string, string>,

@@ -32,7 +32,7 @@ export const keys = (store: any, e: UIEvent) => {
     const alt = e.altKey;
     const locked = store.presentation || store.locked;
     if (keys[graveKeyCode] && alt) {
-        store.graphCanvasStore.togglePresentation();
+        store.graphStore.togglePresentation();
     }
     if (locked) {
         // keyboard shortcuts are disabled in presentation/locked mode
@@ -42,67 +42,67 @@ export const keys = (store: any, e: UIEvent) => {
     // BUG in chrome?: in key interface. - and + do not "keyup" when command is held down
     if (keys[equalKeyCode] && ctrl) {
         e.preventDefault();
-        store.graphCanvasStore.zoom(0.10);
+        store.graphStore.zoom(0.10);
         keys[equalKeyCode] = false;
     }
     if (keys[dashKeyCode] && ctrl) {
         e.preventDefault();
-        store.graphCanvasStore.zoom(-0.10);
+        store.graphStore.zoom(-0.10);
         keys[dashKeyCode] = false;
     }
     if (keys[backslashKeyCode]) {
-        store.graphCanvasStore.toggleSelectedNodePresentationMode();
+        store.graphStore.toggleSelectedNodePresentationMode();
     }
     // nudges
     if (keys[arrowUp]) {
-        store.graphCanvasStore.nudgeUp(shift ? 50 : 10);
+        store.graphStore.nudgeUp(shift ? 50 : 10);
     }
     if (keys[arrowDown]) {
-        store.graphCanvasStore.nudgeDown(shift ? 50 : 10);
+        store.graphStore.nudgeDown(shift ? 50 : 10);
     }
     if (keys[arrowLeft]) {
-        store.graphCanvasStore.nudgeLeft(shift ? 50 : 10);
+        store.graphStore.nudgeLeft(shift ? 50 : 10);
     }
     if (keys[arrowRight]) {
-        store.graphCanvasStore.nudgeRight(shift ? 50 : 10);
+        store.graphStore.nudgeRight(shift ? 50 : 10);
     }
     // move z
     if (keys[closeBraceKeyCode] && ctrl && shift) {
-        store.graphCanvasStore.bringToFront();
+        store.graphStore.bringToFront();
     } else if (keys[closeBraceKeyCode] && ctrl) {
-        store.graphCanvasStore.bringForward();
+        store.graphStore.bringForward();
     }
     if (keys[openBraceKeyCode] && ctrl && shift) {
-        store.graphCanvasStore.sendToBack();
+        store.graphStore.sendToBack();
     } else if (keys[openBraceKeyCode] && ctrl) {
-        store.graphCanvasStore.sendBackward();
+        store.graphStore.sendBackward();
     }
     // delete
     if (keys[deleteKey]) {
-        store.graphCanvasStore.deleteSelected();
+        store.graphStore.deleteSelected();
     }
     // group ungroup
     if (keys[gKeyCode] && ctrl && shift) {
-        store.graphCanvasStore.ungroupSelected();
+        store.graphStore.ungroupSelected();
     } else if (keys[gKeyCode] && ctrl) {
-        store.graphCanvasStore.groupSelected();
+        store.graphStore.groupSelected();
     }
     // undo / redo
     // BUG in chrome?: in key interface.  Z does not "keyup" when command is held down
     if (keys[zKeyCode] && ctrl && shift) {
-        store.graphCanvasStore.redo();
+        store.graphStore.redo();
         store.keys[zKeyCode] = false;
     } else if (keys[zKeyCode] && ctrl) {
-        store.graphCanvasStore.undo();
+        store.graphStore.undo();
         store.keys[zKeyCode] = false;
     }
     // duplicate
     if (keys[dKeyCode] && ctrl && shift) {
         e.preventDefault();
-        store.graphCanvasStore.duplicateSelection();
+        store.graphStore.duplicateSelection();
     }
     if (keys[tabKeyCode]) {
         e.preventDefault();
-        store.graphCanvasStore.togglePanelVisibility();
+        store.graphStore.togglePanelVisibility();
     }
 }

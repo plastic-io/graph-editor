@@ -19,14 +19,14 @@ import ConnectorInfo from "@plastic-io/graph-editor-vue3-connector-info";
 import EndpointListPanel from "@plastic-io/graph-editor-vue3-endpoint-list-panel";
 import ErrorInterstitial from "@plastic-io/graph-editor-vue3-error-interstitial";
 import EventLoggerPanel from "@plastic-io/graph-editor-vue3-event-logger-panel";
-import GraphCanvas from "@plastic-io/graph-editor-vue3-canvas";
-import GraphManager from "@plastic-io/graph-editor-vue3-manager";
-import GraphOrchestrator from "@plastic-io/graph-editor-vue3-orchestrator";
-import GraphPresentation from "@plastic-io/graph-editor-vue3-presentation";
-import GraphPresentationPanel from "@plastic-io/graph-editor-vue3-presentation-panel";
-import GraphPropertiesPanel from "@plastic-io/graph-editor-vue3-properties";
-import GraphRewind from "@plastic-io/graph-editor-vue3-rewind";
-import GraphShortcutIcons from "@plastic-io/graph-editor-vue3-shortcut-icons";
+import Graph from "@plastic-io/graph-editor-vue3-graph";
+import Manager from "@plastic-io/graph-editor-vue3-manager";
+import Orchestrator from "@plastic-io/graph-editor-vue3-orchestrator";
+import Presentation from "@plastic-io/graph-editor-vue3-presentation";
+import PresentationPanel from "@plastic-io/graph-editor-vue3-presentation-panel";
+import PropertiesPanel from "@plastic-io/graph-editor-vue3-properties";
+import Rewind from "@plastic-io/graph-editor-vue3-rewind";
+import ShortcutIcons from "@plastic-io/graph-editor-vue3-shortcut-icons";
 import HelpOverlay from "@plastic-io/graph-editor-vue3-help-overlay";
 import HistoryPanel from "@plastic-io/graph-editor-vue3-history-panel";
 import ImportPanel from "@plastic-io/graph-editor-vue3-import-panel";
@@ -69,20 +69,20 @@ app.use(vuetify);
 const plugins = [
   // GraphOrchestrator needs to come before a lot of the other
   // modules because it provides a common store to share state
-  GraphOrchestrator,
+  Orchestrator,
   AppBar,
   Auth0,
   ConnectorInfo,
   EndpointListPanel,
   ErrorInterstitial,
   EventLoggerPanel,
-  GraphCanvas,
-  GraphManager,
-  GraphPresentation,
-  GraphPresentationPanel,
-  GraphPropertiesPanel,
-  GraphRewind,
-  GraphShortcutIcons,
+  Graph,
+  Manager,
+  Presentation,
+  PresentationPanel,
+  PropertiesPanel,
+  Rewind,
+  ShortcutIcons,
   HelpOverlay,
   HistoryPanel,
   ImportPanel,

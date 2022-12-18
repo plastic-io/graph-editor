@@ -25,7 +25,7 @@
     "@plastic-io/graph-editor-vue3-error-interstitial": "file:./packages/ErrorInterstitial",
     "@plastic-io/graph-editor-vue3-event-logger-panel": "file:./packages/EventLoggerPanel",
     "@plastic-io/graph-editor-vue3-appearance": "file:./packages/Appearance",
-    "@plastic-io/graph-editor-vue3-canvas": "file:./packages/Canvas",
+    "@plastic-io/graph-editor-vue3-graph": "file:./packages/Graph",
     "@plastic-io/graph-editor-vue3-editor-module": "file:./packages/EditorModule",
     "@plastic-io/graph-editor-vue3-local-user-preferences": "file:./packages/LocalUserPreferences",
     "@plastic-io/graph-editor-vue3-manager": "file:./packages/Manager",

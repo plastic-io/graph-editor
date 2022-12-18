@@ -82,7 +82,7 @@ import compileTemplate from "@plastic-io/graph-editor-vue3-compile-template";
 
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
-import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
+import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 
 import {useStore} from "./store"; // eslint-disable-line
 
@@ -197,7 +197,7 @@ export default {
         ...mapActions(useStore, [
             "replacer",
         ]),
-        ...mapActions(useCanvasStore, [
+        ...mapActions(useGraphStore, [
             "getNodeById",
             "clearSchedulerErrorItem",
             "clearSchedulerError",
@@ -302,7 +302,7 @@ export default {
             'dataProviders',
             'scheduler',
         ]),
-        ...mapState(useCanvasStore, [
+        ...mapState(useGraphStore, [
             'hoveredNode',
             'selectedNodes',
             'translating',

@@ -28,7 +28,7 @@ import {Node} from "@plastic-io/plastic-io";
 
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
-import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
+import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 
 export default {
     name: "node-field",
@@ -36,7 +36,7 @@ export default {
         ...mapWritableState(usePreferencesStore, [
             'preferences',
         ]),
-        ...mapWritableState(useCanvasStore, [
+        ...mapWritableState(useGraphStore, [
             'hoveredPort',
         ]),
         ...mapState(useOrchestratorStore, [

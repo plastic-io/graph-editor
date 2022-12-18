@@ -5,7 +5,7 @@ import getRandomName from "@plastic-io/graph-editor-names";
 import {helpTopics} from "@plastic-io/graph-editor-vue3-help-overlay";
 import type DocumentProvider from "@plastic-io/graph-editor-vue3-document-provider";
 import GraphEditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-editor-module";
-import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
+import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 export default class GraphManager extends GraphEditorModule {
   constructor(config: Record<string, any>) {
     super();
@@ -139,8 +139,8 @@ export const useStore = defineStore('orchestrator', {
         
     },
     createScheduler() {
-        const graphCanvasStore = useCanvasStore();
-        this.scheduler.instance = new Scheduler(graphCanvasStore.graph!, this, this.scheduler.state, console);
+        const graphStore = useGraphStore();
+        this.scheduler.instance = new Scheduler(graphStore.graph!, this, this.scheduler.state, console);
     },
     clearInfo() {},
     undo() {},

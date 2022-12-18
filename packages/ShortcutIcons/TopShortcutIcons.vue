@@ -74,7 +74,7 @@
 <script lang="typescript">
 import {mapWritableState, mapActions, mapState} from "pinia";
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
-import {useStore as useCanvasStore} from "@plastic-io/graph-editor-vue3-canvas";
+import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 
@@ -88,7 +88,7 @@ export default {
         ...mapWritableState(useOrchestratorStore, [
             'translating',
         ]),
-        ...mapWritableState(useCanvasStore, [
+        ...mapWritableState(useGraphStore, [
             'graph',
             'view',
             'selectedNodes',
@@ -127,11 +127,11 @@ export default {
         },
     },
     methods: {
-        ...mapActions(useCanvasStore, [
+        ...mapActions(useGraphStore, [
             'open',
             'createNewNode',
         ]),
-        ...mapActions(useCanvasStore, [
+        ...mapActions(useGraphStore, [
             'open',
             'createNewNode',
         ]),
