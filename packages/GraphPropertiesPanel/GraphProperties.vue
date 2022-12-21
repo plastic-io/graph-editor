@@ -1,9 +1,5 @@
 <template>
     <v-card flat v-if="graphSnapshot" style="height: calc(100vh - 96px); overflow-y: auto;">
-        <v-card-title>
-            <v-icon left help-topic="graph">mdi-graph-outline</v-icon>
-            Graph Properties
-        </v-card-title>
         <v-card-text class="ma-0 pa-0">
             <v-expansion-panels flat v-model="panel">
                 <v-expansion-panel>

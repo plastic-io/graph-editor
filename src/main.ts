@@ -24,7 +24,7 @@ import Manager from "@plastic-io/graph-editor-vue3-manager";
 import Orchestrator from "@plastic-io/graph-editor-vue3-orchestrator";
 import Presentation from "@plastic-io/graph-editor-vue3-presentation";
 import PresentationPanel from "@plastic-io/graph-editor-vue3-presentation-panel";
-import PropertiesPanel from "@plastic-io/graph-editor-vue3-properties";
+import GraphPropertiesPanel from "@plastic-io/graph-editor-vue3-graph-properties-panel";
 import Rewind from "@plastic-io/graph-editor-vue3-rewind";
 import ShortcutIcons from "@plastic-io/graph-editor-vue3-shortcut-icons";
 import HelpOverlay from "@plastic-io/graph-editor-vue3-help-overlay";
@@ -80,7 +80,7 @@ const plugins = [
   Manager,
   Presentation,
   PresentationPanel,
-  PropertiesPanel,
+  GraphPropertiesPanel,
   Rewind,
   ShortcutIcons,
   HelpOverlay,

@@ -12,7 +12,7 @@
                 v-for="(plugin, index) in getPluginsByType('system-bar-top')"
                 :value="plugin.name"
                 >
-                    <component :is="plugin.component"/>
+                    <component :is="plugin.component" v-bind="plugin.props"/>
                 </template>
             </v-system-bar>
             <div :style="showHelp ? 'pointer-events: none;' : ''">
@@ -33,7 +33,7 @@
                 v-for="(plugin, index) in getPluginsByType('system-bar-bottom')"
                 :value="plugin.name"
                 >
-                    <component :is="plugin.component"/>
+                    <component :is="plugin.component" v-bind="plugin.props"/>
                 </template>
             </v-system-bar>
         </template>

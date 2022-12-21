@@ -101,38 +101,27 @@ export const useStore = defineStore('orchestrator', {
     locked: false,
     historyPosition: 0,
     nodeZCounter: 0,
-    selectedGroups: [],
-    groupBounds: {
-        minX: 0,
-        minY: 0,
-        maxX: 0,
-        maxY: 0,
-    },
-    addingConnector: null,
-    movingConnector: null,
-    primaryGroup: null,
-    movingVectors: [],
-    selectedConnectors: [],
-    groupVectors: [],
-    selectedVector: null,
-    selectedVectors: [],
     errorConnectors: [],
     watchConnectors: [],
-    activityConnectors: {},
-    hoveredConnector: null,
-    hoveredVector: null,
-    hoveredPort: null,
     luts: {},
     keys: {},
     toc: null,
     events: [],
   }),
   actions: {
+    togglePresentation() {},
+    redo() {},
+    undo() {},
+    togglePanelVisibility() {},
+    clearArtifact() {},
+    clearSchedulerErrorItem() {},
+    clearSchedulerError() {},
     getPluginsByType(type: string) {
-      return this.plugins.filter(p => p.type === type);
+      return this.plugins.filter(p => p.type === type).sort((a, b) => {
+          return a.order - b.order;
+      });
     },
     addPlugin(plugin: Plugin) {
-        console.info('adding plugin', plugin);
         this.plugins.push(plugin);
     },
     graphUrl(url: string) {
@@ -143,16 +132,6 @@ export const useStore = defineStore('orchestrator', {
         this.scheduler.instance = new Scheduler(graphStore.graph!, this, this.scheduler.state, console);
     },
     clearInfo() {},
-    undo() {},
-    redo() {},
-    duplicateSelection() {},
-    groupSelected() {},
-    ungroupSelected() {},
-    bringForward() {},
-    bringToFront() {},
-    sendBackward() {},
-    sendToBack() {},
-    deleteSelected() {},
     setHoveredNode() {},
     setHoveredPort() {},
   },

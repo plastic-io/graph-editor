@@ -11,7 +11,7 @@ export default class Graph extends EditorModule {
 };
 
 export class GraphNode extends Node {
-
+  
 }
 
 

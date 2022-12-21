@@ -69,7 +69,6 @@
         help-topic="toggleHelp"
         :color="showHelp ? 'info' : ''"
         title="Help">mdi-help-circle-outline</v-icon>
-
 </template>
 <script lang="typescript">
 import {mapWritableState, mapActions, mapState} from "pinia";

@@ -50,13 +50,13 @@ export default {
         },
         nodeFieldStyle() {
             return {
-                background: this.type === "output" ? "var(--v-info-lighten2)" : "var(--v-info-lighten2)",
-                outline: this.isHovered ? "solid 1px var(--v-info-lighten2)" : undefined,
+                background: this.type === "output" ? "var(--vt-c-text-dark-1)" : "var(--vt-c-text-dark-1)",
+                outline: this.isHovered ? "solid 1px var(--vt-c-text-dark-1)" : undefined,
             };
         },
         nodeNameStyle() {
             return {
-                outline: this.isHovered ? "solid 1px var(--v-info-lighten2)" : undefined,
+                outline: this.isHovered ? "solid 1px var(--vt-c-text-dark-1)" : undefined,
             };
         },
         edge() {

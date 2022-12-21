@@ -20,11 +20,11 @@ class LocalPreferencesProvider extends PreferencesProvider {
     super();
     this.asyncUpdate = false;
     const preferencesStore = usePreferencesStore();
-    console.log("subscribe to state");
-    preferencesStore.$subscribe((mutation, state) => {
-      console.log('preferencesStore mutation', mutation);
-      this.set(state.preferences as UserPreferences);
-    }, { detached: true });
+    setTimeout(() => {
+      preferencesStore.$subscribe((mutation, state) => {
+        this.set(state.preferences as UserPreferences);
+      }, { detached: true });
+    }, 0);
   }
   async get(): Promise<UserPreferences> {
     let item: string = localStorage.getItem(STORE_KEY) ||
@@ -32,7 +32,6 @@ class LocalPreferencesProvider extends PreferencesProvider {
     return JSON.parse(item);
   }
   async set(value: UserPreferences): Promise<void> {
-    console.log('set', JSON.stringify(value.uiSize));
     localStorage.setItem(STORE_KEY, JSON.stringify(value));
   }
   async delete(): Promise<void> {

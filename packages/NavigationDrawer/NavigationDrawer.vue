@@ -13,19 +13,39 @@
             class="flex-d align-stretch pa-0"
             fill-height
             style="z-index: 1; overflow: hidden;">
-            <v-tabs v-model="panelTopTabs">
-              <v-tab
-                v-for="(plugin, index) in getPluginsByType('nav-panel-top-tabs')"
-                :value="plugin.name"
-              >
-                <v-icon :icon="plugin.icon"/>
-              </v-tab>
-            </v-tabs>
-            <v-window v-model="panelTopTabs">
-              <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-top-tabs')" :value="plugin.name"  style="height: calc(100vh - 148px);">
-                <component :is="plugin.component"/>
-              </v-window-item>
-            </v-window>
+
+            <template v-if="selectedNodes.length === 0">
+                <v-tabs v-model="panelTopGraphTabs">
+                  <v-tab
+                    v-for="(plugin, index) in getPluginsByType('nav-panel-top-graph-tabs')"
+                    :value="plugin.name"
+                  >
+                    <v-icon :icon="plugin.icon"/>
+                  </v-tab>
+                </v-tabs>
+                <v-window v-model="panelTopGraphTabs">
+                    <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-top-graph-tabs')" :value="plugin.name"  style="height: calc(100vh - 148px);">
+                        <component :is="plugin.component" v-bind="plugin.props"/>
+                    </v-window-item>
+                </v-window>
+            </template>
+
+            <template v-else>
+                <v-tabs v-model="panelTopNodeTabs">
+                      <v-tab
+                        v-for="(plugin, index) in getPluginsByType('nav-panel-top-node-tabs')"
+                        :value="plugin.name"
+                      >
+                        <v-icon :icon="plugin.icon"/>
+                    </v-tab>
+                </v-tabs>
+                <v-window v-model="panelTopNodeTabs">
+                  <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-top-node-tabs')" :value="plugin.name"  style="height: calc(100vh - 148px);">
+                    <component :is="plugin.component" v-bind="plugin.props"/>
+                  </v-window-item>
+                </v-window>
+            </template>
+
         </v-container>
         <div style="position: absolute; bottom: 5px; width: 100%;" class="control-panel-bottom">
           <v-divider style="margin-bottom: 15px;margin-right: 5px;"/>
@@ -55,17 +75,34 @@ import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-or
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 export default {
     name: "control-panel",
+    data: () => {
+        return {
+            lastNodePanel: 'Node Properties Panel',
+            lastGraphPanel: 'Graph Properties Panel',
+            mouse: {
+                x: 0,
+                y: 0,
+            },
+            navWidths: {},
+            panelTopGraphTabs: null,
+            panelTopNodeTabs: null,
+            localVersion: 0,
+            iconGutterSize: 43,
+            graphVue: null,
+            graphSet: null,
+            graphJSON: null,
+            panelDragging: null,
+            panel: "none",
+            panelOpen: true,
+            localGraph: null,
+        };
+    },
     watch: {
         "mouse.y"() {
             this.mouseTranslate();
         },
         "mouse.x"() {
             this.mouseTranslate();
-        },
-        panelTopTabs() {
-            if (!this.navWidths[this.panelTopTabs]) {
-                this.navWidths[this.panelTopTabs] = 400;
-            }
         },
         graph: {
             handler: function() {
@@ -103,14 +140,20 @@ export default {
         ...mapState(useInputStore, [
           'keys',
         ]),
-        gutterStyle: function () {
+        currentTabs() {
+            if (this.selectedNodes.length === 0) {
+                return this.panelTopGraphTabs;
+            }
+            return this.panelTopNodeTabs;
+        },
+        gutterStyle() {
             return {
                 width: (this.navWidth - this.iconGutterSize) + "px",
             };
         },
-        navStyle: function() {
+        navStyle() {
             return {
-                width: this.panel ? (this.navWidths[this.panelTopTabs] + "px") : "250px",
+                width: this.panel ? (this.navWidths[this.currentTabs] + "px") : "250px",
             };
         }
     },
@@ -124,7 +167,7 @@ export default {
         },
         mouseTranslate() {
             if (this.panelDragging) {
-                this.navWidths[this.panelTopTabs] =
+                this.navWidths[this.currentTabs] =
                     this.panelDragging.w +
                     (this.mouse.x - this.panelDragging.x);
             }
@@ -135,15 +178,16 @@ export default {
             this.panelDragging = {
                 x: this.mouse.x,
                 y: this.mouse.y,
-                w: this.navWidths[this.panelTopTabs]
+                w: this.navWidths[this.currentTabs]
             };
             const dragEnd = () => {
                 this.panelDragging = false;
                 el.style.transition = undefined;
+                this.navWidth = this.navWidths[this.currentTabs];
                 usePreferencesStore().$patch({
                     preferences: {
                         uiSize: {
-                            [this.panelTopTabs]: this.navWidths[this.panelTopTabs],
+                            [this.currentTabs]: this.navWidths[this.currentTabs],
                         },
                     },
                 });
@@ -164,26 +208,11 @@ export default {
         this.localGraph = this.graph;
         this.navWidths = JSON.parse(JSON.stringify(this.preferences.uiSize));
         document.onmousemove = this.mousemove;
+        this.$nextTick(() => {
+            this.navWidth = this.navWidths[this.currentTabs];
+        });
     },
-    data: () => {
-        return {
-            mouse: {
-                x: 0,
-                y: 0,
-            },
-            navWidths: {},
-            panelTopTabs: null,
-            localVersion: 0,
-            iconGutterSize: 43,
-            graphVue: null,
-            graphSet: null,
-            graphJSON: null,
-            panelDragging: null,
-            panel: "none",
-            panelOpen: true,
-            localGraph: null,
-        };
-    }
+
 };
 </script>
 <style>

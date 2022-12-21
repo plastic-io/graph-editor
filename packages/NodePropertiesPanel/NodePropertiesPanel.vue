@@ -227,7 +227,6 @@ export default {
             return;
         }
         this.node = JSON.parse(JSON.stringify(this.selectedNode));
-        console.log(this.node);
     },
     computed: {
         ...mapState(useGraphStore, [

@@ -31,7 +31,6 @@ export default class MouseAction {
   applyGraphChanges(description: string) {
     this.graphStore.updateGraphFromSnapshot(description);
   }
-  updateBoundingRect() {}
   mouse(mouse: any) {
     if (this.orchestratorStore.inRewindMode) {
         console.warn("No mouse based mutations during rewind mode");
@@ -84,15 +83,16 @@ export default class MouseAction {
         };
     });
     // adding a connector
-    if (this.orchestratorStore.hoveredPort && !this.inputStore.mouse.lmb && mouse.lmb && !this.orchestratorStore.movingConnector && this.orchestratorStore.hoveredPort.type === "output" && !locked) {
-        this.orchestratorStore.addingConnector = this.orchestratorStore.hoveredPort;
-        this.orchestratorStore.addingConnector.connector = {
+    if (this.graphStore.hoveredPort && !this.inputStore.mouse.lmb && mouse.lmb && !this.graphStore.movingConnector && this.graphStore.hoveredPort.type === "output" && !locked) {
+        this.graphStore.addingConnector = this.graphStore.hoveredPort;
+        this.graphStore.addingConnector.connector = {
             id: newId(),
             nodeId: null,
             field: null,
             graphId: null,
             version: null,
         };
+        console.log('adding a connector', this.graphStore.addingConnector);
     }
     // moving a connector
     if (this.orchestratorStore.hoveredConnector && !this.inputStore.mouse.lmb && mouse.lmb && pastDeadZone && !locked) {
@@ -163,23 +163,23 @@ export default class MouseAction {
         }
     }
     // trying to move a connector to this port
-    if (this.orchestratorStore.hoveredPort && this.orchestratorStore.movingConnector && !this.orchestratorStore.addingConnector && this.orchestratorStore.hoveredPort.type === "input") {
-        const node = this.graphStore.graphSnapshot.nodes.find((v: Node) => v.id === this.orchestratorStore.movingConnector.output.node.id);
-        const edge = node.edges.find((e: {field: string}) => e.field === this.orchestratorStore.movingConnector.output.field.name);
-        const connector = edge.connectors.find((e: {id: string}) => e.id === this.orchestratorStore.movingConnector.connector.id);
-        const typeA = this.orchestratorStore.movingConnector.field.type;
-        const typeB = this.orchestratorStore.hoveredPort.field.type;
+    if (this.graphStore.hoveredPort && this.graphStore.movingConnector && !this.graphStore.addingConnector && this.graphStore.hoveredPort.type === "input") {
+        const node = this.graphStore.graphSnapshot.nodes.find((v: Node) => v.id === this.graphStore.movingConnector.output.node.id);
+        const edge = node.edges.find((e: {field: string}) => e.field === this.graphStore.movingConnector.output.field.name);
+        const connector = edge.connectors.find((e: {id: string}) => e.id === this.graphStore.movingConnector.connector.id);
+        const typeA = this.graphStore.movingConnector.field.type;
+        const typeB = this.graphStore.hoveredPort.field.type;
         const valid = typeA === typeB || (typeA === "Object" || typeB === "Object");
         const msg = "Cannot connect " + typeA + " to " + typeB;
         if (!valid) {
-            this.orchestratorStore.connectorWarn = msg;
+            this.graphStore.connectorWarn = msg;
         }
         if (!mouse.lmb && this.inputStore.mouse.lmb) {
             if (valid) {
-                connector.nodeId = this.orchestratorStore.hoveredPort.node.id;
-                connector.field = this.orchestratorStore.hoveredPort.field.name;
+                connector.nodeId = this.graphStore.hoveredPort.node.id;
+                connector.field = this.graphStore.hoveredPort.field.name;
                 this.applyGraphChanges("Move Connector");
-                this.orchestratorStore.movingConnector = null;
+                this.graphStore.movingConnector = null;
             } else {
                 this.orchestratorStore.showError = true;
                 this.orchestratorStore.error = msg;
@@ -187,29 +187,29 @@ export default class MouseAction {
         }
     }
     // add a new connector to a port
-    if (this.orchestratorStore.hoveredPort && this.orchestratorStore.addingConnector && this.orchestratorStore.hoveredPort.type === "input") {
-        const node = this.graphStore.graphSnapshot.nodes.find((v: Node) => v.id === this.orchestratorStore.addingConnector.node.id);
-        const edge = node.edges.find((e: {field: string}) => e.field === this.orchestratorStore.addingConnector.field.name);
-        const connector = this.orchestratorStore.addingConnector.connector;
-        const typeA = this.orchestratorStore.addingConnector.field.type;
-        const typeB = this.orchestratorStore.hoveredPort.field.type;
+    if (this.graphStore.hoveredPort && this.graphStore.addingConnector && this.graphStore.hoveredPort.type === "input") {
+        const node = this.graphStore.graphSnapshot.nodes.find((v: Node) => v.id === this.graphStore.addingConnector.node.id);
+        const edge = node.edges.find((e: {field: string}) => e.field === this.graphStore.addingConnector.field.name);
+        const connector = this.graphStore.addingConnector.connector;
+        const typeA = this.graphStore.addingConnector.field.type;
+        const typeB = this.graphStore.hoveredPort.field.type;
         const valid = typeA === typeB || (typeA === "Object" || typeB === "Object");
         const msg = "Cannot connect " + typeA + " to " + typeB;
         if (!valid) {
-            this.orchestratorStore.connectorWarn = msg;
+            this.graphStore.connectorWarn = msg;
         }
         if (!mouse.lmb && this.inputStore.mouse.lmb) {
             if (valid) {
-                connector.field = this.orchestratorStore.hoveredPort.field.name;
-                connector.nodeId = this.orchestratorStore.hoveredPort.node.id;
-                connector.graphId = this.orchestratorStore.hoveredPort.node.graphId;
-                connector.version = this.orchestratorStore.hoveredPort.node.version;
+                connector.field = this.graphStore.hoveredPort.field.name;
+                connector.nodeId = this.graphStore.hoveredPort.node.id;
+                connector.graphId = this.graphStore.hoveredPort.node.graphId;
+                connector.version = this.graphStore.hoveredPort.node.version;
                 edge.connectors.push(connector);
                 if (node.linkedGraph) {
-                    linkInnerNodeEdges(node, this.orchestratorStore.scheduler.instance);
+                    linkInnerNodeEdges(node, this.graphStore.scheduler.instance);
                 }
                 this.applyGraphChanges("Add Connector");
-                this.orchestratorStore.addingConnector = null;
+                this.graphStore.addingConnector = null;
             } else {
                 this.orchestratorStore.showError = true;
                 this.orchestratorStore.error = "Cannot connect " + typeA + " to " + typeB;
@@ -220,16 +220,16 @@ export default class MouseAction {
     if (!mouse.lmb && this.inputStore.mouse.lmb && this.graphStore.movingNodes.length > 0) {
         this.graphStore.movingNodes = [];
         this.applyGraphChanges("Move Nodes");
-        this.orchestratorStore.movingConnector = null;
-        this.orchestratorStore.addingConnector = null;
+        this.graphStore.movingConnector = null;
+        this.graphStore.addingConnector = null;
         this.graphStore.translating = {};
     }
     // mouse button was just released on nothing and no addKey was pressed
     if (!mouse.lmb && this.inputStore.mouse.lmb && !this.graphStore.hoveredNode
-        && !pastDeadZone && !this.orchestratorStore.hoveredConnector && !addKey) {
-        this.orchestratorStore.selectedConnectors = [];
+        && !pastDeadZone && !this.graphStore.hoveredConnector && !addKey) {
+        this.graphStore.selectedConnectors = [];
         this.graphStore.selectedNodes = [];
-        this.orchestratorStore.primaryGroup = null;
+        this.graphStore.primaryGroup = null;
         this.graphStore.selectedNode = null;
     }
     // start moving nodes
@@ -331,7 +331,7 @@ export default class MouseAction {
             node.properties.y = Math.floor(y / gridSize) * gridSize;
         });
     }
-    this.updateBoundingRect();
+    this.graphStore.updateBoundingRect();
     // set state last so we can check this.inputStore.mouse/mouse diff
     this.inputStore.$patch({mouse});
     this.orchestratorStore.mouseMovements.push({time: Date.now(), mouse});

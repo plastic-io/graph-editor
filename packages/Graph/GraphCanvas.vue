@@ -22,7 +22,7 @@
         </template>
         <!-- <graph-presentation v-if="presentation"/> -->
         <div v-if="selectionRect.visible && !presentation" class="selection-rect" :style="selectionRectStyle"></div>
-        <div v-if="selectedNodes.length > 0 && !presentation" class="bounding-rect" :style="boundingRectStyle"></div>
+        <div v-if="this.selectedNodes.length !== 0 && !presentation" class="bounding-rect" :style="boundingRectStyle"></div>
     </div>
 </template>
 <script lang="ts">
@@ -35,15 +35,25 @@ export default {
   name: 'graph-canvas',
   data: () => {
     return {
+      innerHeight: 0,
+      innerWidth: 0,
       presentation: false,
       showGrid: true,
       addingConnector: null,
     }
   },
+  mounted() {
+    const resize = () => {
+        this.innerWidth = window.innerWidth;
+        this.innerHeight = window.innerHeight;
+    };
+    document.addEventListener('resize', resize);
+    resize();
+  },
   computed: {
     ...mapWritableState(usePreferencesStore, ['preferences']),
-    ...mapWritableState(useGraphStore, ['graph', 'graphSnapshot', 'view', 'selectionRect', 'selectedNodes', 'el', 'boundingRect']),
-    ...mapWritableState(useOrchestratorStore, ['translating']),
+    ...mapWritableState(useGraphStore, ['systemBarOffset', 'graph', 'graphSnapshot', 'view', 'selectionRect', 'selectedNodes', 'el', 'boundingRect']),
+    ...mapWritableState(useOrchestratorStore, ['translating', 'navWidth']),
     connectors: function () {
         let connectors = [];
         this.graph.nodes.forEach((node) => {
@@ -77,14 +87,24 @@ export default {
         };
     },
     boundingRectStyle: function() {
-        return {
+        const b = {
             borderWidth: 0.5 / this.view.k + "px",
             left: this.boundingRect.x + "px",
             top: this.boundingRect.y + "px",
             width: this.boundingRect.width + "px",
             height: this.boundingRect.height + "px",
             borderColor: colors[this.preferences.appearance.boundingRectColor].base,
-        };
+        }
+        if (this.selectedNodes.length === 0) {
+            return {
+                 ...b,
+                top: this.systemBarOffset + 'px',
+                left: this.navWidth + 'px',
+                width: this.innerWidth - this.navWidth + 'px',
+                height: this.innerHeight - (this.systemBarOffset*2) + 'px',
+            }
+        }
+        return b;
     },
     graphCanvasClasses: function () {
         const classes = [];
