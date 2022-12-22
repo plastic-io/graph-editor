@@ -14,6 +14,7 @@ export interface TocItem {
 export interface GraphDiff {
     time: number
     crc: number,
+    description: string,
     changes: object[]
 }
 export interface NodeArtifact {
@@ -32,8 +33,10 @@ export abstract class PreferencesProvider {
 }
 export default abstract class DocumentProvider {
   asyncUpdate: boolean;
+  graph: null | Graph;
   constructor() {
       this.asyncUpdate = false;
+      this.graph = null;
   }
   abstract updateToc(key: string, value: TocItem): Promise<void>;
   abstract subscribe(url: string | null, callback: (e: any) => void): Promise<void>;

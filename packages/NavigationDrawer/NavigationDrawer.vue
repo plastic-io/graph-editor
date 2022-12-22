@@ -25,7 +25,7 @@
                 </v-tabs>
                 <v-window v-model="panelTopGraphTabs">
                     <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-top-graph-tabs')" :value="plugin.name"  style="height: calc(100vh - 148px);">
-                        <component :is="plugin.component" v-bind="plugin.props"/>
+                        <component :is="plugin.component" v-bind="plugin.props" :width="width"/>
                     </v-window-item>
                 </v-window>
             </template>
@@ -41,7 +41,7 @@
                 </v-tabs>
                 <v-window v-model="panelTopNodeTabs">
                   <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-top-node-tabs')" :value="plugin.name"  style="height: calc(100vh - 148px);">
-                    <component :is="plugin.component" v-bind="plugin.props"/>
+                    <component :is="plugin.component" v-bind="plugin.props" :width="width"/>
                   </v-window-item>
                 </v-window>
             </template>
@@ -52,6 +52,8 @@
           <template
             v-for="(plugin, index) in getPluginsByType('nav-panel-bottom-icons')"
             :value="plugin.name"
+            v-bind="plugin.props"
+            :width="width"
           >
             <v-icon :icon="plugin.icon"/>
           </template>
@@ -140,6 +142,9 @@ export default {
         ...mapState(useInputStore, [
           'keys',
         ]),
+        width() {
+            return this.navWidths[this.currentTabs];
+        },
         currentTabs() {
             if (this.selectedNodes.length === 0) {
                 return this.panelTopGraphTabs;
@@ -153,7 +158,7 @@ export default {
         },
         navStyle() {
             return {
-                width: this.panel ? (this.navWidths[this.currentTabs] + "px") : "250px",
+                width: this.panel ? (this.width + "px") : "250px",
             };
         }
     },
@@ -178,16 +183,16 @@ export default {
             this.panelDragging = {
                 x: this.mouse.x,
                 y: this.mouse.y,
-                w: this.navWidths[this.currentTabs]
+                w: this.width || this.navWidth,
             };
             const dragEnd = () => {
                 this.panelDragging = false;
                 el.style.transition = undefined;
-                this.navWidth = this.navWidths[this.currentTabs];
+                this.navWidth = this.width;
                 usePreferencesStore().$patch({
                     preferences: {
                         uiSize: {
-                            [this.currentTabs]: this.navWidths[this.currentTabs],
+                            [this.currentTabs]: this.width,
                         },
                     },
                 });

@@ -24,3 +24,11 @@ export const useStore: any = defineStore('graph', {
     ...info,
   },
 });
+
+export const useGraphSnapshotStore: any = defineStore('graph-snapshot', {
+  state() {
+    return {
+      graph: null as Graph | null,
+    }
+  }
+});

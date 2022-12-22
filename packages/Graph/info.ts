@@ -47,12 +47,13 @@ export default {
       }
       let graph: Graph | null = null;
       try {
-        graph = await graphOrchestrator.dataProviders.graph.get(graphId);
+        this.graphSnapshot = await graphOrchestrator.dataProviders.graph.get(graphId);
+        this.updateGraphFromSnapshot("Open");
       } catch (err: any) {
-        graph = graphManager.createGraph("");
+        this.graphSnapshot = graphManager.createGraph("");
+        this.updateGraphFromSnapshot("Created");
       }
-      this.graph = graph;
-      this.graphSnapshot = JSON.parse(JSON.stringify(graph));
+      this.graphLoaded = true;
       graphOrchestrator.createScheduler();
     },
 } as ThisType<any>;

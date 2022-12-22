@@ -2,6 +2,17 @@ import {template, set} from "@plastic-io/graph-editor-vue3-help-overlay";
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import {diff, applyChange, revertChange, observableDiff} from "deep-diff";
 export default {
+    updateGraphFromSnapshot(description: string) {
+        // write to the graph in the graph store
+        this.$patch({
+          description: description,
+          graph: JSON.parse(JSON.stringify(this.graphSnapshot)),
+        });
+        // make a copy of the change in the snapshot store for data providers
+        this.graphSnapshotStore.$patch({
+            graph: JSON.parse(JSON.stringify(this.graph)),
+        });
+    },
     updateNodeTemplate(e: {type: string, value: string, nodeId: string}) {
         const node = this.getNodeById(e.nodeId);
         node.template[e.type] = e.value;
@@ -147,11 +158,6 @@ export default {
           node.properties.appearsInPresentation = !node.properties.appearsInPresentation;
       });
       this.updateGraphFromSnapshot("Toggle Node Presentation");
-    },
-    updateGraphFromSnapshot(description: string) {
-        this.$patch({
-          graph: JSON.parse(JSON.stringify(this.graphSnapshot)),
-        });
     },
     createNewNode(e: {x: number, y: number}) {
       const pos = {

@@ -59,27 +59,30 @@ export default {
     editor.getModel().onDidChangeContent((event) => {
       this.update();
     });
-    for (let x = 0; x < 500; x += 50) {
-      setTimeout(() => {
-        editor.layout();
-      }, x);
-    }
-
     // HACK: if editor is attached to "this" it will freeze the system
     this.$refs.editor.pinstance = editor;
+    this.resize();
   },
   props: {
     templateType: String,
     language: String,
+    width: Number,
   },
   data() {
     return {
       dirty: false,
-      editor: null
+      editor: null,
     };
   },
   methods: {
     ...mapActions(useGraphStore, ['updateNodeTemplate']),
+    resize() {
+      for (let x = 0; x < 500; x += 100) {
+        setTimeout(() => {
+          this.$refs.editor.pinstance.layout();
+        }, x);
+      }
+    },
     update() {
       this.dirty = true;
       localStorage.setItem(this.storeKey, this.$refs.editor.pinstance.getValue());
@@ -102,14 +105,13 @@ export default {
     graph() {
       this.$refs.editor.pinstance.value = this.selectedNode.template.vue;
     },
-    navWidth() {
-      this.$refs.editor.pinstance.layout();
+    width() {
+      this.resize();
     },
   },
   computed: {
-    ...mapState(useGraphStore, ['graph', 'graphSnapshot', 'selectedNodes', 'selectedNode']),
+    ...mapState(useGraphStore, ['graph', 'selectedNodes', 'selectedNode']),
     ...mapState(usePreferencesStore, ['preferences']),
-    ...mapState(useOrchestratorStore, ['navWidth']),
     storeKey() {
       return this.selectedNode ? 'pinstance-editor-' + this.templateType + '-' + this.selectedNode.id : '';
     },
@@ -120,5 +122,6 @@ export default {
   .monaco-editor {
     margin-top: 25px;
     height: calc(100vh - 155px);
+    width: 100%;
   }
 </style>
