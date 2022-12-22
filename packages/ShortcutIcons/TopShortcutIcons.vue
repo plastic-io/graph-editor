@@ -128,19 +128,6 @@ export default {
     methods: {
         ...mapActions(useGraphStore, [
             'open',
-            'createNewNode',
-        ]),
-        ...mapActions(useGraphStore, [
-            'open',
-            'createNewNode',
-        ]),
-        ...mapActions(useInputStore, [
-            'keydown',
-            'keyup',
-        ]),
-        ...mapActions(useOrchestratorStore, [
-            'clearInfo',
-            'getPluginsByType',
             'undo',
             'redo',
             'duplicateSelection',
@@ -151,6 +138,15 @@ export default {
             'sendBackward',
             'sendToBack',
             'deleteSelected',
+            'createNewNode',
+        ]),
+        ...mapActions(useInputStore, [
+            'keydown',
+            'keyup',
+        ]),
+        ...mapActions(useOrchestratorStore, [
+            'clearInfo',
+            'getPluginsByType',
         ]),
         openGraph() {
             window.open(

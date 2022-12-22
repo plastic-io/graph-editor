@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia';
-import {useStore as useGraphManagerStore} from "@plastic-io/graph-editor-vue3-manager";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
@@ -11,7 +10,6 @@ export const useStore = defineStore('input', {
     name: 'input',
     keys: {} as Record<string, boolean>,
     orchistratorStore: useOrchestratorStore(),
-    managerStore: useGraphManagerStore(),
     graphStore: useGraphStore(),
     mouse: {
       lmb: false,

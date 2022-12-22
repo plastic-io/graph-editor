@@ -1,4 +1,3 @@
-import {useStore as useManagerStore} from "@plastic-io/graph-editor-vue3-manager";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import type {Graph, Node} from "@plastic-io/plastic-io";
 export default {
@@ -16,7 +15,9 @@ export default {
         if (navEl && navEl.contains(e.target)) {
             return false;
         }
-        return (!/^(no-graph-target|v-list|v-menu)/.test(e.target.className));
+        const r = /no-graph-target/;
+        // HACK: cheap hack, just check one node up for no-target
+        return !(r.test(e.target.className) || (e.target.parentNode && r.test(e.target.parentNode.className)));
     },
     getItemAt(e) {
         while (e.parentNode) {
@@ -39,7 +40,6 @@ export default {
       return this.graphSnapshot.nodes.find((n: Node) => n.id === nodeId);
     },
     async open(graphId: string) {
-      const graphManager = useManagerStore();
       const graphOrchestrator = useOrchestratorStore();
       if (!graphOrchestrator.dataProviders.graph) {
         throw new Error('No data providers to open a graph with.');
@@ -50,7 +50,8 @@ export default {
         this.graphSnapshot = await graphOrchestrator.dataProviders.graph.get(graphId);
         this.updateGraphFromSnapshot("Open");
       } catch (err: any) {
-        this.graphSnapshot = graphManager.createGraph("");
+        const url = self.location.pathname.split('/')[1];
+        this.graphSnapshot = this.createGraph(url, "");
         this.updateGraphFromSnapshot("Created");
       }
       this.graphLoaded = true;

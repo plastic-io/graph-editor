@@ -1,5 +1,4 @@
 import type {Graph, Node} from "@plastic-io/plastic-io";
-import {useStore as useManagerStore} from "@plastic-io/graph-editor-vue3-manager";
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
@@ -23,7 +22,6 @@ export default () => {
         groupNodes: [],
         movingNodes: [],
         inputStore: useInputStore(),
-        managerStore: useManagerStore(),
         orchestratorStore: useOrchestratorStore(),
         preferencesStore: usePreferencesStore(),
         graphSnapshotStore: useGraphSnapshotStore(),

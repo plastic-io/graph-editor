@@ -107,7 +107,6 @@
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
-import {useStore as useGraphManagerStore} from "@plastic-io/graph-editor-vue3-manager";
 
 import {mapWritableState, mapActions, mapState} from "pinia";
 
@@ -118,11 +117,9 @@ import * as mdi from "@mdi/js";
 export default {
     name: "graph-properties",
     methods: {
-        ...mapActions(useGraphManagerStore, [
+        ...mapActions(useGraphStore, [
             "publishGraph",
             "save",
-        ]),
-        ...mapActions(useGraphStore, [
             "selectNode",
         ]),
         fromNow(e) {

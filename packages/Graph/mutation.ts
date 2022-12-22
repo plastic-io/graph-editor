@@ -1,7 +1,29 @@
 import {template, set} from "@plastic-io/graph-editor-vue3-help-overlay";
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import {diff, applyChange, revertChange, observableDiff} from "deep-diff";
+import type {Graph} from "@plastic-io/plastic-io";
 export default {
+    createGraph(url: string, createdBy: string): Graph {
+      const id = newId();
+      const now = new Date();
+      return {
+        id,
+        version: 0,
+        url,
+        nodes: [],
+        properties: {
+          name: "",
+          description: "",
+          exportable: false,
+          icon: "mdi-graph",
+          createdBy: createdBy,
+          createdOn: now,
+          lastUpdate: now,
+          height: 150,
+          width: 300,
+        }
+      };
+    },
     updateGraphFromSnapshot(description: string) {
         // write to the graph in the graph store
         this.$patch({
@@ -110,8 +132,8 @@ export default {
       this.groupNodes = [];
       this.hoveredConnector = null;
       this.hoveredNode = null;
-      selectedNodeIds.forEach(this.deleteNodeById());
-      selectedConnectorIds.forEach(this.deleteConnectorById());
+      selectedNodeIds.forEach(this.deleteNodeById);
+      selectedConnectorIds.forEach(this.deleteConnectorById);
       this.updateGraphFromSnapshot("Delete");
     },
     ungroupSelected() {

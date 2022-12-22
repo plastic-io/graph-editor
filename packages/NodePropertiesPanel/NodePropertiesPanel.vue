@@ -154,7 +154,6 @@
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
-import {useStore as useGraphManagerStore} from "@plastic-io/graph-editor-vue3-manager";
 
 import {mapWritableState, mapActions, mapState} from "pinia";
 
@@ -163,14 +162,6 @@ import * as mdi from "@mdi/js";
 export default {
     name: "node-properties",
     methods: {
-        ...mapActions(useGraphManagerStore, [
-            "publishNode",
-            "runNodeTest",
-            "moveHistoryPosition",
-        ]),
-        runTest() {
-            this.runNodeTest(this.node);
-        },
         hyphenateProperty(prop) {
             var p = "";
             Array.prototype.forEach.call(prop, function (char) {

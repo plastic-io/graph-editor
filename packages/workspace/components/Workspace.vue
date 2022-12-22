@@ -3,7 +3,7 @@
         <error-interstitial v-if="notFound" />
         <template v-if="graph && !graph.err">
             <v-system-bar
-                class="top-system-bar"
+                class="top-system-bar no-graph-target"
                 v-if="!presentation && panelVisibility"
                 ref="topBar"
                 style="z-index: 2;white-space: nowrap; top: 0; position: fixed; width: 100vw;"
@@ -27,7 +27,7 @@
             <v-system-bar
                 v-if="!presentation && panelVisibility"
                 ref="bottomBar"
-                class="no-select bottom-system-bar"
+                class="no-select bottom-system-bar no-graph-target"
             >
                 <template
                 v-for="(plugin, index) in getPluginsByType('system-bar-bottom')"
