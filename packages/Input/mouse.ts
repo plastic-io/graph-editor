@@ -73,13 +73,13 @@ export default class MouseAction {
     let y = (mouse.y - this.graphStore.view.y) / this.graphStore.view.k;
     let m = 5;
     // map LUTs for collions
-    const luts = Object.keys(this.orchestratorStore.luts).map((connectorId: string) => {
+    const luts = Object.keys(this.graphStore.luts).map((connectorId: string) => {
         return {
-            output: this.orchestratorStore.luts[connectorId].output,
-            input: this.orchestratorStore.luts[connectorId].input,
-            node: this.orchestratorStore.luts[connectorId].node,
-            connector: this.orchestratorStore.luts[connectorId].connector,
-            table: this.orchestratorStore.luts[connectorId].lut,
+            output: this.graphStore.luts[connectorId].output,
+            input: this.graphStore.luts[connectorId].input,
+            node: this.graphStore.luts[connectorId].node,
+            connector: this.graphStore.luts[connectorId].connector,
+            table: this.graphStore.luts[connectorId].lut,
         };
     });
     // adding a connector
@@ -95,18 +95,20 @@ export default class MouseAction {
         console.log('adding a connector', this.graphStore.addingConnector);
     }
     // moving a connector
-    if (this.orchestratorStore.hoveredConnector && !this.inputStore.mouse.lmb && mouse.lmb && pastDeadZone && !locked) {
-        this.orchestratorStore.movingConnector = this.orchestratorStore.hoveredConnector;
+    // console.log('moving connector', this.graphStore.hoveredConnector, !this.inputStore.mouse.lmb, mouse.lmb, pastDeadZone, !locked);
+    if (this.graphStore.hoveredConnector && !this.inputStore.mouse.lmb && mouse.lmb && !locked) {
+        // console.log('moving connector');
+        this.graphStore.movingConnector = this.graphStore.hoveredConnector;
     }
     // draw select box maybe
     if (this.graphStore.selectionRect.visible ||
-        (      !this.orchestratorStore.hoveredConnector
-            && !this.orchestratorStore.movingConnector
+        (      !this.graphStore.hoveredConnector
+            && !this.graphStore.movingConnector
             && pastDeadZone
             && !this.graphStore.hoveredNode
-            && !this.orchestratorStore.hoveredPort
-            && !this.orchestratorStore.addingConnector
-            && !this.orchestratorStore.keys[spaceKeyCode]
+            && !this.graphStore.hoveredPort
+            && !this.graphStore.addingConnector
+            && !this.inputStore.keys[spaceKeyCode]
             && this.graphStore.movingNodes.length === 0
         )) {
         if (mouse.lmb && this.graphStore.translating.mouse && !this.graphStore.translating.isMap) {
@@ -127,12 +129,12 @@ export default class MouseAction {
     }
     // selection box is moving around, clear out the selection every move unless addkey is held
     if (this.graphStore.selectionRect.visible && !addKey && this.inputStore.mouse.lmb) {
-        this.orchestratorStore.selectedConnectors = [];
+        this.graphStore.selectedConnectors = [];
         this.graphStore.selectedNodes = [];
     }
-    this.orchestratorStore.connectorWarn = null;
+    this.graphStore.connectorWarn = null;
     // check hits on the connector LUT to find connector selection and connection hovers
-    this.orchestratorStore.hoveredConnector = null;
+    this.graphStore.hoveredConnector = null;
     for (let j = 0; j < luts.length; j += 1) {
         const t = luts[j].table;
         const connector = luts[j].connector;
@@ -146,24 +148,24 @@ export default class MouseAction {
                 // check if this connector should be selected as well as hovered
                 if ((mouse.lmb && !this.inputStore.mouse.lmb) || this.graphStore.selectionRect.visible) {
                     // maybe remove the previous selection before adding this one
-                    if (!(this.orchestratorStore.keys[shiftKeyCode] || this.orchestratorStore.keys[metaKeyCode] || this.orchestratorStore.keys[ctrlKeyCode])
+                    if (!(this.inputStore.keys[shiftKeyCode] || this.inputStore.keys[metaKeyCode] || this.inputStore.keys[ctrlKeyCode])
                         && !this.graphStore.selectionRect.visible) {
-                        this.orchestratorStore.selectedConnectors = [];
+                        this.graphStore.selectedConnectors = [];
                     }
-                    if (this.orchestratorStore.selectedConnectors.indexOf(connector) === -1) {
-                        this.orchestratorStore.selectedConnectors.push(connector);
+                    if (this.graphStore.selectedConnectors.indexOf(connector) === -1) {
+                        this.graphStore.selectedConnectors.push(connector);
                     }
                 }
                 // don't hover other connectors while moving a connector
-                if (!this.orchestratorStore.movingConnector && !this.graphStore.selectionRect.visible) {
-                    this.orchestratorStore.hoveredConnector = {node, connector, input, output};
+                if (!this.graphStore.movingConnector && !this.graphStore.selectionRect.visible) {
+                    this.graphStore.hoveredConnector = {node, connector, input, output};
                 }
                 break;
             }
         }
     }
     // trying to move a connector to this port
-    if (this.graphStore.hoveredPort && this.graphStore.movingConnector && !this.graphStore.addingConnector && this.graphStore.hoveredPort.type === "input") {
+    if (false && this.graphStore.hoveredPort && this.graphStore.movingConnector && !this.graphStore.addingConnector && this.graphStore.hoveredPort.type === "input") {
         const node = this.graphStore.graphSnapshot.nodes.find((v: Node) => v.id === this.graphStore.movingConnector.output.node.id);
         const edge = node.edges.find((e: {field: string}) => e.field === this.graphStore.movingConnector.output.field.name);
         const connector = edge.connectors.find((e: {id: string}) => e.id === this.graphStore.movingConnector.connector.id);
@@ -217,11 +219,25 @@ export default class MouseAction {
         }
     }
     // drop moving nodes and connectors
-    if (!mouse.lmb && this.inputStore.mouse.lmb && this.graphStore.movingNodes.length > 0) {
-        this.graphStore.movingNodes = [];
-        this.applyGraphChanges("Move Nodes");
-        this.graphStore.movingConnector = null;
-        this.graphStore.addingConnector = null;
+    if (!mouse.lmb && this.inputStore.mouse.lmb &&
+        (this.graphStore.movingNodes.length > 0
+            || this.graphStore.movingConnector !== null
+            || this.graphStore.addingConnector !== null
+        )) {
+        if (this.graphStore.movingNodes.length > 0) {
+            this.graphStore.movingNodes = [];
+            this.applyGraphChanges("Move Nodes");
+        }
+        if (this.graphStore.movingConnector) {
+            // delete moving connector if it didn't find a home
+            console.log('delete moving connector');
+            this.graphStore.movingConnector = null;
+        }
+        if (this.graphStore.addingConnector) {
+            // delete adding connector if it didn't connect
+            console.log('delete adding connector');
+            this.graphStore.addingConnector = null;
+        }
         this.graphStore.translating = {};
     }
     // mouse button was just released on nothing and no addKey was pressed
@@ -254,7 +270,7 @@ export default class MouseAction {
         if (!mouse.lmb && this.inputStore.mouse.lmb && !pastDeadZone && this.graphStore.movingNodes.length === 0) {
             if (!addKey || !this.graphStore.hoveredNode) {
                 this.graphStore.selectedNodes = [];
-                this.orchestratorStore.selectedGroups = [];
+                this.graphStore.selectedGroups = [];
             }
             if (this.graphStore.hoveredNode) {
                 const v = this.graphStore.graph.nodes.find((v: Node) => v.id === this.graphStore.hoveredNode.id);
@@ -301,13 +317,13 @@ export default class MouseAction {
     // expand selected groups to include related groups, then add them to the selection
     if (this.graphStore.groupNodes.length === 1) {
         expandGroupNodeArray(this.graphStore.groupNodes);
-        this.orchestratorStore.selectedGroups = this.graphStore.groupNodes;
+        this.graphStore.selectedGroups = this.graphStore.groupNodes;
         if (this.graphStore.groupNodes.length !== 1) {
-            this.orchestratorStore.primaryGroup = this.graphStore.groupNodes[0].properties.groups[0];
+            this.graphStore.primaryGroup = this.graphStore.groupNodes[0].properties.groups[0];
         }
     }
     // translate view
-    if (((this.orchestratorStore.keys[spaceKeyCode] || this.graphStore.translating.isMap) && mouse.lmb) || mouse.mmb) {
+    if (((this.inputStore.keys[spaceKeyCode] || this.graphStore.translating.isMap) && mouse.lmb) || mouse.mmb) {
         mouse.event.preventDefault();
         const p = {
             x: this.graphStore.translating.view.x + (mouse.x - this.graphStore.translating.mouse.x),
@@ -334,6 +350,5 @@ export default class MouseAction {
     this.graphStore.updateBoundingRect();
     // set state last so we can check this.inputStore.mouse/mouse diff
     this.inputStore.$patch({mouse});
-    this.orchestratorStore.mouseMovements.push({time: Date.now(), mouse});
   }
 }

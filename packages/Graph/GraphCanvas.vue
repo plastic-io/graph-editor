@@ -39,7 +39,6 @@ export default {
       innerWidth: 0,
       presentation: false,
       showGrid: true,
-      addingConnector: null,
     }
   },
   mounted() {
@@ -52,7 +51,17 @@ export default {
   },
   computed: {
     ...mapWritableState(usePreferencesStore, ['preferences']),
-    ...mapWritableState(useGraphStore, ['systemBarOffset', 'graph', 'graphSnapshot', 'view', 'selectionRect', 'selectedNodes', 'el', 'boundingRect']),
+    ...mapWritableState(useGraphStore, [
+        'addingConnector',
+        'systemBarOffset',
+        'graph',
+        'graphSnapshot',
+        'view',
+        'selectionRect',
+        'selectedNodes',
+        'el',
+        'boundingRect',
+    ]),
     ...mapWritableState(useOrchestratorStore, ['translating', 'navWidth']),
     connectors: function () {
         let connectors = [];

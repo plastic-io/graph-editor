@@ -1,6 +1,9 @@
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import type {Graph, Node} from "@plastic-io/plastic-io";
 export default {
+    getCalculatedGraphUrl(): string {
+        return self.location.pathname.split('/')[1];
+    },
     isGraphTarget(e): boolean {
         let parentNode = e.target;
         const navEl = document.getElementsByClassName('graph-nav-drawer')[0];
@@ -50,10 +53,11 @@ export default {
         this.graphSnapshot = await graphOrchestrator.dataProviders.graph.get(graphId);
         this.updateGraphFromSnapshot("Open");
       } catch (err: any) {
-        const url = self.location.pathname.split('/')[1];
+        const url = this.getCalculatedGraphUrl();
         this.graphSnapshot = this.createGraph(url, "");
         this.updateGraphFromSnapshot("Created");
       }
+      console.log(JSON.parse(JSON.stringify(this.graphSnapshot)));
       this.graphLoaded = true;
       graphOrchestrator.createScheduler();
     },

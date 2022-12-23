@@ -20,7 +20,7 @@
             </div>
             <div :class="presentation ? '' : 'graph-container'" :style="graphContainerStyle">
                 <graph-canvas
-                    :class="translating && mouse.lmb ? 'no-select' : ''"
+                    :class="noSelect ? 'no-select' : ''"
                     :showGrid="preferences.appearance.showGrid && !presentation"
                 ></graph-canvas>
             </div>
@@ -115,6 +115,19 @@ export default {
             };
         },
     },
+    watch: {
+        'mouse.lmb'() {
+            if (this.mouse.lmb) {
+                this.noSelect = true;
+                return;
+            }
+            if (!this.mouse.lmb) {
+                setTimeout(() => {
+                    this.noSelect = false;
+                }, 1);
+            }
+        },
+    },
     methods: {
         ...mapActions(useGraphStore, [
             'scale',
@@ -177,6 +190,7 @@ export default {
             bgColor: "#000000",
             spaceKeyCode: 32,
             translate: false,
+            noSelect: false,
             showDialog: false,
             localErrorMessage: "",
             localShowError: false,

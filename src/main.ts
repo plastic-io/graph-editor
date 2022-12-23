@@ -44,8 +44,6 @@ import ProviderSettings from "@plastic-io/graph-editor-vue3-provider-settings";
 import SetEditor from "@plastic-io/graph-editor-vue3-set-editor";
 import SharedMouse from "@plastic-io/graph-editor-vue3-shared-mouse";
 import SharedUsers from "@plastic-io/graph-editor-vue3-shared-users";
-import SplineAnimator from "@plastic-io/graph-editor-vue3-spline-animator";
-import SystemBar from "@plastic-io/graph-editor-vue3-system-bar";
 import TemplateEditor from "@plastic-io/graph-editor-vue3-template-editor";
 import UserPanel from "@plastic-io/graph-editor-vue3-user-panel";
 import Workspace from "@plastic-io/graph-editor-vue3-workspace";
@@ -100,8 +98,6 @@ const plugins = [
   SetEditor,
   SharedMouse,
   SharedUsers,
-  SplineAnimator,
-  SystemBar,
   TemplateEditor,
   UserPanel,
   WorkspaceControlPanel,
