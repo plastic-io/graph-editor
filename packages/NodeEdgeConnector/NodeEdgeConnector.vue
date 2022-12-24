@@ -55,11 +55,13 @@ export default {
           'historyPosition',
         ]),
         ...mapState(useGraphStore, [
+          'hoveredPort',
           'addingConnector',
           'graph',
           'graphSnapshot',
           'view',
           'translating',
+          'ltrPct',
           'selectedConnectors',
           'hoveredConnector',
           'errorConnectors',
@@ -96,7 +98,7 @@ export default {
         input() {
             const node = (this.localGraph || this.graph).nodes.find((v) => {
                 return v.id === this.connector.nodeId;
-            });
+            }) ;
             const field = node ? node.properties.inputs.find((input) => {
                 return this.connector.field === input.name;
             }) : null;
@@ -104,7 +106,7 @@ export default {
             return {
                 index,
                 node,
-                field
+                field,
             };
         },
         connectorClass() {

@@ -77,6 +77,7 @@ export default {
             });
         });
         if (this.addingConnector) {
+            console.log('push connectors');
             connectors.push({
                 connector: this.addingConnector.connector,
                 edge: this.addingConnector.edge,

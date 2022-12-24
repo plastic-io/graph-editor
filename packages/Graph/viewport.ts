@@ -1,7 +1,7 @@
 import type {Graph, Node} from "@plastic-io/plastic-io";
 export default {
     remapNodes() {
-        return this.graph.nodes.filter((v: Vector) => {
+        return this.graph.nodes.filter((v: Node) => {
             return this.selectedNodes.find((vi: any) => v.id === vi.id);
         });
     },

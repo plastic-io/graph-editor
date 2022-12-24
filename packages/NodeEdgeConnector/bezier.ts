@@ -42,7 +42,7 @@ export default function bezierDraw(connector: any): void {
         ctx.fill();
         ctx.closePath();
     }
-    function draw() {
+    function draw(): any {
         const padding = {  // eslint-disable-line
             x: 300,
             y: 300,
@@ -52,19 +52,25 @@ export default function bezierDraw(connector: any): void {
             // it should show up soon
             return setTimeout(draw, 100);
         }
+        // I make no apologies for this.  I did what I had to do.
         const dragDeadZone = connector.preferences.appearance.connectors.dragDeadZone;
         const pastDeadZone = connector.translating.mouse ? (Math.abs(connector.mouse.x - connector.translating.mouse.x) > dragDeadZone
             || Math.abs(connector.mouse.y - connector.translating.mouse.y) > dragDeadZone) : false;
-        const isMoving = (connector.movingConnector && connector.movingConnector.connector.id === connector.connector.id && pastDeadZone)
-            || (connector.addingConnector && connector.addingConnector.connector.id === connector.connector.id);
-        const elOutPort = document.getElementById(`node-output-${connector.output.node.id}-${connector.output.field.name}`);
-        const elInPort = connector.input.node ? document.getElementById(`node-input-${connector.input.node.id}-${connector.input.field.name}`) : null;
+        const isAdding = connector.addingConnector && connector.addingConnector.connector.id === connector.connector.id && pastDeadZone;
+        const isMoving = connector.movingConnector && connector.movingConnector.connector.id === connector.connector.id && pastDeadZone;
+        const isMovingOrAdding = isAdding || isMoving;
+        const isAddingFromInput = connector.addingConnector && connector.addingConnector.type === 'input';
+        const ltr = isMoving ? connector.ltrPct > 0.5 : !isAddingFromInput;
+        const inSrc = isAddingFromInput ? connector.addingConnector : connector.input;
+        const elOutPort = connector.output.field ? document.getElementById(`node-output-${connector.output.node.id}-${connector.output.field.name}`) : null;
+        const elInPort = inSrc.node ? document.getElementById(`node-input-${inSrc.node.id}-${inSrc.field.name}`) : null;
         // if a graph element is still loading, it might not have io yet
-        if ((!isMoving && !elInPort) || !elOutPort) {
-            return setTimeout(draw, 100);
+        if ((ltr && !isMovingOrAdding && !elInPort) || (!ltr && !isMovingOrAdding && !elOutPort) ) {
+            return;
+            // setTimeout(draw, 100);
         }
-        const elOutPortRect = elOutPort.getBoundingClientRect();
-        const elInPortRect = !isMoving ? elInPort!.getBoundingClientRect() : {x: 0, y: 0,};
+        const elOutPortRect = elOutPort ? elOutPort.getBoundingClientRect() : {x: 0, y: 0,};
+        const elInPortRect = elInPort ? elInPort!.getBoundingClientRect() : {x: 0, y: 0,};
         const inRect = {
             x: elInPortRect.x,
             y: elInPortRect.y,
@@ -83,7 +89,7 @@ export default function bezierDraw(connector: any): void {
         let y = Math.min(inRect.y, outRect.y) - (padding.y / 2);
         let width = (Math.max(inRect.x, outRect.x) - Math.min(inRect.x, outRect.x)) + padding.x;
         let height = (Math.max(inRect.y, outRect.y) - Math.min(inRect.y, outRect.y)) + padding.y;
-        if (isMoving) {
+        if (isMovingOrAdding) {
             // 50 px offset to ensure bezier arc is within the width of the canvas
             x = Math.min(x, mouseX - 50);
             y = Math.min(y, mouseY);
@@ -95,12 +101,12 @@ export default function bezierDraw(connector: any): void {
         connector.width = width;
         connector.height = height;
         const start = {
-            x: outRect.x,
-            y: outRect.y
+            x: !ltr && isMovingOrAdding ? mouseX : outRect.x,
+            y: !ltr && isMovingOrAdding ? mouseY : outRect.y
         };
         const end = {
-            x: isMoving ? mouseX : inRect.x,
-            y: isMoving ? mouseY : inRect.y
+            x: ltr && isMovingOrAdding ? mouseX : inRect.x,
+            y: ltr && isMovingOrAdding ? mouseY : inRect.y
         };
         ctx.clearRect(0, 0, connector.width, connector.height);
         ctx.translate(-connector.x, -connector.y);
@@ -134,7 +140,7 @@ export default function bezierDraw(connector: any): void {
             lastViewPos.y = connector.view.y;
             lastViewPos.k = connector.view.k;
         }
-        if (!connector.addingConnector) {
+        if (!connector.addingConnector && !connector.movingConnector) {
             connector.graphStore.$patch({
                 luts: {
                     [connector.connector.id]: {
