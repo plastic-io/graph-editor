@@ -2,27 +2,29 @@
     <div class="map-view no-select" :style="mapStyle" @wheel.stop @click.stop v-if="graphSnapshot">
         <v-card elevation="7">
             <div class="map-system-bar" @mousedown.stop="startTranslate">
-                <v-icon title="Close Map" @click="preferences.showMap = false">
+                <v-icon title="Close Map" size="small" @click="preferences.showMap = false">
                     mdi-map
                 </v-icon>
-                <div help-topic="viewportLocation" title="Viewport localtion" style="padding-right: 10px;cursor: crosshair;" @click="resetView">
+                <span help-topic="viewportLocation" title="Viewport localtion" class="viewport-location" @click="resetView">
                     x:{{ view.x.toFixed(0) }} y:{{ view.y.toFixed(0) }}
-                </div>
-                <v-spacer/>
-                <v-icon title="Zoom Out (^ + -)" style="cursor: pointer;" @click="zoomOut">mdi-magnify-minus-outline</v-icon>
-                <div
-                    help-topic="viewportZoom"
-                    @click="resetZoom"
-                    title="Zoom Level"
-                    style="padding-right: 5px;cursor: crosshair;">
-                    {{ (view.k * 100).toFixed(2) }}%
-                </div>
-                <v-icon
-                    @click="zoomIn"
-                    title="Zoom In (^ + +)"
-                    style="cursor: pointer;"
-                    >mdi-magnify-plus-outline</v-icon>
-                <v-icon title="Close Map" @click="preferences.showMap = false">
+                </span>
+                <span>
+                  <v-icon size="small" title="Zoom Out (^ + -)" style="cursor: pointer;" @click="zoomOut">mdi-magnify-minus-outline</v-icon>
+                  <span
+                      help-topic="viewportZoom"
+                      @click="resetZoom"
+                      title="Zoom Level"
+                      style="padding-right: 5px;cursor: crosshair;">
+                      {{ (view.k * 100).toFixed(2) }}%
+                  </span>
+                  <v-icon
+                      size="small"
+                      @click="zoomIn"
+                      title="Zoom In (^ + +)"
+                      style="cursor: pointer;"
+                      >mdi-magnify-plus-outline</v-icon>
+                </span>
+                <v-icon size="small" title="Close Map" class="float-right pa-2" @click="preferences.showMap = false">
                     mdi-close
                 </v-icon>
             </div>
@@ -47,6 +49,7 @@ export default {
     name: "mini-map-info",
     data() {
         return {
+            margin: 20,
             pos: {
               x: 10,
               y: 30,
@@ -82,10 +85,30 @@ export default {
             'resetZoom',
             'resetView',
         ]),
-        startTranslate() {
-          console.log("start translate");
-          // window.addEventListener('mousemove', translate);
-          // window.addEventListener("resize", this.updateScale);
+        endTranslate() {
+          const preferencesStore = usePreferencesStore();
+          preferencesStore.$patch({
+            ['mini-map-location']: this.pos,
+          });
+          document.body.style = "";
+          window.removeEventListener('mousemove', this.translate);
+          window.removeEventListener('mouseup', this.endTranslate);
+        },
+        translate(e) {
+          this.pos.x = Math.min(this.translating.x - (e.clientX - this.translating.mx), window.innerWidth - this.margin);
+          this.pos.y = Math.min(this.translating.y + (e.clientY - this.translating.my), window.innerHeight - this.margin);
+          console.log(this.pos.x, this.pos.y);
+        },
+        startTranslate(e) {
+          this.translating = {
+            x: this.pos.x,
+            y: this.pos.y,
+            mx: e.clientX,
+            my: e.clientY,
+          };
+          document.body.style = "cursor: grabbing";
+          window.addEventListener('mousemove', this.translate);
+          window.addEventListener('mouseup', this.endTranslate);
         },
         updateScale() {
             if (!this.$refs.map) {
@@ -115,6 +138,7 @@ export default {
                 this.updateScale();
             }, n);
         });
+        window.addEventListener("resize", this.updateScale);
     },
     unmounted() {
         window.removeEventListener("resize", this.updateScale);
@@ -182,10 +206,20 @@ export default {
 .map-view {
     position: fixed;
 }
+.viewport-location {
+  display: inline-block;
+  width: 110px;
+  padding-right: 10px;
+  cursor: crosshair;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .map-system-bar {
+    cursor: grab;
     width: 280px;
-    height: 24px;
-    background: navy;
+    height: 22px;
+    font-size: 12px;
+    padding-left: 5px;
 }
 .graph-map {
     overflow: hidden;
