@@ -1,28 +1,30 @@
 <template>
-    <div x-graph-canvas :style="graphCanvasStyle" v-if="graph" @drop="drop($event)" @dragover="dragOver($event)" :key="graph.version">
-        <div
-            :style="preferences.appearance.theme === 'dark' ? '' : 'filter: invert(1);'"
-            :class="graphCanvasClasses"
-        ></div>
-        <node-edge-connector
-            v-for="c in connectors"
-            :key="c.connector.id + graph.version"
-            :connector="c.connector"
-            :edge="c.edge"
-            :node="c.node"
-        />
-        <template v-if="!presentation">
-            <node
-                v-for="node in graphSnapshot.nodes"
-                :key="node.id"
-                :node="node"
-                :graph="graph"
-                :presentation="false"
+    <div>
+        <div x-graph-canvas :style="graphCanvasStyle" v-if="graph" @drop="drop($event)" @dragover="dragOver($event)" :key="graph.version">
+            <div
+                :style="preferences.appearance.theme === 'dark' ? '' : 'filter: invert(1);'"
+                :class="graphCanvasClasses"
+            ></div>
+            <node-edge-connector
+                v-for="c in connectors"
+                :key="c.connector.id + graph.version"
+                :connector="c.connector"
+                :edge="c.edge"
+                :node="c.node"
             />
-        </template>
-        <!-- <graph-presentation v-if="presentation"/> -->
-        <div v-if="selectionRect.visible && !presentation" class="selection-rect" :style="selectionRectStyle"></div>
-        <div v-if="this.selectedNodes.length !== 0 && !presentation" class="bounding-rect" :style="boundingRectStyle"></div>
+            <template v-if="!presentation">
+                <node
+                    v-for="node in graphSnapshot.nodes"
+                    :key="node.id"
+                    :node="node"
+                    :graph="graph"
+                    :presentation="false"
+                />
+            </template>
+            <!-- <graph-presentation v-if="presentation"/> -->
+            <div v-if="selectionRect.visible && !presentation" class="selection-rect" :style="selectionRectStyle"></div>
+            <div v-if="this.selectedNodes.length !== 0 && !presentation" class="bounding-rect" :style="boundingRectStyle"></div>
+        </div>
     </div>
 </template>
 <script lang="ts">
@@ -77,7 +79,6 @@ export default {
             });
         });
         if (this.addingConnector) {
-            console.log('push connectors');
             connectors.push({
                 connector: this.addingConnector.connector,
                 edge: this.addingConnector.edge,

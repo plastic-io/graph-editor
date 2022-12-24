@@ -23,6 +23,7 @@
                     :class="noSelect ? 'no-select' : ''"
                     :showGrid="preferences.appearance.showGrid && !presentation"
                 ></graph-canvas>
+                <mini-map-info v-if="preferences.showMap && !presentation"/>
             </div>
             <v-system-bar
                 v-if="!presentation && panelVisibility"
@@ -169,9 +170,7 @@ export default {
     },
     mounted() {
         this.workspaceElement = this.$el;
-        window.onwheel = e => {
-            this.onwheel(e);
-        };
+
         document.oncut = this.evCut;
         document.onpaste = this.evPaste;
         document.oncopy = this.evCopy;
@@ -181,6 +180,14 @@ export default {
         window.onmousemove = this.mousemove;
         window.onkeyup = this.keyup;
         window.onkeydown = this.keydown;
+
+
+        document.addEventListener('wheel', (e) => {
+          this.onwheel(e);
+          e.preventDefault();
+        }, {
+            passive: false,
+        });
 
         const graphId = window.location.pathname.substring(1);
         this.open(graphId);

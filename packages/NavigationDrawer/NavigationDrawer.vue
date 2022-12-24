@@ -63,7 +63,8 @@
               title="Use this slider to resize the control panel for some tabs"
               style="cursor: ew-resize; float: right;"
               color="secondary"
-              @mousedown="startPanelDrag">
+              @mousedown="startPanelDrag"
+              >
               mdi-drag-vertical
           </v-icon>
         </div>
@@ -85,6 +86,8 @@ export default {
                 x: 0,
                 y: 0,
             },
+            panelDefault: 450,
+            panelMin: 10,
             navWidths: {},
             panelTopGraphTabs: null,
             panelTopNodeTabs: null,
@@ -173,8 +176,7 @@ export default {
         mouseTranslate() {
             if (this.panelDragging) {
                 this.navWidths[this.currentTabs] =
-                    this.panelDragging.w +
-                    (this.mouse.x - this.panelDragging.x);
+                    Math.max(this.panelDragging.w + (this.mouse.x - this.panelDragging.x), this.panelMin);
             }
         },
         startPanelDrag() {
