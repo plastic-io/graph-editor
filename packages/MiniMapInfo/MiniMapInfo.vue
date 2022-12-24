@@ -1,7 +1,7 @@
 <template>
     <div class="map-view no-select" :style="mapStyle" @wheel.stop @click.stop v-if="graphSnapshot">
         <v-card elevation="7">
-            <div class="map-system-bar" @mousedown.stop="startTranslate">
+            <div class="map-system-bar" :style="{backgroundColor: $vuetify.theme.current.colors['on-surface-variant']}"  @mousedown.stop="startTranslate">
                 <v-icon title="Close Map" size="small" @click="preferences.showMap = false">
                     mdi-map
                 </v-icon>
@@ -97,7 +97,6 @@ export default {
         translate(e) {
           this.pos.x = Math.min(this.translating.x - (e.clientX - this.translating.mx), window.innerWidth - this.margin);
           this.pos.y = Math.min(this.translating.y + (e.clientY - this.translating.my), window.innerHeight - this.margin);
-          console.log(this.pos.x, this.pos.y);
         },
         startTranslate(e) {
           this.translating = {
