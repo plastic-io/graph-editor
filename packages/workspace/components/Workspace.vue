@@ -18,12 +18,12 @@
             <div :style="showHelp ? 'pointer-events: none;' : ''">
                 <navigation-drawer v-if="!presentation && panelVisibility" ref="panel"/>
             </div>
+            <mini-map-info v-if="preferences.showMap && !presentation"/>
             <div :class="presentation ? '' : 'graph-container'" :style="graphContainerStyle">
                 <graph-canvas
                     :class="noSelect ? 'no-select' : ''"
                     :showGrid="preferences.appearance.showGrid && !presentation"
                 ></graph-canvas>
-                <mini-map-info v-if="preferences.showMap && !presentation"/>
             </div>
             <v-system-bar
                 v-if="!presentation && panelVisibility"
@@ -69,6 +69,7 @@ export default {
             'buttonMap',
         ]),
         ...mapWritableState(useGraphStore, [
+            'view',
             'graph',
             'selectionRect',
             'hoveredNode',
@@ -168,27 +169,34 @@ export default {
         theme.global.name.value = isDark ? 'dark' : 'light';
         this.bgColor = isDark ? "#000000" : "#FFFFFF";
     },
-    mounted() {
-        this.workspaceElement = this.$el;
-
-        document.oncut = this.evCut;
-        document.onpaste = this.evPaste;
-        document.oncopy = this.evCopy;
-        window.onmousedown = this.mousedown;
-        window.ondblclick = this.dblclick;
-        window.onmouseup = this.mouseup;
-        window.onmousemove = this.mousemove;
-        window.onkeyup = this.keyup;
-        window.onkeydown = this.keydown;
-
-
-        document.addEventListener('wheel', (e) => {
-          this.onwheel(e);
-          e.preventDefault();
-        }, {
+    unmounted() {
+        document.removeEventListener('cut', this.evCut);
+        document.removeEventListener('paste', this.evPaste);
+        document.removeEventListener('copy', this.evCopy);
+        window.removeEventListener('mousedown', this.mousedown);
+        window.removeEventListener('dblclick', this.dblclick);
+        window.removeEventListener('mouseup', this.mouseup);
+        window.removeEventListener('mousemove', this.mousemove);
+        window.removeEventListener('keyup', this.keyup);
+        window.removeEventListener('keydown', this.keydown);
+        document.removeEventListener('wheel', this.onwheel, {
             passive: false,
         });
-
+    },
+    mounted() {
+        this.workspaceElement = this.$el;
+        document.addEventListener('cut', this.evCut);
+        document.addEventListener('paste', this.evPaste);
+        document.addEventListener('copy', this.evCopy);
+        window.addEventListener('mousedown', this.mousedown);
+        window.addEventListener('dblclick', this.dblclick);
+        window.addEventListener('mouseup', this.mouseup);
+        window.addEventListener('mousemove', this.mousemove);
+        window.addEventListener('keyup', this.keyup);
+        window.addEventListener('keydown', this.keydown);
+        document.addEventListener('wheel', this.onwheel, {
+            passive: false,
+        });
         const graphId = window.location.pathname.substring(1);
         this.open(graphId);
     },

@@ -214,12 +214,14 @@ export default {
     mounted() {
         this.localGraph = this.graph;
         this.navWidths = JSON.parse(JSON.stringify(this.preferences.uiSize));
-        document.onmousemove = this.mousemove;
+        document.addEventListener('mousemove', this.mousemove);
         this.$nextTick(() => {
             this.navWidth = this.navWidths[this.currentTabs];
         });
     },
-
+    unmounted() {
+        document.removeEventListener('mousemove', this.mousemove);
+    },
 };
 </script>
 <style>

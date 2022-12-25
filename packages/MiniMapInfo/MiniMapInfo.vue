@@ -1,14 +1,11 @@
 <template>
-    <div class="map-view no-select" :style="mapStyle" @wheel.stop @click.stop v-if="graphSnapshot">
+    <div class="map-view no-select no-graph-target" :style="mapStyle" @wheel.stop @click.stop v-if="graphSnapshot">
         <v-card elevation="7">
-            <div class="map-system-bar" :style="{backgroundColor: $vuetify.theme.current.colors['on-surface-variant']}"  @mousedown.stop="startTranslate">
-                <v-icon title="Close Map" size="small" @click="preferences.showMap = false">
+            <div class="map-system-bar no-graph-target" :style="{backgroundColor: $vuetify.theme.current.colors['on-surface-variant']}"  @mousedown.stop="startTranslate">
+                <v-icon title="Reset Minimap Settings" size="small" @click="resetLocation">
                     mdi-map
                 </v-icon>
-                <span help-topic="viewportLocation" title="Viewport localtion" class="viewport-location" @click="resetView">
-                    x:{{ view.x.toFixed(0) }} y:{{ view.y.toFixed(0) }}
-                </span>
-                <span>
+                <span class="pa-2">
                   <v-icon size="small" title="Zoom Out (^ + -)" style="cursor: pointer;" @click="zoomOut">mdi-magnify-minus-outline</v-icon>
                   <span
                       help-topic="viewportZoom"
@@ -24,18 +21,25 @@
                       style="cursor: pointer;"
                       >mdi-magnify-plus-outline</v-icon>
                 </span>
-                <v-icon size="small" title="Close Map" class="float-right pa-2" @click="preferences.showMap = false">
+                <span help-topic="viewportLocation" title="Viewport localtion" class="viewport-location" @click="resetView">
+                    x:{{ view.x.toFixed(0) }} y:{{ view.y.toFixed(0) }}
+                </span>
+                
+                <v-icon size="small" title="Close Map" class="float-right ma-1" @click="preferences.showMap = false">
                     mdi-close
                 </v-icon>
             </div>
             <v-card-text class="pa-0">
-                <div class="graph-map" ref="map">
+                <div class="graph-map" :style="{height: mapStyle.height}" ref="map">
                     <div style="position: relative;">
                         <div class="graph-map-view-port" :style="viewMapStyle"></div>
                         <div class="graph-map-node" :style="nodeMapStyle(node)" v-for="node in graphSnapshot.nodes" :key="node.id"></div>
                     </div>
                 </div>
             </v-card-text>
+            <v-icon title="Resize" size="small" class="mini-map-resize no-graph-target" @mousedown="startResize">
+              mdi-resize-bottom-right
+            </v-icon>
         </v-card>
     </div>
 </template>
@@ -49,10 +53,15 @@ export default {
     name: "mini-map-info",
     data() {
         return {
+            stopScaleLooping: false,
+            minHeight: 20,
+            minWidth: 250,
             margin: 20,
-            pos: {
+            rect: {
               x: 10,
               y: 30,
+              h: 150,
+              w: 250,
             },
             translating: {
               x: 0,
@@ -71,6 +80,12 @@ export default {
         view() {
             this.updateScale();
         },
+        graph: {
+            handler() {
+                this.updateScale();
+            },
+            deep: true,
+        },
         graphSnapshot: {
             handler() {
                 this.updateScale();
@@ -85,26 +100,88 @@ export default {
             'resetZoom',
             'resetView',
         ]),
-        endTranslate() {
+        resetLocation() {
+          this.rect = {
+              x: 10,
+              y: 30,
+              h: 150,
+              w: 250,
+          };
+        },
+        updatePrefStore() {
           const preferencesStore = usePreferencesStore();
           preferencesStore.$patch({
-            ['mini-map-location']: this.pos,
+            preferences: {
+              uiSize: {
+                ['mini-map-location']: this.rect,
+              },
+            },
           });
+        },
+        endTranslate() {
+          this.updatePrefStore();
           document.body.style = "";
+          this.stopScaleLooping = true;
           window.removeEventListener('mousemove', this.translate);
           window.removeEventListener('mouseup', this.endTranslate);
+          this.updateScale();
+        },
+        validateSize(size) {
+          return {
+            w: Math.max(this.minWidth, Math.min(size.w, window.innerWidth - this.margin)),
+            h: Math.max(this.minHeight, Math.min(size.h, window.innerHeight - this.margin)),
+          };
+        },
+        validatePos(pos) {
+          return {
+            x: Math.max(0, Math.min(pos.x, window.innerWidth - this.margin)),
+            y: Math.max(0, Math.min(pos.y, window.innerHeight - this.margin)),
+          };
         },
         translate(e) {
-          this.pos.x = Math.min(this.translating.x - (e.clientX - this.translating.mx), window.innerWidth - this.margin);
-          this.pos.y = Math.min(this.translating.y + (e.clientY - this.translating.my), window.innerHeight - this.margin);
+          const x = this.translating.x - (e.clientX - this.translating.mx);
+          const y = this.translating.y + (e.clientY - this.translating.my);
+          this.rect = {
+            ...this.rect,
+            ...this.validatePos({x, y}),
+          };
         },
-        startTranslate(e) {
+        endResize() {
+          this.updatePrefStore();
+          document.body.style = "";
+          this.stopScaleLooping = true;
+          window.removeEventListener('mousemove', this.resizing);
+          window.removeEventListener('mouseup', this.endResize);
+          this.updateScale();
+        },
+        resizing(e) {
+          const w = this.translating.w - (e.clientX - this.translating.mx);
+          const h = this.translating.h + (e.clientY - this.translating.my);
+          this.rect = {
+            ...this.rect,
+            ...this.validateSize({h, w}),
+          };
+        },
+        startResize(e) {
           this.translating = {
-            x: this.pos.x,
-            y: this.pos.y,
+            w: this.rect.w,
+            h: this.rect.h,
             mx: e.clientX,
             my: e.clientY,
           };
+          this.updateScaleLoop();
+          document.body.style = "cursor: nesw-resize";
+          window.addEventListener('mousemove', this.resizing);
+          window.addEventListener('mouseup', this.endResize);
+        },
+        startTranslate(e) {
+          this.translating = {
+            x: this.rect.x,
+            y: this.rect.y,
+            mx: e.clientX,
+            my: e.clientY,
+          };
+          this.updateScaleLoop();
           document.body.style = "cursor: grabbing";
           window.addEventListener('mousemove', this.translate);
           window.addEventListener('mouseup', this.endTranslate);
@@ -130,14 +207,37 @@ export default {
             this.scale = ratio;
             this.mapScale = this.scale;
         },
+        updateScaleLoop() {
+            if (this.stopScaleLooping) {
+              this.stopScaleLooping = false;
+              return;
+            }
+            this.updateScale();
+            setTimeout(() => {
+                this.updateScaleLoop();
+            }, 50);
+        },
+        validate(){
+          this.rect = {
+            ...this.validatePos(this.rect),
+            ...this.validateSize(this.rect),
+          };
+        }
     },
     mounted() {
-        [1, 100, 1000, 2000, 4000].forEach((n) => {
-            setTimeout(() => {
-                this.updateScale();
-            }, n);
+        this.updateScaleLoop();
+        setTimeout(() => {
+            this.stopScaleLooping = true;
+        }, 4000);
+        const rect = JSON.parse(JSON.stringify(this.preferences.uiSize['mini-map-location'] || this.rect));
+        this.rect = {
+          ...this.validatePos(rect),
+          ...this.validateSize(rect),
+        };
+        window.addEventListener("resize", () => {
+          this.updateScale();
+          this.validate();
         });
-        window.addEventListener("resize", this.updateScale);
     },
     unmounted() {
         window.removeEventListener("resize", this.updateScale);
@@ -159,8 +259,10 @@ export default {
         ]),
         mapStyle() {
           return {
-            top: this.pos.y + 'px',
-            right: this.pos.x + 'px',
+            top: this.rect.y + 'px',
+            right: this.rect.x + 'px',
+            width: this.rect.w + 'px',
+            height: this.rect.h + 'px',
           };
         },
         viewMapStyle() {
@@ -204,26 +306,29 @@ export default {
 }
 .map-view {
     position: fixed;
+    z-index: 1007;
+}
+.mini-map-resize {
+  transform: scaleX(-1);
+  margin-top: -18px;
+  float: left;
+  cursor: nesw-resize;
 }
 .viewport-location {
   display: inline-block;
-  width: 110px;
   padding-right: 10px;
   cursor: crosshair;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .map-system-bar {
     cursor: grab;
-    width: 280px;
     height: 22px;
     font-size: 12px;
     padding-left: 5px;
+    white-space: nowrap;
 }
 .graph-map {
     overflow: hidden;
     padding: 0;
-    width: 280px;
-    height: 120px;
 }
 </style>

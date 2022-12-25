@@ -41,13 +41,40 @@ export default {
       innerWidth: 0,
       presentation: false,
       showGrid: true,
+      positionLocationSaveTimeout: 750,
+      positionTimeout: 0,
     }
+  },
+  watch: {
+    view: {
+        handler() {
+            clearTimeout(this.positionTimeout);
+            this.positionTimeout = setTimeout(() => {
+                this.updatePrefStore();
+            }, this.positionLocationSaveTimeout)
+        },
+        deep: true,
+    },
+  },
+  methods: {
+    updatePrefStore() {
+      const preferencesStore = usePreferencesStore();
+      preferencesStore.$patch({
+        preferences: {
+          uiSize: {
+            ['view-location-' + this.graph.id]: this.view,
+          },
+        },
+      });
+    },
   },
   mounted() {
     const resize = () => {
         this.innerWidth = window.innerWidth;
         this.innerHeight = window.innerHeight;
     };
+    const view = JSON.parse(JSON.stringify(this.preferences.uiSize['view-location-' + this.graph.id] || {x: 0, y: 0, k: 1}));
+    this.view = view;
     document.addEventListener('resize', resize);
     resize();
   },

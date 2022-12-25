@@ -37,11 +37,17 @@ export const useStore = defineStore('input', {
     updateMouse(mouse: any) {
         this.mouseAction.mouse(mouse);
     },
-    onwheel(e: MouseEvent) {
+    onwheel(e: WheelEvent) {
         if (!this.graphStore.isGraphTarget(e)) {
             return;
         }
-        this.graphStore.scale(e);
+        if (Math.floor(e.deltaY) === e.deltaY) {
+            this.graphStore.view.y -= e.deltaY;
+            this.graphStore.view.x -= e.deltaX;
+        } else {
+            this.graphStore.scale(e);
+        }
+        e.preventDefault();
     },
     mousemove(e: MouseEvent) {
         if (this.orchistratorStore.showHelp || this.orchistratorStore.inRewindMode) {
