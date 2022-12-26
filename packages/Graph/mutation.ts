@@ -1,8 +1,38 @@
 import {template, set} from "@plastic-io/graph-editor-vue3-help-overlay";
-import {newId} from "@plastic-io/graph-editor-vue3-utils";
+import {newId, deref} from "@plastic-io/graph-editor-vue3-utils";
 import {diff, applyChange, revertChange, observableDiff} from "deep-diff";
 import type {Graph} from "@plastic-io/plastic-io";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+const events = [];
 export default {
+    undo() {
+        this.moveHistoryPosition(-1);
+    },
+    redo(state: any) {
+        this.moveHistoryPosition(1);
+    },
+    moveHistoryPosition(move: number) {
+        const target = this.historyPosition + move;
+        if (target > this.events.length || target < 0) {
+            return;
+        }
+        while (this.historyPosition !== target) {
+            if (this.historyPosition > target) {
+                this.historyPosition -= 1;
+                const changes = this.events[this.historyPosition].changes;
+                changes.forEach((change: any) => {
+                    revertChange(this.graphSnapshot, true, change);
+                });
+            } else if (this.historyPosition < target) {
+                const changes = this.events[this.historyPosition].changes;
+                changes.forEach((change: any) => {
+                    applyChange(this.graphSnapshot, true, change);
+                });
+                this.historyPosition += 1;
+            }
+        }
+        this.graph = deref(this.graphSnapshot);
+    },
     createGraph(url: string, createdBy: string): Graph {
       const id = newId();
       const now = new Date();
@@ -25,15 +55,53 @@ export default {
       };
     },
     updateGraphFromSnapshot(description: string) {
+        console.log('updateGraphFromSnapshot', description);
+        // // tick the version number by 1
+        this.graphSnapshot.version += 1;
+        // // gather the difference and store it in an event list for undo/redo
+        const changes = diff(this.graph, this.graphSnapshot);
+        if (!changes) {
+            console.warn('Graph: updateGraphFromSnapshot called with no updates found.');
+            return;
+        }
+        const graphDiff = {
+            id: newId(),
+            description,
+            changes,
+        };
+        this.events.push(deref(graphDiff));
         // write to the graph in the graph store
-        this.$patch({
-          description: description,
-          graph: JSON.parse(JSON.stringify(this.graphSnapshot)),
+        this.$patch((state: any) => {
+          state.description = description;
+          graphDiff.changes.forEach((change: any) => {
+              applyChange(state.graph, true, change);
+          });
         });
+        this.historyPosition += 1;
         // make a copy of the change in the snapshot store for data providers
         this.graphSnapshotStore.$patch({
-            graph: JSON.parse(JSON.stringify(this.graph)),
+            graph: deref(this.graph),
         });
+    },
+    async open(graphId: string) {
+      const graphOrchestrator = useOrchestratorStore();
+      if (!graphOrchestrator.dataProviders.graph) {
+        throw new Error('No data providers to open a graph with.');
+        return;
+      }
+      let graph: Graph | null = null;
+      try {
+        this.graphSnapshot = await graphOrchestrator.dataProviders.graph.get(graphId);
+        // don't allow an opening graph to count as a history change
+        this.graph = deref(this.graphSnapshot);
+      } catch (err: any) {
+        const url = this.getCalculatedGraphUrl();
+        this.graphSnapshot = this.createGraph(url, "");
+        this.updateGraphFromSnapshot("Created");
+      }
+      console.log(deref(this.graphSnapshot));
+      this.graphLoaded = true;
+      graphOrchestrator.createScheduler();
     },
     updateNodeTemplate(e: {type: string, value: string, nodeId: string}) {
         const node = this.getNodeById(e.nodeId);
@@ -159,7 +227,7 @@ export default {
     },
     duplicateSelection() {
       if (this.selectedNodes.length > 0) {
-          this.pasteNodes(JSON.parse(JSON.stringify(this.selectedNodes)), "Duplicate");
+          this.pasteNodes(deref(this.selectedNodes), "Duplicate");
       }
     },
     updateNodeData(e: {nodeId: string, data: any}) {

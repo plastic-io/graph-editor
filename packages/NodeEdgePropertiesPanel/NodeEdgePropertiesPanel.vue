@@ -1,11 +1,11 @@
 <template>
-    <div v-if="node">
+    <div>
         <v-tabs v-model="inputsTabs">
             <v-tab v-for="ioKey in ['inputs', 'outputs']" :key="ioKey">
                 {{ioKey}}
             </v-tab>
         </v-tabs>
-        <v-window v-model="inputsTabs">
+        <v-window v-model="inputsTabs" v-if="node" style="height: calc(100vh - 250px); overflow-y: auto;">
             <v-window-item v-for="ioKey in ['inputs', 'outputs']" :key="ioKey">
                 <v-btn
                     class="ma-5"

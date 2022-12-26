@@ -50,6 +50,9 @@ class LocalDataProvider extends DocumentProvider {
     constructor() {
         super();
     }
+    async getEvents(): Promise<GraphDiff[]> {
+        return [{} as GraphDiff]
+    }
     async set(url: string, value: GraphDiff | NodeArtifact | GraphArtifact): Promise<void> {
         let events: GraphDiff[] = [];
         const state: any = {};

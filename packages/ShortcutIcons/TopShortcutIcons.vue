@@ -90,6 +90,7 @@ export default {
         ...mapWritableState(useGraphStore, [
             'graph',
             'view',
+            'events',
             'selectedNodes',
             'selectionRect',
             'hoveredNode',
@@ -112,7 +113,6 @@ export default {
             'error',
             'presentation',
             'locked',
-            'events',
             'historyPosition',
             'primaryGroup',
             'groupNodes',

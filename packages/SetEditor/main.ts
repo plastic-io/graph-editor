@@ -10,7 +10,7 @@ export default class SetEditor extends EditorModule {
     app.component('set-code-editor', Editor);
     const graphOrchestratorStore =  useOrchestratorStore();
     const plugin = new Plugin({
-      name: 'Set Editor',
+      name: 'Set',
       component: 'set-code-editor',
       icon: 'mdi-lambda',
       helpTopic: 'edge',

@@ -1,4 +1,3 @@
-import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import type {Graph, Node} from "@plastic-io/plastic-io";
 export default {
     getCalculatedGraphUrl(): string {
@@ -41,24 +40,5 @@ export default {
     },
     getNodeById(nodeId: string): any {
       return this.graphSnapshot.nodes.find((n: Node) => n.id === nodeId);
-    },
-    async open(graphId: string) {
-      const graphOrchestrator = useOrchestratorStore();
-      if (!graphOrchestrator.dataProviders.graph) {
-        throw new Error('No data providers to open a graph with.');
-        return;
-      }
-      let graph: Graph | null = null;
-      try {
-        this.graphSnapshot = await graphOrchestrator.dataProviders.graph.get(graphId);
-        this.updateGraphFromSnapshot("Open");
-      } catch (err: any) {
-        const url = this.getCalculatedGraphUrl();
-        this.graphSnapshot = this.createGraph(url, "");
-        this.updateGraphFromSnapshot("Created");
-      }
-      console.log(JSON.parse(JSON.stringify(this.graphSnapshot)));
-      this.graphLoaded = true;
-      graphOrchestrator.createScheduler();
     },
 } as ThisType<any>;

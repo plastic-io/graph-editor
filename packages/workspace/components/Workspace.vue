@@ -93,7 +93,6 @@ export default {
             'error',
             'presentation',
             'locked',
-            'events',
             'historyPosition',
             'primaryGroup',
             'groupNodes',

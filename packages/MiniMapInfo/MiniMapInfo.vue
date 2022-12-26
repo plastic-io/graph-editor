@@ -37,7 +37,7 @@
                     </div>
                 </div>
             </v-card-text>
-            <v-icon title="Resize" size="small" class="mini-map-resize no-graph-target" @mousedown="startResize">
+            <v-icon title="Resize" color="secondary" size="small" class="mini-map-resize no-graph-target" @mousedown="startResize">
               mdi-resize-bottom-right
             </v-icon>
         </v-card>

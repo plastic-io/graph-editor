@@ -10,7 +10,7 @@ export default class TemplateEditor extends EditorModule {
     app.component('vue-code-editor', Editor);
     const graphOrchestratorStore =  useOrchestratorStore();
     const plugin = new Plugin({
-      name: 'Template Editor',
+      name: 'View',
       component: 'vue-code-editor',
       icon: 'mdi-vuejs',
       helpTopic: 'template',

@@ -9,7 +9,7 @@ export default class GraphProperties extends EditorModule {
     app.component('graph-properties', _GraphProperties);
     const graphOrchestratorStore =  useOrchestratorStore();
     const plugin = new Plugin({
-      name: 'Graph Properties Panel',
+      name: 'Graph',
       component: 'graph-properties',
       icon: 'mdi-graph-outline',
       helpTopic: 'graphProperties',

@@ -6,6 +6,7 @@ import {useGraphSnapshotStore} from './store';
 export default () => {
     return {
         events: [],
+        historyPosition: 0,
         selectedGroups: [],
         lastChangeName: null,
         primaryGroup: null,

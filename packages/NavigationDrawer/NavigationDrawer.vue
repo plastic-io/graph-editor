@@ -15,59 +15,63 @@
             style="z-index: 1; overflow: hidden;">
 
             <template v-if="selectedNodes.length === 0">
-                <v-tabs v-model="panelTopGraphTabs">
+                <v-tabs v-model="panelTopGraphTabs" centered stacked>
                   <v-tab
                     v-for="(plugin, index) in getPluginsByType('nav-panel-top-graph-tabs')"
                     :value="plugin.name"
                   >
                     <v-icon :icon="plugin.icon"/>
+                    {{plugin.name}}
                   </v-tab>
                 </v-tabs>
-                <v-window v-model="panelTopGraphTabs">
-                    <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-top-graph-tabs')" :value="plugin.name"  style="height: calc(100vh - 148px);">
-                        <component :is="plugin.component" v-bind="plugin.props" :width="width"/>
-                    </v-window-item>
-                </v-window>
             </template>
-
             <template v-else>
-                <v-tabs v-model="panelTopNodeTabs">
+                <v-tabs v-model="panelTopNodeTabs" centered stacked>
                       <v-tab
                         v-for="(plugin, index) in getPluginsByType('nav-panel-top-node-tabs')"
                         :value="plugin.name"
                       >
                         <v-icon :icon="plugin.icon"/>
+                        {{plugin.name}}
                     </v-tab>
                 </v-tabs>
-                <v-window v-model="panelTopNodeTabs">
-                  <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-top-node-tabs')" :value="plugin.name"  style="height: calc(100vh - 148px);">
-                    <component :is="plugin.component" v-bind="plugin.props" :width="width"/>
-                  </v-window-item>
-                </v-window>
             </template>
+
+            <v-window v-model="currentTabs">
+              <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-top-graph-tabs')" :value="plugin.name"  style="height: calc(100vh - 200px);">
+                <component :is="plugin.component" v-bind="plugin.props" :width="width"/>
+              </v-window-item>
+              <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-top-node-tabs')" :value="plugin.name"  style="height: calc(100vh - 200px);">
+                <component :is="plugin.component" v-bind="plugin.props" :width="width"/>
+              </v-window-item>
+              <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-bottom-tabs')"  :value="plugin.name"  style="height: calc(100vh - 148px);">
+                <component :is="plugin.component" v-bind="plugin.props" :width="width"/>
+              </v-window-item>
+            </v-window>
 
         </v-container>
         <div style="position: absolute; bottom: 5px; width: 100%;" class="control-panel-bottom">
-          <v-divider style="margin-bottom: 15px;margin-right: 5px;"/>
-          <template
-            v-for="(plugin, index) in getPluginsByType('nav-panel-bottom-icons')"
-            :value="plugin.name"
-            v-bind="plugin.props"
-            :width="width"
-          >
-            <v-icon :icon="plugin.icon"/>
-          </template>
-          <v-icon
-              help-topic="dragResizePanel"
-              class="control-panel-icon mb-2"
-              title="Use this slider to resize the control panel for some tabs"
-              style="cursor: ew-resize; float: right;"
-              color="secondary"
-              @mousedown="startPanelDrag"
+          <v-divider style="margin-right: 5px;"/>
+          <v-tabs v-model="currentTabs" centered stacked>
+              <v-tab
+                v-for="(plugin, index) in getPluginsByType('nav-panel-bottom-tabs')"
+                :value="plugin.name"
+                v-bind="plugin.props"
               >
-              mdi-drag-vertical
-          </v-icon>
+                <v-icon :icon="plugin.icon" style="margin-bottom: 5px;"/>
+              </v-tab>
+          </v-tabs>
         </div>
+        <v-icon
+            help-topic="dragResizePanel"
+            class="nav-drawer-resizer"
+            title="Use this slider to resize the control panel for some tabs"
+            style="cursor: ew-resize; float: right;"
+            color="secondary"
+            @mousedown="startPanelDrag"
+        >
+            mdi-drag-vertical
+        </v-icon>
     </v-navigation-drawer>
 </template>
 <script lang="typescript">
@@ -127,7 +131,6 @@ export default {
           'log',
           'showHelp',
           'historyPosition',
-          'events',
           'plugins',
           'panelPlugins',
         ]),
@@ -148,11 +151,19 @@ export default {
         width() {
             return this.navWidths[this.currentTabs];
         },
-        currentTabs() {
-            if (this.selectedNodes.length === 0) {
-                return this.panelTopGraphTabs;
+        currentTabs: {
+            get() {
+                if (this.selectedNodes.length === 0) {
+                    return this.panelTopGraphTabs;
+                }
+                return this.panelTopNodeTabs;
+            },
+            set(val) {
+                if (this.selectedNodes.length === 0) {
+                    return this.panelTopGraphTabs = val;
+                }
+                return this.panelTopNodeTabs = val;
             }
-            return this.panelTopNodeTabs;
         },
         gutterStyle() {
             return {
@@ -228,6 +239,9 @@ export default {
 .main-nav {
     padding-right: 18px;
     width: 100%;
+}
+.nav-drawer-resizer {
+    margin-top: 15px;
 }
 .icon-nav .v-icon.v-icon:after {
     display: none;

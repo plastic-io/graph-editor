@@ -41,9 +41,7 @@ export default abstract class DocumentProvider {
   abstract updateToc(key: string, value: TocItem): Promise<void>;
   abstract subscribe(url: string | null, callback: (e: any) => void): Promise<void>;
   abstract get(url: string): Promise<Graph>;
-  abstract getEvents(url: string): Promise<Graph>;
-  abstract undo(): Promise<Graph>;
-  abstract redo(): Promise<Graph>;
+  abstract getEvents(url: string): Promise<GraphDiff[]>;
   abstract set(url: string, value: GraphDiff | NodeArtifact | GraphArtifact): Promise<void>;
   abstract delete(url: string): Promise<void>;
 }

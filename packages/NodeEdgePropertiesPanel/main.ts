@@ -9,7 +9,7 @@ export default class NodeEdgePropertiesPanel extends EditorModule {
     app.component('node-edge-properties-panel', _NodeEdgePropertiesPanel);
     const graphOrchestratorStore =  useOrchestratorStore();
     const plugin = new Plugin({
-      name: 'Node Edge Properties Panel',
+      name: 'Edges',
       component: 'node-edge-properties-panel',
       icon: 'mdi-video-input-component',
       helpTopic: 'edge',

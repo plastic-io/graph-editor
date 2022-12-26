@@ -1,36 +1,34 @@
 <template>
-    <v-card flat v-if="node && selectedNode" style="height: calc(100vh - 98px); overflow-y: auto;">
-        <v-card-title>
-            <v-icon left help-topic="node">mdi-network-outline</v-icon>
-            Node Properties
-            <v-spacer/>
-            <v-menu flat bottom color="secondary" open-on-hover>
-                <template v-slot:activator="{ on: tooltip }">
-                    <v-icon v-on="{ ...tooltip }">
-                        {{node.artifact ? 'mdi-link' : 'mdi-information-outline'}}
-                    </v-icon>
-                </template>
-                <v-card v-if="!node.artifact">
-                    <v-card-text>
-                        <i>Node Id: {{node.id}}</i>
-                    </v-card-text>
-                </v-card>
-                <v-alert
-                    v-if="node.artifact"
-                    type="warning"
-                    prominent
-                    class="ma-0"
-                    style="width: 35vw;"
-                    border="left">
-                    This node did not originate on this graph.
-                    <i>Node artifact: {{node.artifact}}</i>
-                </v-alert>
-            </v-menu>
-        </v-card-title>
+    <v-card flat v-if="node && selectedNode" style="height: calc(100vh - 150px); overflow-y: auto;">
         <v-card-text class="ma-0 pa-0">
             <v-expansion-panels flat v-model="panel">
                 <v-expansion-panel>
-                    <v-expansion-panel-title>General</v-expansion-panel-title>
+                    <v-expansion-panel-title>
+                        General
+                        <v-spacer/>
+                        <v-tooltip flat bottom color="secondary" open-on-hover>
+                            <template v-slot:activator="{ props }">
+                                <v-icon v-bind="props">
+                                    {{node.artifact ? 'mdi-link' : 'mdi-information-outline'}}
+                                </v-icon>
+                            </template>
+                            <v-card v-if="!node.artifact">
+                                <v-card-text>
+                                    <i>Node Id: {{node.id}}</i>
+                                </v-card-text>
+                            </v-card>
+                            <v-alert
+                                v-if="node.artifact"
+                                type="warning"
+                                prominent
+                                class="ma-0"
+                                style="width: 35vw;"
+                                border="left">
+                                This node did not originate on this graph.
+                                <i>Node artifact: {{node.artifact}}</i>
+                            </v-alert>
+                        </v-tooltip>
+                    </v-expansion-panel-title>
                     <v-expansion-panel-text>
                         <v-card class="ma-0 pa-0" flat>
                             <v-card-text class="ma-0 pa-0">
@@ -223,7 +221,6 @@ export default {
         ...mapState(useGraphStore, [
           'tags',
           'historyPosition',
-          'events',
         ]),
         ...mapState(useGraphStore, [
           'graph',

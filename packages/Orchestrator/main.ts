@@ -106,7 +106,6 @@ export const useStore = defineStore('orchestrator', {
     luts: {},
     keys: {},
     toc: null,
-    events: [],
   }),
   actions: {
     togglePresentation() {},

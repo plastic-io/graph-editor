@@ -9,7 +9,7 @@ export default class NodePropertiesPanel extends EditorModule {
     app.component('node-properties-panel', _NodePropertiesPanel);
     const graphOrchestratorStore =  useOrchestratorStore();
     const plugin = new Plugin({
-      name: 'Node Properties Panel',
+      name: 'Node',
       component: 'node-properties-panel',
       icon: 'mdi-vector-point',
       helpTopic: 'nodeProperties',
