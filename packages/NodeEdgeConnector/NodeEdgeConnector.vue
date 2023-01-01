@@ -9,7 +9,7 @@
             :width="width * ratio"/>
     </div>
 </template>
-<script>
+<script lang="ts">
 import {Connector, Node, Edge} from "@plastic-io/plastic-io";
 import {mapState} from "pinia";
 import bezier from "./bezier";

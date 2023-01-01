@@ -21,7 +21,7 @@
         </div>
     </div>
 </template>
-<script>
+<script lang="ts">
 import {mapWritableState, mapActions, mapState} from "pinia";
 
 import {Node} from "@plastic-io/plastic-io";

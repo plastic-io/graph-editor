@@ -7,67 +7,32 @@
         ref="nav"
         app
         flat
-        :key="localVersion"
-        style="height: calc(100vh - 48px);">
+        :key="localVersion">
         <v-container
-            class="flex-d align-stretch pa-0"
-            fill-height
+            class="pa-0"
             style="z-index: 1; overflow: hidden;">
-
-            <template v-if="selectedNodes.length === 0">
-                <v-tabs v-model="panelTopGraphTabs" centered stacked>
+            <v-tabs v-model="currentTabs">
                   <v-tab
-                    v-for="(plugin, index) in getPluginsByType('nav-panel-top-graph-tabs')"
+                    v-for="(plugin, index) in currentTabGroup"
                     :value="plugin.name"
                   >
-                    <v-icon :icon="plugin.icon"/>
                     {{plugin.name}}
-                  </v-tab>
-                </v-tabs>
-            </template>
-            <template v-else>
-                <v-tabs v-model="panelTopNodeTabs" centered stacked>
-                      <v-tab
-                        v-for="(plugin, index) in getPluginsByType('nav-panel-top-node-tabs')"
-                        :value="plugin.name"
-                      >
-                        <v-icon :icon="plugin.icon"/>
-                        {{plugin.name}}
-                    </v-tab>
-                </v-tabs>
-            </template>
-
+                </v-tab>
+            </v-tabs>
             <v-window v-model="currentTabs">
-              <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-top-graph-tabs')" :value="plugin.name"  style="height: calc(100vh - 200px);">
-                <component :is="plugin.component" v-bind="plugin.props" :width="width"/>
-              </v-window-item>
-              <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-top-node-tabs')" :value="plugin.name"  style="height: calc(100vh - 200px);">
-                <component :is="plugin.component" v-bind="plugin.props" :width="width"/>
-              </v-window-item>
-              <v-window-item v-for="(plugin, index) in getPluginsByType('nav-panel-bottom-tabs')"  :value="plugin.name"  style="height: calc(100vh - 148px);">
-                <component :is="plugin.component" v-bind="plugin.props" :width="width"/>
+              <v-window-item
+                v-for="(plugin, index) in panelPlugins"
+                :value="plugin.name">
+                <component :is="plugin.component" v-bind="plugin.props"/>
               </v-window-item>
             </v-window>
-
         </v-container>
-        <div style="position: absolute; bottom: 5px; width: 100%;" class="control-panel-bottom">
-          <v-divider style="margin-right: 5px;"/>
-          <v-tabs v-model="currentTabs" centered stacked>
-              <v-tab
-                v-for="(plugin, index) in getPluginsByType('nav-panel-bottom-tabs')"
-                :value="plugin.name"
-                v-bind="plugin.props"
-              >
-                <v-icon :icon="plugin.icon" style="margin-bottom: 5px;"/>
-              </v-tab>
-          </v-tabs>
-        </div>
         <v-icon
             help-topic="dragResizePanel"
             class="nav-drawer-resizer"
-            title="Use this slider to resize the control panel for some tabs"
-            style="cursor: ew-resize; float: right;"
+            title="Use this slider to resize this panel"
             color="secondary"
+            :style="{left: (currentWidth - dragIconWidth) + 'px'}"
             @mousedown="startPanelDrag"
         >
             mdi-drag-vertical
@@ -81,15 +46,17 @@ import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 export default {
-    name: "control-panel",
+    name: "navigation-drawer",
     data: () => {
         return {
-            lastNodePanel: 'Node Properties Panel',
-            lastGraphPanel: 'Graph Properties Panel',
+            lastNodePanel: 'Node',
+            lastGraphPanel: 'Graph',
             mouse: {
                 x: 0,
                 y: 0,
             },
+            defaultWidth: 400,
+            dragIconWidth: 28,
             panelDefault: 450,
             panelMin: 10,
             navWidths: {},
@@ -107,6 +74,11 @@ export default {
         };
     },
     watch: {
+        selectedPanel() {
+            if (this.selectedPanel) {
+                this.currentTabs = this.selectedPanel;
+            }
+        },
         "mouse.y"() {
             this.mouseTranslate();
         },
@@ -132,7 +104,7 @@ export default {
           'showHelp',
           'historyPosition',
           'plugins',
-          'panelPlugins',
+          'selectedPanel',
         ]),
         ...mapState(useGraphStore, [
           'selectRect',
@@ -148,8 +120,27 @@ export default {
         ...mapState(useInputStore, [
           'keys',
         ]),
-        width() {
-            return this.navWidths[this.currentTabs];
+        currentWidth() {
+            return this.navWidths[this.currentTabs] || this.defaultWidth;
+        },
+        panelPlugins() {
+            return [
+                ...this.getPluginsByType('nav-panel-graph-tabs'),
+                ...this.getPluginsByType('nav-panel-node-tabs'),
+                ...this.getPluginsByType('nav-panel-tabs'),
+            ];
+        },
+        currentTabGroup() {
+            if (this.selectedNodes.length === 0) {
+                return [
+                    ...this.getPluginsByType('nav-panel-graph-tabs'),
+                    ...this.getPluginsByType('nav-panel-tabs'),
+                ];
+            }
+            return [
+                ...this.getPluginsByType('nav-panel-node-tabs'),
+                ...this.getPluginsByType('nav-panel-tabs'),
+            ];
         },
         currentTabs: {
             get() {
@@ -165,14 +156,9 @@ export default {
                 return this.panelTopNodeTabs = val;
             }
         },
-        gutterStyle() {
-            return {
-                width: (this.navWidth - this.iconGutterSize) + "px",
-            };
-        },
         navStyle() {
             return {
-                width: this.panel ? (this.width + "px") : "250px",
+                width: this.panel ? (this.currentWidth + "px") : "250px",
             };
         }
     },
@@ -196,16 +182,16 @@ export default {
             this.panelDragging = {
                 x: this.mouse.x,
                 y: this.mouse.y,
-                w: this.width || this.navWidth,
+                w: this.currentWidth || this.navWidth,
             };
             const dragEnd = () => {
                 this.panelDragging = false;
                 el.style.transition = undefined;
-                this.navWidth = this.width;
+                this.navWidth = this.currentWidth;
                 usePreferencesStore().$patch({
                     preferences: {
                         uiSize: {
-                            [this.currentTabs]: this.width,
+                            [this.currentTabs]: this.currentWidth,
                         },
                     },
                 });
@@ -229,6 +215,8 @@ export default {
         this.$nextTick(() => {
             this.navWidth = this.navWidths[this.currentTabs];
         });
+        this.panelTopGraphTabs = 'Graph';
+        this.panelTopNodeTabs = 'Node';
     },
     unmounted() {
         document.removeEventListener('mousemove', this.mousemove);
@@ -236,28 +224,12 @@ export default {
 };
 </script>
 <style>
-.main-nav {
-    padding-right: 18px;
-    width: 100%;
+.graph-nav-drawer {
+    height: calc(100vh - 48px) !important;
 }
 .nav-drawer-resizer {
-    margin-top: 15px;
-}
-.icon-nav .v-icon.v-icon:after {
-    display: none;
-}
-.icon-nav {
-    border: solid 1px black;
-    width: 43px;
-    right: 0;
-    position: absolute;
-    height: calc(100vh - 48px);
-    padding: 8px;
-}
-.control-panel-icon {
-    margin-bottom: 10px;
-}
-.control-panel-bottom .control-panel-icon:last-child {
-    margin-bottom: 0;
+    position: fixed;
+    cursor: ew-resize;
+    bottom: 7px;
 }
 </style>

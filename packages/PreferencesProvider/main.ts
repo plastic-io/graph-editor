@@ -62,7 +62,7 @@ export class UserPreferences {
         this.userName = getRandomName();
         this.email = "";
         this.userId = '0';
-        this.avatar = "https://api.adorable.io/avatars/50/" + this.userName.replace(/ /g, "") + ".png";
+        this.avatar = "https://adorable-avatars.broken.services/" + this.userName.replace(/ /g, "") + ".png";
         this.workstationId = newId();
         this.newNodeHelp = true;
         this.showLabels = true;

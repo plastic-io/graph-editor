@@ -8,14 +8,29 @@ export default class HistoryPanel extends EditorModule {
     super();
     app.component('history-panel', _HistoryPanel);
     const graphOrchestratorStore =  useOrchestratorStore();
-    const historyPanelPlugin = new Plugin({
-      name: 'History Panel',
+    const historyPanelPluginIcon = new Plugin({
+      name: 'History',
+      component: 'v-icon',
+      helpTopic: 'historyPanel',
+      type: 'system-bar-top',
+      order: 0,
+      divider: true,
+      props: {
+        icon: 'mdi-history',
+        onclick() {
+          graphOrchestratorStore.selectedPanel = 'History';
+        },
+      }
+    });
+    const historyPanelPluginTab = new Plugin({
+      name: 'History',
       component: 'history-panel',
       icon: 'mdi-history',
       helpTopic: 'historyPanel',
-      type: 'nav-panel-bottom-tabs',
+      type: 'nav-panel-tabs',
       order: 0,
     });
-    graphOrchestratorStore.addPlugin(historyPanelPlugin);
+    graphOrchestratorStore.addPlugin(historyPanelPluginIcon);
+    graphOrchestratorStore.addPlugin(historyPanelPluginTab);
   }
 };

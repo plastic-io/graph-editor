@@ -316,7 +316,7 @@ export default {
             this.node = JSON.parse(JSON.stringify(v));
         },
         getSelectedNode() {
-            return this.graphSnapshot.nodes.find((v) => v.id === this.nodeId);
+            return JSON.parse(JSON.stringify(this.graphSnapshot.nodes.find((v) => v.id === this.nodeId)));
         },
     },
     watch: {

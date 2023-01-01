@@ -1,57 +1,21 @@
 <template>
-    <v-card elevation="0" flat style="height: calc(100vh - 150px);" class="pa-2">
-        <v-card elevation="0">
-            <v-card-text>
-                <v-tabs v-model="tabs">
-                    <v-tab key="history">
-                        <v-icon help-topic="historyPanel">mdi-history</v-icon>
-                    </v-tab>
-                    <v-tab key="rewind">
-                        <v-icon help-topic="rewind">mdi-rewind</v-icon>
-                    </v-tab>
-                </v-tabs>
-                <v-window v-model="tabs">
-                    <v-window-item key="history">
-                        <v-list style="height: calc(100vh - 121px);overflow-y: auto;">
-                            <v-list-item
-                                v-for="(event, index) in localEvents"
-                                :key="index"
-                                :style="historyColor(index)"
-                                :title="event.description"
-                                @click="moveHistoryPosition(-(historyPosition - index))">
-                                <template v-slot:prepend>
-                                    {{index}}
-                                    <v-icon>{{getIcon(event.description)}}</v-icon>
-                                </template>
-                            </v-list-item>
-                        </v-list>
-                    </v-window-item>
-                    <v-window-item key="rewind">
-                        <v-card class="ma-5">
-                            <v-card-title>
-                                Rewind
-                            </v-card-title>
-                            <v-card-text>
-                                You can rewind the state of your graph to any previous
-                                version.
-                            </v-card-text>
-                            <v-card-actions>
-                                <v-spacer/>
-                                <v-btn @click="showRewind">
-                                    <v-icon>
-                                        mdi-rewind
-                                    </v-icon>
-                                    Rewind
-                                </v-btn>
-                            </v-card-actions>
-                        </v-card>
-                    </v-window-item>
-                </v-window>
-            </v-card-text>
-        </v-card>
+    <v-card elevation="0" flat style="height: calc(100vh - 200px);" class="pa-2">
+        <v-list style="height: calc(100vh - 121px);overflow-y: auto;">
+            <v-list-item
+                v-for="(event, index) in localEvents"
+                :key="index"
+                :style="historyColor(index)"
+                :title="event.description"
+                @click="moveHistoryPosition(-(historyPosition - index))">
+                <template v-slot:prepend>
+                    {{index}}
+                    <v-icon>{{getIcon(event.description)}}</v-icon>
+                </template>
+            </v-list-item>
+        </v-list>
     </v-card>
 </template>
-<script>
+<script lang="ts">
 import {mapState, mapActions} from "pinia";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";

@@ -8,14 +8,11 @@
         <span v-if="inRewindMode">
             Rewinding...
         </span>
-        <i v-else style="display: inline-block; width: 75px; overflow: visible;" help-topic="saveStatus" v-html="pending ? 'Saving...' : 'Saved'"/>
     </div>
     <v-spacer style="margin-right: 5%;"/>
     <span help-topic="documentName" class="pa-1">
-        {{ graph.properties.name || "Untitled" }}
+        {{ graph.properties.name || graph.url || "Untitled" }}
     </span>
-    <span>-</span>
-    <span help-topic="plastic" class="pa-1">Plastic-IO</span>
     <v-spacer/>
     <shared-users/>
     <v-icon :disabled="historyPosition === 0 || events.length === 0"
@@ -26,12 +23,12 @@
         @click="redo"
         help-topic="redo"
         title="Redo last undone action (^ + Shift + Z)">mdi-redo-variant</v-icon>
-    <v-divider vertical style="margin: 5px;"/>
+    <v-divider vertical class="mx-2"/>
     <v-icon :disabled="selectedNodes.length === 0"
         @click="duplicateSelection"
         help-topic="duplicate"
         title="Duplicate selected nodes (^ + Shift + D)">mdi-content-duplicate</v-icon>
-    <v-divider vertical style="margin: 5px;"/>
+    <v-divider vertical class="mx-2"/>
     <v-icon :disabled="selectedNodes.length < 2"
         @click="groupSelected"
         help-topic="group"
@@ -40,7 +37,7 @@
         @click="ungroupSelected"
         help-topic="ungroup"
         title="Ungroup (^ + Shift + G)" >mdi-ungroup</v-icon>
-    <v-divider vertical style="margin: 5px;"/>
+    <v-divider vertical class="mx-2"/>
     <v-icon
         @click="bringForward"
         help-topic="bringForward"
@@ -57,13 +54,13 @@
         @click="sendToBack"
         help-topic="sendToBack"
         title="Send to back (^ + Shift + [)">mdi-arrange-send-to-back</v-icon>
-    <v-divider vertical style="margin: 5px;"/>
+    <v-divider vertical class="mx-2"/>
     <v-icon
         help-topic="deleteSelected"
         @click="deleteSelected"
         title="Delete selected (delete)"
         :disabled="selectedNodes.length === 0 && selectedConnectors === 0">mdi-delete</v-icon>
-    <v-divider vertical style="margin: 5px;"/>
+    <v-divider vertical class="mx-2"/>
     <v-icon
         @click="showHelp = !showHelp"
         help-topic="toggleHelp"

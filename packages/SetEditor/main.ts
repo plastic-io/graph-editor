@@ -14,7 +14,7 @@ export default class SetEditor extends EditorModule {
       component: 'set-code-editor',
       icon: 'mdi-lambda',
       helpTopic: 'edge',
-      type: 'nav-panel-top-node-tabs',
+      type: 'nav-panel-node-tabs',
       props: {
         templateType: 'set',
         language: 'javascript',

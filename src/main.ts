@@ -13,15 +13,15 @@ import * as directives from 'vuetify/directives'
 
 // plugins
 import type GraphEditorModule from "@plastic-io/graph-editor-vue3-editor-module";
+import Orchestrator from "@plastic-io/graph-editor-vue3-orchestrator";
 import AppBar from "@plastic-io/graph-editor-vue3-app-bar"
-import Auth0 from "@plastic-io/graph-editor-vue3-auth0";
+import Auth0AuthenticationProvider from "@plastic-io/graph-editor-vue3-auth0-authentication-provider";
 import ConnectorInfo from "@plastic-io/graph-editor-vue3-connector-info";
 import EndpointListPanel from "@plastic-io/graph-editor-vue3-endpoint-list-panel";
 import ErrorInterstitial from "@plastic-io/graph-editor-vue3-error-interstitial";
 import EventLoggerPanel from "@plastic-io/graph-editor-vue3-event-logger-panel";
 import Graph from "@plastic-io/graph-editor-vue3-graph";
 import Manager from "@plastic-io/graph-editor-vue3-manager";
-import Orchestrator from "@plastic-io/graph-editor-vue3-orchestrator";
 import Presentation from "@plastic-io/graph-editor-vue3-presentation";
 import PresentationPanel from "@plastic-io/graph-editor-vue3-presentation-panel";
 import GraphPropertiesPanel from "@plastic-io/graph-editor-vue3-graph-properties-panel";
@@ -45,7 +45,7 @@ import SetEditor from "@plastic-io/graph-editor-vue3-set-editor";
 import SharedMouse from "@plastic-io/graph-editor-vue3-shared-mouse";
 import SharedUsers from "@plastic-io/graph-editor-vue3-shared-users";
 import TemplateEditor from "@plastic-io/graph-editor-vue3-template-editor";
-import UserPanel from "@plastic-io/graph-editor-vue3-user-panel";
+import SettingsPanel from "@plastic-io/graph-editor-vue3-settings-panel";
 import Workspace from "@plastic-io/graph-editor-vue3-workspace";
 import WorkspaceControlPanel from "@plastic-io/graph-editor-vue3-workspace-control-panel";
 import WssDocumentProvider from "@plastic-io/graph-editor-vue3-wss-document-provider-info";
@@ -68,8 +68,10 @@ const plugins = [
   // GraphOrchestrator needs to come before a lot of the other
   // modules because it provides a common store to share state
   Orchestrator,
+  // local user prefs needs to load before any modules that use
+  // data stored in it (e.g.: Auth0)
+  LocalUserPreferences,
   AppBar,
-  Auth0,
   ConnectorInfo,
   EndpointListPanel,
   ErrorInterstitial,
@@ -86,7 +88,6 @@ const plugins = [
   ImportPanel,
   Input,
   LocalStorageDocumentProvider,
-  LocalUserPreferences,
   MiniMapInfo,
   NavigationDrawer,
   Node,
@@ -99,13 +100,14 @@ const plugins = [
   SharedMouse,
   SharedUsers,
   TemplateEditor,
-  UserPanel,
+  SettingsPanel,
   WorkspaceControlPanel,
   WssDocumentProvider,
   Workspace,
-] as GraphEditorModule[];
-const pluginInstances = {} as Record<string, GraphEditorModule>;
-plugins.forEach((_Plugin: GraphEditorModule) => {
+  Auth0AuthenticationProvider,
+] as any;
+const pluginInstances = {} as any;
+plugins.forEach((_Plugin: any) => {
   const plugin = new _Plugin({}, app, router, pinia);
   pluginInstances[plugin.name] = plugin;
 });

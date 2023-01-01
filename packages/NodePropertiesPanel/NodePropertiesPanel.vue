@@ -1,5 +1,5 @@
 <template>
-    <v-card flat v-if="node && selectedNode" style="height: calc(100vh - 150px); overflow-y: auto;">
+    <v-card flat v-if="node && selectedNode" style="overflow-y: auto;">
         <v-card-text class="ma-0 pa-0">
             <v-expansion-panels flat v-model="panel">
                 <v-expansion-panel>
@@ -148,7 +148,7 @@
         </v-card-text>
     </v-card>
 </template>
-<script>
+<script lang="ts">
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
@@ -220,7 +220,6 @@ export default {
     computed: {
         ...mapState(useGraphStore, [
           'tags',
-          'historyPosition',
         ]),
         ...mapState(useGraphStore, [
           'graph',

@@ -43,7 +43,7 @@
         </v-card>
     </div>
 </template>
-<script>
+<script lang="ts">
 import {mapState, mapWritableState, mapActions} from "pinia";
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";

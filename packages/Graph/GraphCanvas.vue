@@ -1,8 +1,8 @@
 <template>
     <div>
-        <div x-graph-canvas :style="graphCanvasStyle" v-if="graph" @drop="drop($event)" @dragover="dragOver($event)" :key="graph.version">
+        <div x-graph-canvas :style="graphCanvasStyle" v-if="graph" :key="graph.version">
             <div
-                :style="preferences.appearance.theme === 'dark' ? '' : 'filter: invert(1);'"
+                :style="preferences!.appearance.theme === 'dark' ? '' : 'filter: invert(1);'"
                 :class="graphCanvasClasses"
             ></div>
             <node-edge-connector
@@ -23,7 +23,7 @@
             </template>
             <!-- <graph-presentation v-if="presentation"/> -->
             <div v-if="selectionRect.visible && !presentation" class="selection-rect" :style="selectionRectStyle"></div>
-            <div v-if="this.selectedNodes.length !== 0 && !presentation" class="bounding-rect" :style="boundingRectStyle"></div>
+            <div v-if="selectedNodes.length !== 0 && !presentation" class="bounding-rect" :style="boundingRectStyle"></div>
         </div>
     </div>
 </template>
@@ -91,7 +91,6 @@ export default {
         'el',
         'boundingRect',
     ]),
-    ...mapWritableState(useOrchestratorStore, ['translating', 'navWidth']),
     connectors: function () {
         let connectors = [];
         this.graph.nodes.forEach((node) => {
@@ -121,7 +120,7 @@ export default {
             top: this.selectionRect.y + "px",
             width: this.selectionRect.width + "px",
             height: this.selectionRect.height + "px",
-            borderColor: colors[this.preferences.appearance.selectionRectColor].base,
+            borderColor: colors[this.preferences!.appearance.selectionRectColor].base,
         };
     },
     boundingRectStyle: function() {
@@ -131,16 +130,7 @@ export default {
             top: this.boundingRect.y + "px",
             width: this.boundingRect.width + "px",
             height: this.boundingRect.height + "px",
-            borderColor: colors[this.preferences.appearance.boundingRectColor].base,
-        }
-        if (this.selectedNodes.length === 0) {
-            return {
-                 ...b,
-                top: this.systemBarOffset + 'px',
-                left: this.navWidth + 'px',
-                width: this.innerWidth - this.navWidth + 'px',
-                height: this.innerHeight - (this.systemBarOffset*2) + 'px',
-            }
+            borderColor: colors[this.preferences!.appearance.boundingRectColor].base,
         }
         return b;
     },

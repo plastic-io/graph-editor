@@ -77,7 +77,7 @@
         </div>
     </div>
 </template>
-<script>
+<script lang="ts">
 import compileTemplate from "@plastic-io/graph-editor-vue3-compile-template";
 
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
@@ -142,6 +142,7 @@ export default {
         },
         node: {
             handler: function () {
+                console.log('recompile after change');
                 const changes = diff(this.localNodeSnapshot.template.vue, this.node.template.vue);
                 this.localNode = this.node;
                 this.localNodeSnapshot = JSON.parse(JSON.stringify(this.node, this.replacer));

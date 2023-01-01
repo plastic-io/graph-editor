@@ -13,7 +13,7 @@ export default class GraphProperties extends EditorModule {
       component: 'graph-properties',
       icon: 'mdi-graph-outline',
       helpTopic: 'graphProperties',
-      type: 'nav-panel-top-graph-tabs',
+      type: 'nav-panel-graph-tabs',
     });
     graphOrchestratorStore.addPlugin(plugin);
   }

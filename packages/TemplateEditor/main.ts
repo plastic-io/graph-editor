@@ -14,7 +14,7 @@ export default class TemplateEditor extends EditorModule {
       component: 'vue-code-editor',
       icon: 'mdi-vuejs',
       helpTopic: 'template',
-      type: 'nav-panel-top-node-tabs',
+      type: 'nav-panel-node-tabs',
       props: {
         templateType: 'vue',
         language: 'html',

@@ -3,9 +3,11 @@ import type {Graph, Node} from "@plastic-io/plastic-io";
 import Scheduler from "@plastic-io/plastic-io";
 import getRandomName from "@plastic-io/graph-editor-names";
 import {helpTopics} from "@plastic-io/graph-editor-vue3-help-overlay";
+import type AuthenticationProvider from "@plastic-io/graph-editor-vue3-authentication-provider";
 import type DocumentProvider from "@plastic-io/graph-editor-vue3-document-provider";
 import GraphEditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-editor-module";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
+import {useTheme} from 'vuetify';
 export default class GraphManager extends GraphEditorModule {
   constructor(config: Record<string, any>) {
     super();
@@ -14,10 +16,18 @@ export default class GraphManager extends GraphEditorModule {
 export const useStore = defineStore('orchestrator', {
   state: () => ({
     token: null,
+    bgColor: '000',
+    selectedPanel: '',
     mapScale: 1,
     plugins: [] as Plugin[],
-    authProvider: null,
-    identity: {},
+    authProvider: null as null | AuthenticationProvider,
+    identity: {
+        user: {
+          avatar: '',
+          email: '',
+        },
+        provider: '',
+    },
     notFound: null,
     navWidth: 450,
     buttonMap: {
@@ -108,6 +118,12 @@ export const useStore = defineStore('orchestrator', {
     toc: null,
   }),
   actions: {
+    setTheme(newTheme: string) {
+        const isDark = newTheme === "dark";
+        const theme = useTheme();
+        theme.global.name.value = isDark ? 'dark' : 'light';
+        this.bgColor = isDark ? "#000000" : "#FFFFFF";
+    },
     togglePresentation() {},
     redo() {},
     undo() {},

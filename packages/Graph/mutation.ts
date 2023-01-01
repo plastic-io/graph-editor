@@ -55,15 +55,16 @@ export default {
       };
     },
     updateGraphFromSnapshot(description: string) {
-        console.log('updateGraphFromSnapshot', description);
-        // // tick the version number by 1
-        this.graphSnapshot.version += 1;
-        // // gather the difference and store it in an event list for undo/redo
-        const changes = diff(this.graph, this.graphSnapshot);
-        if (!changes) {
+        if (!diff(this.graph, this.graphSnapshot)) {
             console.warn('Graph: updateGraphFromSnapshot called with no updates found.');
             return;
         }
+        // there was an actual change detected
+        console.log('updateGraphFromSnapshot', description);
+        // tick the version number by 1
+        this.graphSnapshot.version += 1;
+        const changes = diff(this.graph, this.graphSnapshot);
+        // gather the difference and store it in an event list for undo/redo
         const graphDiff = {
             id: newId(),
             description,
@@ -92,13 +93,12 @@ export default {
       let graph: Graph | null = null;
       try {
         this.graphSnapshot = await graphOrchestrator.dataProviders.graph.get(graphId);
-        // don't allow an opening graph to count as a history change
-        this.graph = deref(this.graphSnapshot);
       } catch (err: any) {
         const url = this.getCalculatedGraphUrl();
         this.graphSnapshot = this.createGraph(url, "");
-        this.updateGraphFromSnapshot("Created");
       }
+      // don't allow an opening graph to count as a history change
+      this.graph = deref(this.graphSnapshot);
       console.log(deref(this.graphSnapshot));
       this.graphLoaded = true;
       graphOrchestrator.createScheduler();
@@ -112,10 +112,12 @@ export default {
         node: any,
     }) {
         const node = this.graphSnapshot.nodes.find((v: any) => v.id === e.node.id);
+        let hasChanges = false;
         if (!node) {
             return this.orchestratorStore.raiseError(new Error("Cannot find node to update."));
         }
         observableDiff(node, e.node, (d: any) => {
+            hasChanges = true;
             // output changes
             if (d.path[0] === "properties" && d.path[1] === "outputs"
                     && !isNaN(d.path[2]) && (d.path[3] === "name" || d.path[3] === "external" || d.path[3] === "type")) {
@@ -146,7 +148,9 @@ export default {
                 }
             }
         });
-        this.updateGraphFromSnapshot("Rename IO");
+        if (hasChanges) {
+            this.updateGraphFromSnapshot("Rename IO");
+        }
     },
     deleteNodeById(id: string) {
         this.graphSnapshot.nodes.forEach((v: any) => {

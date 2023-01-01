@@ -23,45 +23,55 @@
     <div help-topic="viewportLocation" title="Viewport localtion" style="padding-right: 10px;cursor: crosshair;" @click="resetView">
         <v-icon>mdi-crosshairs-gps</v-icon>x:{{ view.x.toFixed(0) }} y:{{ view.y.toFixed(0) }}
     </div>
-    <v-icon title="Zoom Out (^ + -)" style="cursor: pointer;" @click="zoomOut">mdi-magnify-minus-outline</v-icon>
+    <v-icon
+        title="Zoom Out (^ + -)"
+        style="cursor: pointer;"
+        class="mx-2"
+        @click="zoomOut"
+        >mdi-magnify-minus-outline</v-icon>
     <div
         help-topic="viewportZoom"
         @click="resetZoom"
         title="Zoom Level"
-        style="padding-right: 5px;cursor: crosshair;">
+        style="cursor: crosshair;">
         {{ (view.k * 100).toFixed(2) }}%
     </div>
     <v-icon
         @click="zoomIn"
         title="Zoom In (^ + +)"
-        style="padding-right: 10px;cursor: pointer;"
+        class="mx-2"
+        style="cursor: pointer;"
         >mdi-magnify-plus-outline</v-icon>
     <v-icon
         help-topic="showConnectorView"
         title="Show Connector Information"
         @click="showConnectorView = !showConnectorView"
-        style="padding-right: 10px;cursor: pointer;"
+        style="cursor: pointer;"
+        class="mx-2"
         :color="showConnectorView ? 'info' : ''"
         >mdi-information-outline</v-icon>
     <v-icon
         help-topic="toggleLabels"
         title="Toggle Input/Output Labels"
         @click="preferences.showLabels = !preferences.showLabels"
-        style="padding-right: 10px;cursor: pointer;"
+        style="cursor: pointer;"
+        class="mx-2"
         :color="preferences.showLabels ? 'info' : ''"
         >{{preferences.showLabels ? 'mdi-label' : 'mdi-label-off'}}</v-icon>
     <v-icon
         title="Toggle Grid Visibility"
         @click="preferences.appearance.showGrid = !preferences.appearance.showGrid"
         help-topic="toggleGrid"
-        style="padding-right: 10px;cursor: pointer;"
+        class="mx-2"
+        style="cursor: pointer;"
         :color="preferences.appearance.showGrid ? 'info' : ''"
         >mdi-grid</v-icon>
     <v-icon
         title="Toggle Map Visibility"
         @click="preferences.showMap = !preferences.showMap"
         help-topic="toggleMap"
-        style="padding-right: 10px;cursor: pointer;"
+        class="mx-2"
+        style="cursor: pointer;"
         :color="preferences.showMap ? 'info' : ''"
         >mdi-map</v-icon>
     <v-icon
@@ -69,14 +79,16 @@
         @click="locked = !locked"
         help-topic="toggleLock"
         :color="locked ? 'info' : ''"
-        style="padding-right: 10px;cursor: pointer;"
+        class="mx-2"
+        style="cursor: pointer;"
         >{{locked ? 'mdi-lock' : 'mdi-lock-open'}}</v-icon>
     <v-icon
         title="Toggle Presentation (Alt + `)"
         @click="presentation = !presentation"
         help-topic="togglePresentation"
         :color="presentation ? 'info' : ''"
-        style="padding-right: 10px;cursor: pointer;"
+        class="mx-2"
+        style="cursor: pointer;"
         >{{presentation ? 'mdi-presentation-play' : 'mdi-presentation'}}</v-icon>
 </template>
 <script lang="typescript">

@@ -14,14 +14,20 @@ export class Plugin {
   helpTopic: string;
   type: string;
   order: number;
+  title: string;
+  alt: string;
+  divider: boolean;
   props: Record<string, any>;
   constructor(args: {
     name?: string,
+    title?: string,
+    alt?: string,
     component?: string,
     icon?: string,
     helpTopic?: string,
     type?: string,
     order?: number,
+    divider?: boolean,
     props?: Record<string, any>,
   }) {
     this.name = args.name || args.component || '';
@@ -29,8 +35,11 @@ export class Plugin {
     this.icon = args.icon || '';
     this.helpTopic = args.helpTopic || '';
     this.type = args.type || '';
+    this.title = args.title || '';
+    this.alt = args.alt || '';
     this.order = args.order || 0;
     this.props = args.props || {};
+    this.divider = args.divider || false;
     if (this.type == '') {
       throw new Error('Plugin must define type property: ' + args);
     }

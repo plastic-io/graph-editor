@@ -12,6 +12,7 @@
                 v-for="(plugin, index) in getPluginsByType('system-bar-top')"
                 :value="plugin.name"
                 >
+                    <v-divider v-if="plugin.divider" vertical class="mx-2"/>
                     <component :is="plugin.component" v-bind="plugin.props"/>
                 </template>
             </v-system-bar>
@@ -40,7 +41,7 @@
         </template>
     </v-app>
 </template>
-<script>
+<script lang="ts">
 import {mapWritableState, mapActions, mapState} from "pinia";
 import GraphMap from "@plastic-io/graph-editor-vue3-mini-map-info";
 import ErrorPage from "@plastic-io/graph-editor-vue3-error-interstitial";
@@ -49,7 +50,6 @@ import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
-import {useTheme} from 'vuetify';
 export default {
     name: "GraphEditor",
     props: {
@@ -57,11 +57,12 @@ export default {
     },
     computed: {
         ...mapWritableState(usePreferencesStore, [
-          'preferences',
+            'preferences',
         ]),
         ...mapWritableState(useOrchestratorStore, [
             'translating',
             'selectedNodes',
+            'bgColor',
         ]),
         ...mapWritableState(useInputStore, [
             'mouse',
@@ -128,6 +129,12 @@ export default {
                 }, 1);
             }
         },
+        preferences: {
+            handler() {
+
+            },
+            deep: true
+        },
     },
     methods: {
         ...mapActions(useGraphStore, [
@@ -149,6 +156,7 @@ export default {
         ]),
         ...mapActions(useOrchestratorStore, [
             'clearInfo',
+            'setTheme',
             'getPluginsByType',
             'undo',
             'redo',
@@ -163,10 +171,7 @@ export default {
         ]),
     },
     created() {
-        const isDark = this.preferences.appearance.theme === "dark";
-        const theme = useTheme();
-        theme.global.name.value = isDark ? 'dark' : 'light';
-        this.bgColor = isDark ? "#000000" : "#FFFFFF";
+        this.setTheme(this.preferences.appearance.theme);
     },
     unmounted() {
         document.removeEventListener('cut', this.evCut);
@@ -201,7 +206,6 @@ export default {
     },
     data: () => {
         return {
-            bgColor: "#000000",
             spaceKeyCode: 32,
             translate: false,
             noSelect: false,

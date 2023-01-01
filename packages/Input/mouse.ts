@@ -265,7 +265,9 @@ export default class MouseAction {
         )) {
         if (this.graphStore.movingNodes.length > 0) {
             this.graphStore.movingNodes = [];
-            this.applyGraphChanges("Move Nodes");
+            if (pastDeadZone) {
+                this.applyGraphChanges("Move Nodes");
+            }
         }
         if (this.graphStore.movingConnector && pastDeadZone) {
             // delete moving connector if it didn't find a home
