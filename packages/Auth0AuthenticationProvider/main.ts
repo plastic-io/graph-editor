@@ -57,7 +57,7 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
     clientId: string = '';
     redirectUri: string = '';
     router: Router;
-    loading: boolean = false;
+    loaded: boolean = false;
     authenticationStore: Store;
     preferencesStore: Store;
     constructor(router: Router) {
@@ -67,10 +67,10 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
       this.preferencesStore = usePreferencesStore();
       const setup = (mutation: any, state: any) => {
         // if setup has already run or preferences isn't loaded yet then wait
-        if (!state.preferences || this.loading) {
+        if (!state.preferences || this.loaded) {
           return;
         }
-        this.loading = true;
+        this.loaded = true;
         // grab the auth0 data from prefs
         const config = (state.preferences as any).auth0;
         // validate data
@@ -134,8 +134,6 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
           isAuthenticated
         },
       });
-
-      this.loading = false;
     }
     async redirectCallback() {
         return await this.client.handleRedirectCallback();

@@ -1,13 +1,16 @@
 import { defineStore } from 'pinia';
 import type {Graph, Node} from "@plastic-io/plastic-io";
-import Scheduler from "@plastic-io/plastic-io";
+import {fromJSON} from 'flatted';
 import getRandomName from "@plastic-io/graph-editor-names";
 import {helpTopics} from "@plastic-io/graph-editor-vue3-help-overlay";
 import type AuthenticationProvider from "@plastic-io/graph-editor-vue3-authentication-provider";
 import type DocumentProvider from "@plastic-io/graph-editor-vue3-document-provider";
 import GraphEditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-editor-module";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
+import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
+import SchedulerWorker from "./schedulerWorker?worker";
 import {useTheme} from 'vuetify';
+import {deref} from "@plastic-io/graph-editor-vue3-utils";
 export default class GraphManager extends GraphEditorModule {
   constructor(config: Record<string, any>) {
     super();
@@ -15,6 +18,8 @@ export default class GraphManager extends GraphEditorModule {
 };
 export const useStore = defineStore('orchestrator', {
   state: () => ({
+    graphStore: useGraphStore(),
+    preferencesStore: usePreferencesStore(),
     token: null,
     bgColor: '000',
     selectedPanel: '',
@@ -56,7 +61,7 @@ export const useStore = defineStore('orchestrator', {
     connectionState: "closed",
     createdGraphId: null,
     helpTopics,
-    log: [],
+    log: [] as any,
     pathPrefix: "/graph-editor-vue-2/",
     ioTypes: [
         "Object",
@@ -99,12 +104,12 @@ export const useStore = defineStore('orchestrator', {
         notification: null,
         graph: null as DocumentProvider | null,
     },
-    error: null,
     showError: false,
     connectorWarn: null,
     scheduler: {
         state: {},
-        errors: {},
+        errors: [] as any,
+        warnings: [] as any,
         instance: null as Scheduler | null,
     },
     presentation: false,
@@ -125,8 +130,6 @@ export const useStore = defineStore('orchestrator', {
         this.bgColor = isDark ? "#000000" : "#FFFFFF";
     },
     togglePresentation() {},
-    redo() {},
-    undo() {},
     togglePanelVisibility() {},
     clearArtifact() {},
     clearSchedulerErrorItem() {},
@@ -142,9 +145,126 @@ export const useStore = defineStore('orchestrator', {
     graphUrl(url: string) {
         
     },
+    beginconnector(e: any) {
+      const existingConnectors = this.graphStore.activityConnectors[e.connector.id];
+      const connectorEvent = {
+        activityType: "start",
+        key: e.connector.id,
+        event: e,
+      };
+      if (existingConnectors) {
+        existingConnectors.push(connectorEvent);
+      } else {
+        this.graphStore.$patch({
+          activityConnectors: {
+            [e.connector.id]: [connectorEvent],
+          },
+        });
+      }
+      if (this.preferencesStore.preferences!.debug) {
+        this.$patch({
+          loading: {
+            connector: {
+              [e.connector.id]: {
+                loading: true,
+                time: Date.now(),
+                event: e,
+              },
+            }
+          },
+        });
+      }
+      this.log.push({
+        eventName: 'connector',
+        event: e,
+      });
+    },
+    endconnector(e: any) {
+      const existingConnectors = this.graphStore.activityConnectors[e.connector.id];
+      const connectorEvent = {
+        activityType: "end",
+        key: e.connector.id,
+        end: Date.now(),
+        event: e,
+      };
+      if (existingConnectors) {
+        existingConnectors.push(connectorEvent);
+      } else {
+        this.graphStore.$patch({
+          activityConnectors: {
+            [e.connector.id]: [connectorEvent]
+          },
+        });
+      }
+      if (this.preferencesStore.preferences!.debug) {
+        this.$patch({
+          loading: {
+            connector: {
+              [e.connector.id]: {
+                loading: false,
+                time: Date.now(),
+                event: e,
+              },
+            }
+          },
+        });
+      }
+      this.log.push({
+        eventName: 'connector',
+        event: e,
+      });
+    },
+    set(e: any) {},
+    afterSet(e: any) {},
+    error(e: any) {
+      this.scheduler.errors.push(e);
+    },
+    warning(e: any) {},
+    begin(e: any) {},
+    end(e: any) {},
+    async load(e: any): Promise<any> {
+      const artifactPrefix = "artifacts/";
+      if ("setValue" in e) {
+          const pathParts = e.url.split("/");
+          const itemId = pathParts[2].split(".")[0];
+          const itemVersion = pathParts[2].split(".")[1];
+          const itemType = pathParts[1];
+          if (itemType === "graph" && itemId === this.graphStore.graph.id) {
+              return e.setValue(this.graphStore.graph);
+          }
+          const item = await this.dataProviders.publish!.get(artifactPrefix + itemId + "." + itemVersion);
+          e.setValue(item);
+      }
+    },
     createScheduler() {
-        const graphStore = useGraphStore();
-        this.scheduler.instance = new Scheduler(graphStore.graph!, this, this.scheduler.state, console);
+        const sendMessage = (method: string) => {
+          return (...args: any) => {
+            scheduleWorker.postMessage({
+              method,
+              args,
+            });
+          };
+        }
+        const scheduleWorker = new SchedulerWorker();
+        scheduleWorker.postMessage({
+          method: 'init',
+          args: [
+            {
+              graph: deref(this.graphStore.graph),
+            },
+          ],
+        });
+        (scheduleWorker.onmessage as any) = (e: any) => {
+          const method = (this as any)[e.data.source];
+          const args = fromJSON(e.data.event);
+          if (!method) {
+            return console.error('Method not found', method);
+          }
+          method(args);
+        };
+        (this.scheduler.instance as any) = {
+          url: sendMessage('url'),
+        };
     },
     clearInfo() {},
     setHoveredNode() {},

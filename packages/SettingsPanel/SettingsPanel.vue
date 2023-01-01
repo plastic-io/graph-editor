@@ -26,7 +26,7 @@
                             style="width: 50px; border-radius: 25px;border: solid 2px rgba(255, 255, 255, 0.5);"/>
                       </template>
                       </v-text-field>
-                      <v-btn @click="logoff">
+                      <v-btn class="ma-3" @click="logoff">
                           <v-icon>
                               mdi-logout
                           </v-icon>
@@ -165,9 +165,6 @@ export default {
         ...mapActions(useOrchestratorStore, [
           'getPluginsByType',
         ]),
-    },
-    mounted() {
-      console.log(this.settingsPanels);
     },
     data() {
         return {

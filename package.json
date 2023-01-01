@@ -25,6 +25,7 @@
     "domhandler": "^5.0.3",
     "domutils": "^3.0.1",
     "escodegen": "^2.0.0",
+    "flatted": "^3.2.7",
     "htmlparser2": "^8.0.1",
     "jshashes": "^1.0.8",
     "meriyah": "^4.3.3",

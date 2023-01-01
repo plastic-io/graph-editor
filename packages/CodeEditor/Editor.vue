@@ -49,24 +49,11 @@ window.MonacoEnvironment = {
 
 export default {
   mounted() {
-    const cache = localStorage.getItem(this.storeKey);
-    const editor = monaco.editor.create(this.$refs.editor, {
-      language: this.language,
-      value: cache !== null ? cache : this.selectedNode.template[this.templateType],
-      theme: this.preferences.appearance.theme === 'dark' ? 'vs-dark' : 'vs',
-    });
-    this.dirty = !!cache;
-    editor.getModel().onDidChangeContent((event) => {
-      this.update();
-    });
-    // HACK: if editor is attached to "this" it will freeze the system
-    this.$refs.editor.pinstance = editor;
-    this.resize();
+    this.init();
   },
   props: {
     templateType: String,
     language: String,
-    width: Number,
   },
   data() {
     return {
@@ -76,6 +63,25 @@ export default {
   },
   methods: {
     ...mapActions(useGraphStore, ['updateNodeTemplate']),
+    init() {
+      const editor = monaco.editor.create(this.$refs.editor, {
+        language: this.language,
+        theme: this.preferences.appearance.theme === 'dark' ? 'vs-dark' : 'vs',
+      });
+      editor.getModel().onDidChangeContent((event) => {
+        this.update();
+      });
+      // HACK: if editor is attached to "this" it will freeze the system
+      this.$refs.editor.pinstance = editor;
+      this.resize();
+      this.loadFromCache();
+    },
+    loadFromCache() {
+      const cache = localStorage.getItem(this.storeKey);
+      this.dirty = !!cache;
+      const val = cache !== null ? cache : this.selectedNode.template[this.templateType];
+      this.$refs.editor.pinstance.setValue(val);
+    },
     resize() {
       for (let x = 0; x < 500; x += 100) {
         setTimeout(() => {
@@ -102,16 +108,23 @@ export default {
     },
   },
   watch: {
+    selectedNode() {
+      if (!this.selectedNode) {
+        return;
+      }
+      this.loadFromCache();
+    },
     graph() {
       this.$refs.editor.pinstance.value = this.selectedNode.template.vue;
     },
-    width() {
+    navWidth() {
       this.resize();
     },
   },
   computed: {
     ...mapState(useGraphStore, ['graph', 'selectedNodes', 'selectedNode']),
     ...mapState(usePreferencesStore, ['preferences']),
+    ...mapState(useOrchestratorStore, ['navWidth']),
     storeKey() {
       return this.selectedNode ? 'pinstance-editor-' + this.templateType + '-' + this.selectedNode.id : '';
     },

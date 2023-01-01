@@ -143,9 +143,9 @@ export default {
                 const activity = this.activityConnectors[key];
                 if (activity && activity.length > 0) {
                     if (activity[activity.length - 1].activityType === "start") {
-                        this.activeConnector = true;
+                        // this.activeConnector = true;
                     } else {
-                        this.activeConnector = false;
+                        // this.activeConnector = false;
                     }
                 }
             },

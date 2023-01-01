@@ -14,7 +14,6 @@ import * as directives from 'vuetify/directives'
 // plugins
 import type GraphEditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 import Orchestrator from "@plastic-io/graph-editor-vue3-orchestrator";
-import AppBar from "@plastic-io/graph-editor-vue3-app-bar"
 import Auth0AuthenticationProvider from "@plastic-io/graph-editor-vue3-auth0-authentication-provider";
 import ConnectorInfo from "@plastic-io/graph-editor-vue3-connector-info";
 import EndpointListPanel from "@plastic-io/graph-editor-vue3-endpoint-list-panel";
@@ -71,7 +70,6 @@ const plugins = [
   // local user prefs needs to load before any modules that use
   // data stored in it (e.g.: Auth0)
   LocalUserPreferences,
-  AppBar,
   ConnectorInfo,
   EndpointListPanel,
   ErrorInterstitial,
