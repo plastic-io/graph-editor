@@ -1,3 +1,50 @@
+import type {App} from "vue";
+import type {Router} from "vue-router";
+import EditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-editor-module";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+import CanvasAppearance from "./CanvasAppearance.vue";
+import ConnectorAppearancePanel from "./ConnectorAppearance.vue";
+import GeneralAppearance from "./GeneralAppearance.vue";
+import GraphAppearance from "./GraphAppearance.vue";
+export default class AppearancePanels extends EditorModule {
+  constructor(config: Record<string, any>, app: App<Element>, hostRouter: Router) {
+    super();
+    app.component('canvas-appearance', CanvasAppearance);
+    app.component('connector-appearance', ConnectorAppearancePanel);
+    app.component('general-appearance', GeneralAppearance);
+    app.component('graph-appearance', GraphAppearance);
+    const graphOrchestratorStore =  useOrchestratorStore();
+    graphOrchestratorStore.addPlugin(new Plugin({
+      name: 'General Appearance',
+      title: 'General Appearance',
+      component: 'general-appearance',
+      type: 'settings-panel',
+      order: 0,
+    }));
+    graphOrchestratorStore.addPlugin(new Plugin({
+      name: 'Canvas Appearance',
+      title: 'Canvas Appearance',
+      component: 'canvas-appearance',
+      type: 'settings-panel',
+      order: 0,
+    }));
+    graphOrchestratorStore.addPlugin(new Plugin({
+      name: 'Connector Appearance',
+      title: 'Connector Appearance',
+      component: 'connector-appearance',
+      type: 'settings-panel',
+      order: 0,
+    }));
+    graphOrchestratorStore.addPlugin(new Plugin({
+      name: 'Graph Appearance',
+      title: 'Graph Appearance',
+      component: 'graph-appearance',
+      type: 'settings-panel',
+      order: 0,
+    }));
+  }
+};
+
 export class ConnectorAppearance {
   dragDeadZone: number;
   controlFillStyle: string;

@@ -45,6 +45,8 @@ export class UserPreferences {
     workstationId: string;
     newNodeHelp: boolean;
     showLabels: boolean;
+    textLabels: boolean;
+    showConnectorActivity: boolean;
     debug: boolean;
     showMap: boolean;
     useLocalStorage: boolean;
@@ -67,6 +69,8 @@ export class UserPreferences {
         this.newNodeHelp = true;
         this.showLabels = true;
         this.debug = false;
+        this.textLabels = true;
+        this.showConnectorActivity = false;
         this.showMap = false;
         this.useLocalStorage = true;
         this.showRemoteMouseMovements = true;

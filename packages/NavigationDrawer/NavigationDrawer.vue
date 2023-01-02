@@ -16,13 +16,15 @@
                     v-for="(plugin, index) in currentTabGroup"
                     :value="plugin.name"
                   >
-                    {{plugin.name}}
+                    <span v-if="preferences.textLabels">{{plugin.name}}</span>
+                    <v-icon v-if="!preferences.textLabels" :icon="plugin.icon"/>
                 </v-tab>
             </v-tabs>
-            <v-window v-model="currentTabs">
+            <v-window v-model="currentTabs" :transition="false">
               <v-window-item
                 v-for="(plugin, index) in panelPlugins"
-                :value="plugin.name">
+                :value="plugin.name"
+                :transition="false">
                 <component :is="plugin.component" v-bind="plugin.props"/>
               </v-window-item>
             </v-window>
@@ -158,6 +160,7 @@ export default {
         },
         navStyle() {
             return {
+                transition: 'none',
                 width: this.panel ? (this.currentWidth + "px") : "250px",
             };
         }

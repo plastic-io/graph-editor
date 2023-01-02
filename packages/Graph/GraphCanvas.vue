@@ -40,7 +40,6 @@ export default {
       innerHeight: 0,
       innerWidth: 0,
       presentation: false,
-      showGrid: true,
       positionLocationSaveTimeout: 750,
       positionTimeout: 0,
     }
@@ -138,7 +137,7 @@ export default {
         const classes = [];
         if (!this.presentation) {
             classes.push("graph-canvas-container");
-            if (this.showGrid) {
+            if (this.preferences.showGrid) {
                 classes.push("grid");
             }
         }

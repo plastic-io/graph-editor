@@ -288,10 +288,12 @@ export default class MouseAction {
     // mouse button was just released on nothing and no addKey was pressed
     if (!mouse.lmb && this.inputStore.mouse.lmb && !this.graphStore.hoveredNode
         && !pastDeadZone && !this.graphStore.hoveredConnector && !addKey) {
-        this.graphStore.selectedConnectors = [];
-        this.graphStore.selectedNodes = [];
-        this.graphStore.primaryGroup = null;
-        this.graphStore.selectedNode = null;
+        this.graphStore.$patch({
+            selectedConnectors: [],
+            selectedNodes: [],
+            primaryGroup: null,
+            selectedNode: null,
+        });
     }
     // start moving nodes
     if (!this.inputStore.mouse.lmb && mouse.lmb && this.graphStore.hoveredNode && this.graphStore.movingNodes.length === 0 && !locked) {

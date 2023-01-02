@@ -32,7 +32,7 @@ export const keys = (store: any, e: UIEvent) => {
     const alt = e.altKey;
     const locked = store.presentation || store.locked;
     if (keys[graveKeyCode] && alt) {
-        store.graphStore.togglePresentation();
+        store.orchistratorStore.presentation = !store.orchistratorStore.presentation;
     }
     if (locked) {
         // keyboard shortcuts are disabled in presentation/locked mode

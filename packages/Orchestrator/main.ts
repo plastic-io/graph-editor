@@ -142,10 +142,11 @@ export const useStore = defineStore('orchestrator', {
     addPlugin(plugin: Plugin) {
         this.plugins.push(plugin);
     },
-    graphUrl(url: string) {
-        
-    },
+    graphUrl(url: string) {},
     beginconnector(e: any) {
+      if (!this.preferencesStore.preferences!.showConnectorActivity) {
+        return;
+      }
       const existingConnectors = this.graphStore.activityConnectors[e.connector.id];
       const connectorEvent = {
         activityType: "start",
@@ -180,6 +181,9 @@ export const useStore = defineStore('orchestrator', {
       });
     },
     endconnector(e: any) {
+      if (!this.preferencesStore.preferences!.showConnectorActivity) {
+        return;
+      }
       const existingConnectors = this.graphStore.activityConnectors[e.connector.id];
       const connectorEvent = {
         activityType: "end",

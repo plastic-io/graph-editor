@@ -14,6 +14,8 @@ import * as directives from 'vuetify/directives'
 // plugins
 import type GraphEditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 import Orchestrator from "@plastic-io/graph-editor-vue3-orchestrator";
+import MonacoCodeEditor from '@plastic-io/graph-editor-vue3-monaco-code-editor';
+import Appearance from '@plastic-io/graph-editor-vue3-appearance';
 import Auth0AuthenticationProvider from "@plastic-io/graph-editor-vue3-auth0-authentication-provider";
 import ConnectorInfo from "@plastic-io/graph-editor-vue3-connector-info";
 import EndpointListPanel from "@plastic-io/graph-editor-vue3-endpoint-list-panel";
@@ -70,11 +72,13 @@ const plugins = [
   // local user prefs needs to load before any modules that use
   // data stored in it (e.g.: Auth0)
   LocalUserPreferences,
+  Appearance,
   ConnectorInfo,
   EndpointListPanel,
   ErrorInterstitial,
   EventLoggerPanel,
   Graph,
+  MonacoCodeEditor,
   Manager,
   Presentation,
   PresentationPanel,
@@ -106,10 +110,15 @@ const plugins = [
 ] as any;
 const pluginInstances = {} as any;
 plugins.forEach((_Plugin: any) => {
-  const plugin = new _Plugin({}, app, router, pinia);
-  pluginInstances[plugin.name] = plugin;
+  pluginInstances[_Plugin.name] = new _Plugin({}, app, router, pinia);
 });
 
+(self as any).plastic = {
+  app,
+  router,
+  pinia,
+  plugins: pluginInstances,
+}
 
 app.use(router);
 
