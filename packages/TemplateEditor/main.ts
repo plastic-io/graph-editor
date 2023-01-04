@@ -11,7 +11,7 @@ export default class TemplateEditor extends EditorModule {
       component: 'monaco-code-editor',
       icon: 'mdi-vuejs',
       helpTopic: 'template',
-      type: 'nav-panel-node-tabs',
+      type: 'nav-panel-tabs',
       props: {
         templateType: 'vue',
         language: 'html',

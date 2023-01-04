@@ -55,7 +55,7 @@
                     <v-expansion-panel-text>
                         <v-card class="ma-0 pa-0" flat>
                             <v-card-text class="ma-0 pa-0">
-                                <v-btn color="info" style="margin-top: 10px;" @click="publishGraph" help-topic="graphPublishButton">
+                                <v-btn class="ma-4" color="info" @click="publishGraph" help-topic="graphPublishButton">
                                     Publish<br>Graph
                                     <v-icon right>
                                         mdi-share-variant
@@ -83,16 +83,14 @@
                     <v-expansion-panel-text>
                         <v-card class="ma-0 pa-0" flat help-topic="graphIOList">
                             <v-card-text class="ma-0 pa-0">
-                                <v-list style="width: 110%;">
+                                <v-list style="width: 110%;" value="true" :prepend-icon="io === 'inputs' ? 'mdi-power-socket' : 'mdi-power-plug'">
                                     <template v-for="io in ['inputs', 'outputs']" :key="io">
-                                        <v-list-group value="true" :prepend-icon="io === 'inputs' ? 'mdi-power-socket' : 'mdi-power-plug'">
-                                            <template v-slot:activator>
-                                                <v-list-item-title>{{io}}</v-list-item-title>
-                                            </template>
+                                        <v-list-item >
+                                            {{io}}
                                             <template v-for="(ios) in externalIO[io]">
                                                 {{ios.field.name}} : {{ios.node.properties.name || ios.node.id}}
                                             </template>
-                                        </v-list-group>
+                                        </v-list-item>
                                     </template>
                                 </v-list>
                             </v-card-text>
@@ -117,8 +115,10 @@ import * as mdi from "@mdi/js";
 export default {
     name: "graph-properties",
     methods: {
-        ...mapActions(useGraphStore, [
+        ...mapActions(useOrchestratorStore, [
             "publishGraph",
+        ]),
+        ...mapActions(useGraphStore, [
             "save",
             "selectNode",
         ]),

@@ -50,7 +50,7 @@ class LocalDataProvider extends DocumentProvider {
     constructor() {
         super();
     }
-    async getEvents(): Promise<GraphDiff[]> {
+    async getEvents(): Promise<GraphDiff[] | any> {
         return [{} as GraphDiff]
     }
     async set(url: string, value: GraphDiff | NodeArtifact | GraphArtifact): Promise<void> {
@@ -173,7 +173,7 @@ class LocalDataProvider extends DocumentProvider {
             updateState(new Event('load'));
         }
     }
-    async get(url: string): Promise<Graph> {
+    async get(url: string): Promise<Graph | any> {
         let item: string = (await localStorage.getItem(url) || "");
         let obj: Graph;
         if (!item) {

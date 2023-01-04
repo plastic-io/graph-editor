@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import type {Graph, Node} from "@plastic-io/plastic-io";
 import {fromJSON} from 'flatted';
+import RegistrySettingsPanel from "./RegistrySettings.vue";
 import getRandomName from "@plastic-io/graph-editor-names";
 import {helpTopics} from "@plastic-io/graph-editor-vue3-help-overlay";
 import type AuthenticationProvider from "@plastic-io/graph-editor-vue3-authentication-provider";
@@ -10,10 +11,20 @@ import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import SchedulerWorker from "./schedulerWorker?worker";
 import {useTheme} from 'vuetify';
-import {deref} from "@plastic-io/graph-editor-vue3-utils";
+import {deref, newId} from "@plastic-io/graph-editor-vue3-utils";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 export default class GraphManager extends GraphEditorModule {
-  constructor(config: Record<string, any>) {
+  constructor(config: Record<string, any>, app: App<Element>) {
     super();
+    app.component('registry-settings-panel', RegistrySettingsPanel);
+    const graphOrchestratorStore = useOrchestratorStore();
+    graphOrchestratorStore.addPlugin(new Plugin({
+      name: 'Registry',
+      title: 'Registry',
+      component: 'registry-settings-panel',
+      type: 'settings-panel',
+      order: 10,
+    }));
   }
 };
 export const useStore = defineStore('orchestrator', {
@@ -80,14 +91,6 @@ export const useStore = defineStore('orchestrator', {
     graphReferences: {},
     registry: {},
     artifacts: {},
-    publicGraphRegistries: [
-        "https://unpkg.com/@plastic-io/registry@1.0.0",
-        "https://unpkg.com/@plastic-io/registry@1.0.1",
-        "https://unpkg.com/@plastic-io/registry@1.0.2",
-        "https://unpkg.com/@plastic-io/registry@1.0.3",
-    ],
-    nodeMimeType: "application/json+plastic-io",
-    jsonMimeType: "application/json",
     remoteEvents: [],
     remoteSnapshot: {},
     setMapScale: 1,
@@ -123,14 +126,63 @@ export const useStore = defineStore('orchestrator', {
     toc: null,
   }),
   actions: {
+    async getToc() {
+      this.toc = await this.dataProviders.toc!.get("toc.json");
+    },
+    async publishGraph() {
+      console.log('publishGraph');
+        const graph = this.graphStore.graph;
+        await this.dataProviders.publish!.set(graph.id, {
+            graph,
+            id: newId(),
+        });
+        this.getToc();
+    },
+    async getPublicRegistry(e: any) {
+        const relPath = /^\.\//;
+        let url = e.url;
+        if (e.parent.url && relPath.test(e.url)) {
+            url = e.url.replace(relPath, e.parent.url + "/");
+        }
+        const data = await fetch(url);
+        const responseJson = await data.json();
+        if (responseJson.items) {
+            responseJson.url = url;
+            this.$patch({
+              registry: {
+                [e.url]: {
+                    parent: e.parent,
+                    toc: responseJson,
+                    url: e.url,
+                }
+              }
+            });
+            responseJson.items.forEach((item: any) => {
+                if (item.type === "toc") {
+                    item.url = url;
+                    this.getPublicRegistry({
+                        url: item.artifact,
+                        parent: item,
+                    });
+                }
+                if (item.items) {
+                    item.items.forEach((subItem: any) => {
+                        if (subItem.type === "publishedNode" || subItem.type === "publishedGraph") {
+                            if (url && relPath.test(subItem.artifact)) {
+                                subItem.url = subItem.artifact.replace(relPath, url.substring(0, url.lastIndexOf("/")) + "/");
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    },
     setTheme(newTheme: string) {
         const isDark = newTheme === "dark";
         const theme = useTheme();
         theme.global.name.value = isDark ? 'dark' : 'light';
         this.bgColor = isDark ? "#000000" : "#FFFFFF";
     },
-    togglePresentation() {},
-    togglePanelVisibility() {},
     clearArtifact() {},
     clearSchedulerErrorItem() {},
     clearSchedulerError() {},

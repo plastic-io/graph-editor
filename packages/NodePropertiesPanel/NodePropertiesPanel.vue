@@ -23,7 +23,7 @@
                                 prominent
                                 class="ma-0"
                                 style="width: 35vw;"
-                                border="left">
+                            >
                                 This node did not originate on this graph.
                                 <i>Node artifact: {{node.artifact}}</i>
                             </v-alert>

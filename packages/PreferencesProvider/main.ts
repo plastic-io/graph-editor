@@ -56,6 +56,8 @@ export class UserPreferences {
     defaultNewGraphTemplate: string;
     defaultNewSetTemplate: string;
     defaultNewVueTemplate: string;
+    registries: string;
+    componentScripts: string;
     snapToGrid: boolean;
     gridSize: number;
     appearance: Appearance;
@@ -83,6 +85,8 @@ export class UserPreferences {
         this.gridSize = 10;
         this.appearance = new Appearance();
         this.uiSize = {};
+        this.registries = 'https://unpkg.com/@plastic-io/registry@2.0.1';
+        this.componentScripts = '';
     }
 }
 export default abstract class PreferencesProvider {

@@ -13,7 +13,7 @@ export default class NodePropertiesPanel extends EditorModule {
       component: 'node-properties-panel',
       icon: 'mdi-vector-point',
       helpTopic: 'nodeProperties',
-      type: 'nav-panel-node-tabs',
+      type: 'nav-panel-tabs',
       order: 0,
     });
     graphOrchestratorStore.addPlugin(plugin);

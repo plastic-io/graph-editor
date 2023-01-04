@@ -5,6 +5,316 @@ import type {Graph} from "@plastic-io/plastic-io";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 const events = [];
 export default {
+    async addItem(e: any) {
+        console.log('addItem');
+        const artifactPrefix = "artifacts/";
+        let item, er;
+        if (e.type === 'component') {
+            item = e;
+        } else if (e["artifact-url"] && this.preferencesStore.preferences.graphHTTPServer) {
+            try {
+                const artifactUrl = this.preferencesStore.preferences.graphHTTPServer + e["artifact-url"];
+                item = await fetch(artifactUrl);
+                item = await item.json();
+                e.url = artifactUrl;
+                item.url = artifactUrl;
+            } catch (err) {
+                er = err;
+            }
+        } else if (e.url) {
+            try {
+                item = await fetch(e.url);
+                item = await item.json();
+            } catch (err) {
+                er = err;
+            }
+        } else {
+            try {
+                item = await this.orchestratorStore.dataProviders.publish.get(artifactPrefix + e.id + "." + e.version);
+            } catch (err) {
+                er = err;
+            }
+        }
+        if (!item || er) {
+            this.raiseError(new Error("Cannot open item. " + er));
+        } else {
+            e.item = item;
+            const method = ({
+                publishedNode: "addNodeItem",
+                publishedGraph: "addGraphItem",
+                component: "addComponentItem"
+            } as any)[e.type];
+            this[method](e);
+        }
+    },
+    addComponentItem(e: any) {
+        console.log('addComponentItem', e);
+        const id = newId();
+        const pos = {
+            x: (e.x - this.view.x) / this.view.k,
+            y: (e.y - this.view.y) / this.view.k,
+        };
+        pos.x = Math.floor(pos.x / 10) * 10;
+        pos.y = Math.floor(pos.y / 10) * 10;
+        const component = (self as any)
+            .plastic.app._instance.appContext.components[e.component];
+        const edges = [] as any;
+        const inputs = [] as any;
+        const outputs = [] as any;
+        Object.keys(component.props || {}).forEach((name: any) => {
+            inputs.push({
+                name,
+                type: 'Object',
+                external: false,
+            });
+        });
+        Object.keys(component.emits || {}).forEach((name: any) => {
+            outputs.push({
+                name,
+                type: 'Object',
+                external: false,
+            });
+            edges.push({
+                connectors: [],
+                field: name,
+            });
+        });
+        const vue = `<template>
+    <${e.component} v-bind="$props" id="node_location_${id}"></${e.component}>
+</template>
+<script language="typescript">
+export default {
+    methods: {
+        ev(e) {
+            this.$emit('set', $event);
+        }
+    },
+}
+</script>`;
+        const set = 'edges[field] = value;';
+        const node = {
+            id,
+            linkedNode: null,
+            edges,
+            version: this.graphSnapshot.version,
+            graphId: this.graphSnapshot.id,
+            artifact: null,
+            url: null,
+            data: null,
+            properties: {
+                inputs,
+                outputs,
+                groups: [],
+                name: e.name,
+                description: e.description,
+                tags: '',
+                icon: '',
+                positionAbsolute: false,
+                appearsInPresentation: false,
+                appearsInExport: false,
+                x: pos.x,
+                y: pos.y,
+                z: 0 + this.preferencesStore.preferences.newNodeOffset.z,
+                presentation: {
+                    x: pos.x,
+                    y: pos.y,
+                    z: 0 + this.preferencesStore.preferences.newNodeOffset.z,
+                },
+            },
+            template: {
+                set,
+                vue,
+            },
+        };
+        this.graphSnapshot.nodes.push(node);
+        this.updateGraphFromSnapshot("Import New Graph");
+    },
+    addGraphItem(e: any) {
+        console.log('addGraphItem');
+        const pos = {
+            x: (e.x - this.view.x) / this.view.k,
+            y: (e.y - this.view.y) / this.view.k,
+        };
+        pos.x = Math.floor(pos.x / 10) * 10;
+        pos.y = Math.floor(pos.y / 10) * 10;
+        const linkedGraphInputs: {[key: string]: any} = {};
+        const linkedGraphOutputs: {[key: string]: any} = {};
+        const graph = e.item;
+        graph.nodes.forEach((v: any) => {
+            v.properties.inputs.forEach((i: any) => {
+                if (i.external) {
+                    linkedGraphInputs[i.name] = {
+                        id: v.id,
+                        field: i.name,
+                        type: i.type,
+                        external: false,
+                    } as any;
+                }
+            });
+            v.properties.outputs.forEach((i: any) => {
+                if (i.external) {
+                    linkedGraphOutputs[i.name] = {
+                        id: v.id,
+                        field: i.name,
+                        type: i.type,
+                        external: false,
+                    } as any;
+                }
+            });
+        });
+        // create IOs (inputs, outputs/edges) on outter node to support IO of graphs's externals
+        const id = newId();
+        const node = {
+            id,
+            __contextId: null,
+            edges: [],
+            version: this.graphSnapshot.version,
+            graphId: this.graphSnapshot.id,
+            artifact: e.url || ("artifacts/" + e.id + "." + e.version),
+            url: id,
+            data: null,
+            linkedGraph: {
+                id: e.id,
+                version: e.version,
+                data: {},
+                loaded: true,
+                graph,
+                properties: {},
+                fields: {
+                    inputs: linkedGraphInputs,
+                    outputs: linkedGraphOutputs
+                }
+            },
+            properties: {
+                inputs: [],
+                outputs: [],
+                groups: [],
+                name: e.name,
+                description: e.description,
+                tags: [],
+                icon: "mdi-lan",
+                positionAbsolute: false,
+                appearsInPresentation: false,
+                appearsInExport: false,
+                x: pos.x,
+                y: pos.y,
+                z: 0 + this.preferences.newNodeOffset.z,
+                presentation: {
+                    x: pos.x,
+                    y: pos.y,
+                    z: 0 + this.preferences.newNodeOffset.z,
+                },
+            },
+            template: {
+                // url: string, value: any, field: string, currentNode: Node, graph?: Graph
+                set: `const hostNode = value.context.getters.getNodeById(value.hostNode.id);
+    const vect = hostNode.linkedGraph.graph.nodes.find(v => v.id === value.node.id);
+    scheduler.url.call(scheduler,
+        vect.url,
+        value.event,
+        '$url',
+        hostNode,
+        hostNode.linkedGraph.graph);`,
+                vue: "",
+            },
+        } as any;
+        Object.keys(linkedGraphInputs).forEach((ioKey) => {
+            const io: any = linkedGraphInputs[ioKey];
+            node.properties.inputs.push({
+                name: io.field,
+                external: false,
+                type: io.type,
+            });
+        });
+        Object.keys(linkedGraphOutputs).forEach((ioKey) => {
+            const io: any = linkedGraphOutputs[ioKey];
+            node.properties.outputs.push({
+                name: io.field,
+                external: false
+            });
+            node.edges.push({
+                field: io.field,
+                connectors: [],
+                type: io.type,
+            });
+        });
+        this.graphSnapshot.nodes.push(node);
+        this.updateGraphFromSnapshot("Import New Graph");
+    },
+    addDroppedItem(e: any) {
+        console.log('addDroppedItem');
+        const pos = {
+            x: (e.x - this.view.x) / this.view.k,
+            y: (e.y - this.view.y) / this.view.k,
+        };
+        pos.x = Math.floor(pos.x / 10) * 10;
+        pos.y = Math.floor(pos.y / 10) * 10;
+        const id = newId();
+        e.item.id = id;
+        e.item.url = id;
+        e.item.version = this.graphSnapshot.version;
+        e.item.graphId = this.graphSnapshot.id;
+        e.item.properties.x = pos.x;
+        e.item.properties.y = pos.y;
+        e.item.properties.z = 0 + this.preferencesStore.preferences.newNodeOffset.z;
+        // ensure connectors are not imported
+        e.item.edges.forEach((edge: Edge) => {
+            edge.connectors = [];
+        });
+        this.graphSnapshot.nodes.push(e.item);
+        this.updateGraphFromSnapshot("Drop New Item");
+    },
+    addNodeItem(e: any) {
+        console.log('addNodeItem');
+        const pos = {
+            x: (e.x - this.view.x) / this.view.k,
+            y: (e.y - this.view.y) / this.view.k,
+        };
+        pos.x = Math.floor(pos.x / 10) * 10;
+        pos.y = Math.floor(pos.y / 10) * 10;
+        const id = newId();
+        e.item.loaded = true;
+        // ensure connectors are not imported
+        e.item.edges.forEach((edge: Edge) => {
+            edge.connectors = [];
+        });
+        const node = {
+            id: id,
+            linkedNode: e.item,
+            edges: e.item.edges,
+            version: this.graphSnapshot.version,
+            graphId: this.graphSnapshot.id,
+            artifact: e.url || ("artifacts/" + e.id + "." + e.version),
+            url: id,
+            data: e.item.data,
+            properties: {
+                inputs: e.item.properties.inputs,
+                outputs: e.item.properties.outputs,
+                groups: [],
+                name: e.name,
+                description: e.description,
+                tags: e.item.properties.tags,
+                icon: e.item.properties.icon,
+                positionAbsolute: false,
+                appearsInPresentation: false,
+                appearsInExport: false,
+                x: pos.x,
+                y: pos.y,
+                z: 0 + this.preferencesStore.preferences.newNodeOffset.z,
+                presentation: {
+                    x: pos.x,
+                    y: pos.y,
+                    z: 0 + this.preferencesStore.preferences.newNodeOffset.z,
+                },
+            },
+            template: {
+                set: e.item.template.set,
+                vue: e.item.template.vue,
+            },
+        };
+        this.graphSnapshot.nodes.push(node);
+        this.updateGraphFromSnapshot("Import New Node");
+    },
     undo() {
         this.moveHistoryPosition(-1);
     },

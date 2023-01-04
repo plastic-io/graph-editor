@@ -13,7 +13,7 @@ export default class NodeEdgePropertiesPanel extends EditorModule {
       component: 'node-edge-properties-panel',
       icon: 'mdi-video-input-component',
       helpTopic: 'edge',
-      type: 'nav-panel-node-tabs',
+      type: 'nav-panel-tabs',
       order: 1,
     });
     graphOrchestratorStore.addPlugin(plugin);

@@ -1,5 +1,5 @@
 // core files
-import { createApp } from "vue";
+import { createApp, getCurrentInstance } from "vue";
 import { createPinia, defineStore } from "pinia";
 import App from "./App.vue";
 import router from "./router";

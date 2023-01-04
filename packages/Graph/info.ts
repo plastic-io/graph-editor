@@ -1,5 +1,19 @@
 import type {Graph, Node} from "@plastic-io/plastic-io";
 export default {
+    selectNodes(ids: string[]) {
+        const selectedNodes = [] as any;
+        ids.forEach((id: string) => {
+            selectedNodes.push(this.graphSnapshot.nodes.find((n: any) => {
+                return n.id === id;
+            }));
+        });
+        this.$patch({
+            selectedNodes,
+        });
+    },
+    raiseError(err: Error) {
+        throw err;
+    },
     getCalculatedGraphUrl(): string {
         return self.location.pathname.split('/')[1];
     },

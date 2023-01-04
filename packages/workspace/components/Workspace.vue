@@ -1,5 +1,6 @@
 <template>
     <v-app class="graph-editor" :style="`background: ${bgColor};`">
+        <component is="script" v-for="script in scripts" :src="script"/>
         <error-interstitial v-if="notFound" />
         <template v-if="graph && !graph.err">
             <v-system-bar
@@ -102,6 +103,9 @@ export default {
             'selectedConnectors',
             'hoveredConnector',
         ]),
+        scripts() {
+            return this.preferences.componentScripts.split(',');
+        },
         graphContainerStyle: function() {
             let cursor = "";
             if ((this.mouse.lmb && this.translate) || this.mouse.mmb) {

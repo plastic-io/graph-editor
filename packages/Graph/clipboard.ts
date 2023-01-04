@@ -1,6 +1,61 @@
 import type {Graph, Node} from "@plastic-io/plastic-io";
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
 export default {
+    drop(e: DragEvent) {
+        if (!e.dataTransfer) { return; }
+        if (e.dataTransfer.files.length > 0) {
+            e.preventDefault();
+            for (let x = 0; x < e.dataTransfer.files.length; x += 1) {
+                const file = e.dataTransfer.files[x];
+                if (file.type !== this.jsonMimeType) {
+                    continue;
+                }
+                const reader = new FileReader();
+                reader.onload = (ev: any) => {
+                    const parsedResult = JSON.parse(ev.target.result);
+                    //  context.commit(e.type === "publishedNode" ? "addNodeItem" : "addGraphItem", e);
+                    this.addDroppedItem({
+                        x: e.clientX,
+                        y: e.clientY,
+                        ...{
+                            id: newId(),
+                            lastUpdate: file.lastModified,
+                            description: file.name,
+                            name: file.name.split("_")[0],
+                            icon: parsedResult.properties.icon,
+                            item: parsedResult,
+                            version: parsedResult.version,
+                            type: "droppedFile",
+                        },
+                    });
+                };
+                reader.readAsText(file);
+            }
+            return;
+        }
+        const jsonData = e.dataTransfer.getData(this.jsonMimeType);
+        const plasticData = e.dataTransfer.getData(this.nodeMimeType);
+        if (plasticData) {
+            const data = JSON.parse(plasticData);
+            if (data.type === "newNode") {
+                this.createNewNode({
+                    x: e.clientX,
+                    y: e.clientY,
+                });
+                return;
+            }
+            this.addItem({
+                x: e.clientX,
+                y: e.clientY,
+                ...data,
+            });
+        } else if (jsonData) {
+            const data = JSON.parse(jsonData);
+            this.importItem({
+                item: data,
+            });
+        }
+    },
     copyNodes(nodes: Node[]) {
         nodes = JSON.parse(JSON.stringify(nodes));
         const nodeIds = nodes.map(v => v.id);

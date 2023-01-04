@@ -1,6 +1,13 @@
 <template>
     <div>
-        <div x-graph-canvas :style="graphCanvasStyle" v-if="graph" :key="graph.version">
+        <div
+            x-graph-canvas
+            :style="graphCanvasStyle"
+            v-if="graph"
+            :key="graph.version"
+            @drop="drop($event)"
+            @dragover="dragOver($event)"
+        >
             <div
                 :style="preferences!.appearance.theme === 'dark' ? '' : 'filter: invert(1);'"
                 :class="graphCanvasClasses"
@@ -56,6 +63,13 @@ export default {
     },
   },
   methods: {
+    ...mapActions(useGraphStore, [
+        'drop',
+    ]),
+    dragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "link";
+    },
     updatePrefStore() {
       const preferencesStore = usePreferencesStore();
       preferencesStore.$patch({

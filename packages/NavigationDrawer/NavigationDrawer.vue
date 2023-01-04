@@ -11,18 +11,18 @@
         <v-container
             class="pa-0"
             style="z-index: 1; overflow: hidden;">
-            <v-tabs v-model="currentTabs">
+            <v-tabs v-model="panelTopTabs">
                   <v-tab
-                    v-for="(plugin, index) in currentTabGroup"
+                    v-for="(plugin, index) in getPluginsByType('nav-panel-tabs')"
                     :value="plugin.name"
                   >
                     <span v-if="preferences.textLabels">{{plugin.name}}</span>
                     <v-icon v-if="!preferences.textLabels" :icon="plugin.icon"/>
                 </v-tab>
             </v-tabs>
-            <v-window v-model="currentTabs" :transition="false">
+            <v-window v-model="panelTopTabs" :transition="false">
               <v-window-item
-                v-for="(plugin, index) in panelPlugins"
+                v-for="(plugin, index) in getPluginsByType('nav-panel-tabs')"
                 :value="plugin.name"
                 :transition="false">
                 <component :is="plugin.component" v-bind="plugin.props"/>
@@ -62,8 +62,7 @@ export default {
             panelDefault: 450,
             panelMin: 10,
             navWidths: {},
-            panelTopGraphTabs: null,
-            panelTopNodeTabs: null,
+            panelTopTabs: null,
             localVersion: 0,
             iconGutterSize: 43,
             graphVue: null,
@@ -76,11 +75,6 @@ export default {
         };
     },
     watch: {
-        selectedPanel() {
-            if (this.selectedPanel) {
-                this.currentTabs = this.selectedPanel;
-            }
-        },
         "mouse.y"() {
             this.mouseTranslate();
         },
@@ -123,40 +117,7 @@ export default {
           'keys',
         ]),
         currentWidth() {
-            return this.navWidths[this.currentTabs] || this.defaultWidth;
-        },
-        panelPlugins() {
-            return [
-                ...this.getPluginsByType('nav-panel-graph-tabs'),
-                ...this.getPluginsByType('nav-panel-node-tabs'),
-                ...this.getPluginsByType('nav-panel-tabs'),
-            ];
-        },
-        currentTabGroup() {
-            if (this.selectedNodes.length === 0) {
-                return [
-                    ...this.getPluginsByType('nav-panel-graph-tabs'),
-                    ...this.getPluginsByType('nav-panel-tabs'),
-                ];
-            }
-            return [
-                ...this.getPluginsByType('nav-panel-node-tabs'),
-                ...this.getPluginsByType('nav-panel-tabs'),
-            ];
-        },
-        currentTabs: {
-            get() {
-                if (this.selectedNodes.length === 0) {
-                    return this.panelTopGraphTabs;
-                }
-                return this.panelTopNodeTabs;
-            },
-            set(val) {
-                if (this.selectedNodes.length === 0) {
-                    return this.panelTopGraphTabs = val;
-                }
-                return this.panelTopNodeTabs = val;
-            }
+            return this.navWidths[this.panelTopTabs] || this.defaultWidth;
         },
         navStyle() {
             return {
@@ -175,7 +136,7 @@ export default {
         },
         mouseTranslate() {
             if (this.panelDragging) {
-                this.navWidths[this.currentTabs] =
+                this.navWidths[this.panelTopTabs] =
                     Math.max(this.panelDragging.w + (this.mouse.x - this.panelDragging.x), this.panelMin);
             }
         },
@@ -194,7 +155,7 @@ export default {
                 usePreferencesStore().$patch({
                     preferences: {
                         uiSize: {
-                            [this.currentTabs]: this.currentWidth,
+                            [this.panelTopTabs]: this.currentWidth,
                         },
                     },
                 });
@@ -202,24 +163,15 @@ export default {
             };
             document.addEventListener("mouseup", dragEnd);
         },
-        selectPanel(panel) {
-            if (this.panel === panel) {
-                this.panel = "";
-                return;
-            }
-            this.panel = panel;
-            this.localVersion += 1;
-        }
     },
     mounted() {
         this.localGraph = this.graph;
         this.navWidths = JSON.parse(JSON.stringify(this.preferences.uiSize));
         document.addEventListener('mousemove', this.mousemove);
         this.$nextTick(() => {
-            this.navWidth = this.navWidths[this.currentTabs];
+            this.navWidth = this.navWidths[this.panelTopTabs];
         });
-        this.panelTopGraphTabs = 'Graph';
-        this.panelTopNodeTabs = 'Node';
+        this.panelTopTabs = 'Graph';
     },
     unmounted() {
         document.removeEventListener('mousemove', this.mousemove);

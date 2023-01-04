@@ -32,6 +32,8 @@ export default () => {
         graphSnapshotStore: useGraphSnapshotStore(),
         keys: {} as Record<string, string>,
         artifacts: {} as Record<string, any>,
+        nodeMimeType: "application/json+plastic-io",
+        jsonMimeType: "application/json",
         buttonMap: {
           "0": "lmb",
           "2": "rmb",
