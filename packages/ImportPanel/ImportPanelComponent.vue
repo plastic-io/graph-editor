@@ -2,11 +2,16 @@
   <div>
     <v-list dense help-topic="importComponentList"
     style="overflow-y: auto; height: calc(100vh - 305px);margin-right: 3px;margin-bottom: -5px;">
-      <v-list-item v-for="component in componentList">
-        <span draggable="true" style="cursor: copy;" @dragstart="dragStart($event, component.name)">
+      <v-list-item
+        v-for="component in componentList"
+        draggable="true" style="cursor: copy;" @dragstart="dragStart($event, component.name)"
+      >
+        <v-list-item-media>
             <v-icon icon="mdi-vuejs"/>
-        </span>
-        {{component.name}}
+        </v-list-item-media>
+        <v-list-item-title>
+            {{component.name || "Untitled"}}
+        </v-list-item-title>
       </v-list-item>
     </v-list>
   </div>
