@@ -7,7 +7,7 @@ import {helpTopics} from "@plastic-io/graph-editor-vue3-help-overlay";
 import type AuthenticationProvider from "@plastic-io/graph-editor-vue3-authentication-provider";
 import type DocumentProvider from "@plastic-io/graph-editor-vue3-document-provider";
 import GraphEditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-editor-module";
-import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
+import {useStore as useGraphStore, useGraphSnapshotStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import SchedulerWorker from "./schedulerWorker?worker";
 import {useTheme} from 'vuetify';
@@ -321,6 +321,15 @@ export const useStore = defineStore('orchestrator', {
         (this.scheduler.instance as any) = {
           url: sendMessage('url'),
         };
+        useGraphSnapshotStore().$subscribe((mutation: any, state: any) => {
+          if (!state.graph) {
+            return;
+          }
+          scheduleWorker.postMessage({
+            method: 'change',
+            args: [deref(state.graph)],
+          });
+        });
     },
     clearInfo() {},
     setHoveredNode() {},

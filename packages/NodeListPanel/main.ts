@@ -11,7 +11,7 @@ export default class NodeListPanel extends EditorModule {
     const plugin = new Plugin({
       name: 'Nodes',
       component: 'node-list-panel',
-      icon: 'mdi-list',
+      icon: 'mdi-format-list-bulleted',
       helpTopic: 'nodeList',
       type: 'nav-panel-tabs',
       order: 1,

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import {keys} from "./keys";
@@ -11,6 +12,7 @@ export const useStore = defineStore('input', {
     keys: {} as Record<string, boolean>,
     orchistratorStore: useOrchestratorStore(),
     graphStore: useGraphStore(),
+    inputStore: useInputStore(),
     mouse: {
       lmb: false,
       rmb: false,
@@ -35,7 +37,13 @@ export const useStore = defineStore('input', {
         keys(this, e);
     },
     updateMouse(mouse: any) {
-        this.mouseAction.mouse(mouse);
+        this.inputStore.$patch((inputState: any) => {
+            this.graphStore.$patch((graphState: any) => {
+                this.$patch((state: any) => {
+                    this.mouseAction.mouse(state, graphState, inputState, mouse);
+                });
+            });
+        });
     },
     onwheel(e: WheelEvent) {
         if (!this.graphStore.isGraphTarget(e)) {
@@ -59,6 +67,7 @@ export const useStore = defineStore('input', {
         }
         const mouse = this.getMousePosFromEvent(e);
         const item = this.graphStore.getItemAt(e.target);
+        
         if (item.node) {
             this.graphStore.hoveredNode = item.node;
         } else {
@@ -73,6 +82,7 @@ export const useStore = defineStore('input', {
             y: mouse.y,
             event: e,
         });
+
     },
     dblclick(e: MouseEvent) {
         if (!/graph-canvas-container/.test(e.target.className)) {

@@ -30,9 +30,13 @@ const logger = {
   error(){},
   debug(){},
 };
+const store = {
+  graph: null as any,
+};
 const rpc = {
   init(e: any) {
-    scheduler = new Scheduler(e.graph!, {}, {}, logger);
+    store.graph = e.graph;
+    scheduler = new Scheduler(store.graph, {}, {}, logger);
     scheduler.addEventListener("load", loader);
     scheduler.addEventListener("beginconnector", messenger('beginconnector'));
     scheduler.addEventListener("endconnector", messenger('endconnector'));
@@ -47,6 +51,11 @@ const rpc = {
 onmessage = function(e: any) {
   if (e.data.method === 'init') {
     return rpc.init.apply(null, e.data.args);
+  }
+  if (e.data.method === 'change') {
+    store.graph = e.data.args[0];
+    console.log('scheduler graph update', store.graph);
+    return;
   }
   (scheduler as any)[e.data.method].apply(scheduler, e.data.args);
 }
