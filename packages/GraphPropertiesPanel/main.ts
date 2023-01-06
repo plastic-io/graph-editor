@@ -8,13 +8,22 @@ export default class GraphProperties extends EditorModule {
     super();
     app.component('graph-properties', _GraphProperties);
     const graphOrchestratorStore =  useOrchestratorStore();
-    const plugin = new Plugin({
+    graphOrchestratorStore.addPlugin(new Plugin({
+      name: 'Graph Gutter Icon',
+      component: 'graph-properties',
+      icon: 'mdi-graph-outline',
+      helpTopic: 'graphProperties',
+      type: 'nav-panel-top-gutter-icons',
+      props: {
+        tabSet: 'nav-panel-graph-tabs',
+      },
+    }));
+    graphOrchestratorStore.addPlugin(new Plugin({
       name: 'Graph',
       component: 'graph-properties',
       icon: 'mdi-graph-outline',
       helpTopic: 'graphProperties',
-      type: 'nav-panel-tabs',
-    });
-    graphOrchestratorStore.addPlugin(plugin);
+      type: 'nav-panel-graph-tabs',
+    }));
   }
 };

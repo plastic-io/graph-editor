@@ -8,14 +8,26 @@ export default class ImportPanel extends EditorModule {
     super();
     app.component('import-panel', _ImportPanel);
     const graphOrchestratorStore = useOrchestratorStore();
-    const importPanel = new Plugin({
+    graphOrchestratorStore.addPlugin(new Plugin({
       name: 'Import',
       component: 'import-panel',
       icon: 'mdi-bookshelf',
       helpTopic: 'importPanel',
-      type: 'nav-panel-tabs',
-      order: 0,
-    });
-    graphOrchestratorStore.addPlugin(importPanel);
+      type: 'nav-panel-bottom-gutter-icons',
+      props: {
+        tabSet: 'nav-panel-import-tabs',
+      },
+      order: 1,
+    }));
+
+    graphOrchestratorStore.addPlugin(new Plugin({
+      name: 'Import',
+      component: 'import-panel',
+      icon: 'mdi-bookshelf',
+      helpTopic: 'importPanel',
+      type: 'nav-panel-import-tabs',
+      order: 1,
+    }));
+
   }
 };

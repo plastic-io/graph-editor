@@ -8,26 +8,59 @@
         app
         flat
         :key="localVersion">
-        <v-container
-            class="pa-0"
-            style="z-index: 1; overflow: hidden;">
-            <v-tabs v-model="panelTopTabs">
-                  <v-tab
-                    v-for="(plugin, index) in getPluginsByType('nav-panel-tabs')"
-                    :value="plugin.name"
-                  >
-                    <span v-if="preferences.textLabels">{{plugin.name}}</span>
-                    <v-icon v-if="!preferences.textLabels" :icon="plugin.icon"/>
-                </v-tab>
-            </v-tabs>
-            <v-window v-model="panelTopTabs" :transition="false">
-              <v-window-item
-                v-for="(plugin, index) in getPluginsByType('nav-panel-tabs')"
+        <v-container class="nav-panel-top-gutter">
+            <v-icon
+                v-for="(plugin, index) in getPlugins('nav-panel-top-gutter-icons')"
                 :value="plugin.name"
-                :transition="false">
-                <component :is="plugin.component" v-bind="plugin.props"/>
-              </v-window-item>
+                :icon="plugin.icon"
+                :color="tabSet == plugin.props.tabSet ? 'primary' : ''"
+                @click="tabSet = plugin.props.tabSet;"
+                v-bind="plugin.props"
+            />
+        </v-container>
+
+        <v-container
+            class="pa-0 nav-panel-main"
+            style="z-index: 1; overflow: hidden;">
+            <v-window v-model="tabSet">
+                <v-window-item v-for="pluginPanel in getWindows"
+                    :value="pluginPanel.props.tabSet" :eager="true"
+                >
+                    <keep-alive>
+                        <v-tabs v-model="tabSetTabs[tabSet]">
+                              <v-tab
+                                v-for="(plugin, index) in getPlugins(tabSet)"
+                                :value="plugin.name"
+                              >
+                                <span v-if="preferences.textLabels">{{plugin.name}}</span>
+                                <v-icon v-if="!preferences.textLabels" :icon="plugin.icon"/>
+                            </v-tab>
+                        </v-tabs>
+                    </keep-alive>
+                    <v-window v-model="tabSetTabs[tabSet]">
+                      <v-window-item
+                        v-for="(plugin, index) in windowPlugins"
+                        :value="plugin.name" :eager="true"
+                      >
+                        <keep-alive>
+                            <component :is="plugin.component" v-bind="plugin.props"/>
+                        </keep-alive>
+                      </v-window-item>
+                    </v-window>
+
+                </v-window-item>
             </v-window>
+
+        </v-container>
+        <v-container class="nav-panel-bottom-gutter">
+            <v-icon
+                v-for="(plugin, index) in getPlugins('nav-panel-bottom-gutter-icons')"
+                :value="plugin.name"
+                :icon="plugin.icon"
+                v-bind="plugin.props"
+                :color="tabSet == plugin.props.tabSet ? 'primary' : ''"
+                @click="this.tabSet = plugin.props.tabSet"
+            />
         </v-container>
         <v-icon
             help-topic="dragResizePanel"
@@ -58,11 +91,15 @@ export default {
                 y: 0,
             },
             defaultWidth: 400,
-            dragIconWidth: 28,
+            dragIconWidth: 32,
             panelDefault: 450,
             panelMin: 10,
             navWidths: {},
+            tabSetTabs: {},
+            tabSet: null,
             panelTopTabs: null,
+            panelTopGutterTabs: null,
+            panelBottomGutterTabs: null,
             localVersion: 0,
             iconGutterSize: 43,
             graphVue: null,
@@ -75,6 +112,19 @@ export default {
         };
     },
     watch: {
+        tabSet() {
+            if (this.tabSetTabs[this.tabSet]) {
+                return;
+            }
+            this.tabSetTabs[this.tabSet] = this.getPlugins(this.tabSet)[0].name;
+            console.log('watch tabSet', this.tabSet, this.tabSetTabs);
+        },
+        selectedTabSet() {
+            this.tabSet = this.selectedTabSet;
+        },
+        selectedPanel() {
+            this.tabSetTabs[this.tabSet] = this.selectedPanel;
+        },
         "mouse.y"() {
             this.mouseTranslate();
         },
@@ -94,13 +144,13 @@ export default {
         ]),
         ...mapWritableState(useOrchestratorStore, [
           'navWidth',
+          'selectedPanel',
         ]),
         ...mapState(useOrchestratorStore, [
           'log',
           'showHelp',
           'historyPosition',
           'plugins',
-          'selectedPanel',
         ]),
         ...mapState(useGraphStore, [
           'selectRect',
@@ -116,6 +166,22 @@ export default {
         ...mapState(useInputStore, [
           'keys',
         ]),
+        windowPlugins() {
+            return [
+                ...this.getPlugins(this.tabSet),
+            ];
+        },
+        getPlugins() {
+            return (id) => {
+                return this.getPluginsByType(id);
+            }
+        },
+        getWindows() {
+            return [
+                ...this.getPlugins('nav-panel-top-gutter-icons'),
+                ...this.getPlugins('nav-panel-bottom-gutter-icons'),
+            ]
+        },
         currentWidth() {
             return this.navWidths[this.panelTopTabs] || this.defaultWidth;
         },
@@ -171,7 +237,8 @@ export default {
         this.$nextTick(() => {
             this.navWidth = this.navWidths[this.panelTopTabs];
         });
-        this.panelTopTabs = 'Graph';
+        this.tabSet = 'nav-panel-graph-tabs';
+        this.tabSetTabs['nav-panel-graph-tabs'] = 'Graph';
     },
     unmounted() {
         document.removeEventListener('mousemove', this.mousemove);
@@ -182,9 +249,22 @@ export default {
 .graph-nav-drawer {
     height: calc(100vh - 48px) !important;
 }
+.nav-panel-main {
+    width: calc(100% - 38px) !important;
+    margin-right: auto;
+    margin-left: 0;
+}
 .nav-drawer-resizer {
     position: fixed;
     cursor: ew-resize;
     bottom: 7px;
+}
+.nav-panel-top-gutter, .nav-panel-bottom-gutter {
+    position: absolute;
+    width: 30px;
+    right: 15px;
+}
+.nav-panel-bottom-gutter {
+    bottom: 37px;
 }
 </style>

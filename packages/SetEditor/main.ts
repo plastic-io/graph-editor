@@ -11,7 +11,7 @@ export default class SetEditor extends EditorModule {
       component: 'monaco-code-editor',
       icon: 'mdi-lambda',
       helpTopic: 'edge',
-      type: 'nav-panel-tabs',
+      type: 'nav-panel-node-tabs',
       props: {
         templateType: 'set',
         language: 'javascript',

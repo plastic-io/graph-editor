@@ -34,6 +34,7 @@ export const useStore = defineStore('orchestrator', {
     token: null,
     bgColor: '000',
     selectedPanel: '',
+    selectedTabSet: '',
     mapScale: 1,
     plugins: [] as Plugin[],
     authProvider: null as null | AuthenticationProvider,
@@ -195,89 +196,10 @@ export const useStore = defineStore('orchestrator', {
         this.plugins.push(plugin);
     },
     graphUrl(url: string) {},
-    beginconnector(e: any) {
-      if (!this.preferencesStore.preferences!.showConnectorActivity) {
-        return;
-      }
-      const existingConnectors = this.graphStore.activityConnectors[e.connector.id];
-      const connectorEvent = {
-        activityType: "start",
-        key: e.connector.id,
-        event: e,
-      };
-      if (existingConnectors) {
-        existingConnectors.push(connectorEvent);
-      } else {
-        this.graphStore.$patch({
-          activityConnectors: {
-            [e.connector.id]: [connectorEvent],
-          },
-        });
-      }
-      if (this.preferencesStore.preferences!.debug) {
-        this.$patch({
-          loading: {
-            connector: {
-              [e.connector.id]: {
-                loading: true,
-                time: Date.now(),
-                event: e,
-              },
-            }
-          },
-        });
-      }
-      this.log.push({
-        eventName: 'connector',
-        event: e,
-      });
-    },
-    endconnector(e: any) {
-      if (!this.preferencesStore.preferences!.showConnectorActivity) {
-        return;
-      }
-      const existingConnectors = this.graphStore.activityConnectors[e.connector.id];
-      const connectorEvent = {
-        activityType: "end",
-        key: e.connector.id,
-        end: Date.now(),
-        event: e,
-      };
-      if (existingConnectors) {
-        existingConnectors.push(connectorEvent);
-      } else {
-        this.graphStore.$patch({
-          activityConnectors: {
-            [e.connector.id]: [connectorEvent]
-          },
-        });
-      }
-      if (this.preferencesStore.preferences!.debug) {
-        this.$patch({
-          loading: {
-            connector: {
-              [e.connector.id]: {
-                loading: false,
-                time: Date.now(),
-                event: e,
-              },
-            }
-          },
-        });
-      }
-      this.log.push({
-        eventName: 'connector',
-        event: e,
-      });
-    },
-    set(e: any) {},
-    afterSet(e: any) {},
     error(e: any) {
       this.scheduler.errors.push(e);
     },
     warning(e: any) {},
-    begin(e: any) {},
-    end(e: any) {},
     async load(e: any): Promise<any> {
       const artifactPrefix = "artifacts/";
       if ("setValue" in e) {
@@ -293,6 +215,73 @@ export const useStore = defineStore('orchestrator', {
       }
     },
     createScheduler() {
+        // performance hack.  Avoid using the store on messages from
+        // scheduler to avoid any sort of long term memory leaks/GCing
+        const beginconnector = (e: any) => {
+          if (!this.preferencesStore.preferences!.showConnectorActivity) {
+            return;
+          }
+          const connectorEvent = {
+            activityType: "start",
+            key: e.connector.id,
+            event: e,
+          };
+          this.graphStore.$patch({
+            activityConnectors: {
+              [e.connector.id]: [connectorEvent],
+            },
+          });
+          if (this.preferencesStore.preferences!.debug) {
+            this.$patch({
+              loading: {
+                connector: {
+                  [e.connector.id]: {
+                    loading: true,
+                    time: Date.now(),
+                    event: e,
+                  },
+                }
+              },
+            });
+            this.log.push({
+              eventName: 'connector',
+              event: e,
+            });
+          }
+        };
+        const endconnector = (e: any) => {
+          if (!this.preferencesStore.preferences!.showConnectorActivity) {
+            return;
+          }
+          const connectorEvent = {
+            activityType: "end",
+            key: e.connector.id,
+            end: Date.now(),
+            event: e,
+          };
+          this.graphStore.$patch({
+            activityConnectors: {
+              [e.connector.id]: [connectorEvent]
+            },
+          });
+          if (this.preferencesStore.preferences!.debug) {
+            this.$patch({
+              loading: {
+                connector: {
+                  [e.connector.id]: {
+                    loading: false,
+                    time: Date.now(),
+                    event: e,
+                  },
+                }
+              },
+            });
+            this.log.push({
+              eventName: 'connector',
+              event: e,
+            });
+          }
+        };
         const sendMessage = (method: string) => {
           return (...args: any) => {
             scheduleWorker.postMessage({
@@ -311,11 +300,19 @@ export const useStore = defineStore('orchestrator', {
           ],
         });
         (scheduleWorker.onmessage as any) = (e: any) => {
-          const method = (this as any)[e.data.source];
+          const methodName = (this as any)[e.data.source];
           const args = fromJSON(e.data.event);
-          if (!method) {
-            return console.error('Method not found', method);
+          if (methodName === 'beginconnector') {
+            return beginconnector(args);
           }
+          if (methodName === 'endconnector') {
+            return endconnector(args);
+          }
+          const method = (this as any)[methodName];
+          if (!method) {
+            return;
+          }
+          console.log('onmessage', e.data.source);
           method(args);
         };
         (this.scheduler.instance as any) = {

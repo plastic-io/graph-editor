@@ -83,10 +83,10 @@
                     <v-expansion-panel-text>
                         <v-card class="ma-0 pa-0" flat help-topic="graphIOList">
                             <v-card-text class="ma-0 pa-0">
-                                <v-list style="width: 110%;" value="true" :prepend-icon="io === 'inputs' ? 'mdi-power-socket' : 'mdi-power-plug'">
+                                <v-list style="width: 110%;" value="true">
                                     <template v-for="io in ['inputs', 'outputs']" :key="io">
-                                        <v-list-item >
-                                            {{io}}
+                                        <v-card-title>{{io}}</v-card-title>
+                                        <v-list-item :prepend-icon="io === 'inputs' ? 'mdi-power-socket' : 'mdi-power-plug'">
                                             <template v-for="(ios) in externalIO[io]">
                                                 {{ios.field.name}} : {{ios.node.properties.name || ios.node.id}}
                                             </template>

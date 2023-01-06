@@ -13,7 +13,7 @@ export default class NodeListPanel extends EditorModule {
       component: 'node-list-panel',
       icon: 'mdi-format-list-bulleted',
       helpTopic: 'nodeList',
-      type: 'nav-panel-tabs',
+      type: 'nav-panel-graph-tabs',
       order: 1,
     });
     graphOrchestratorStore.addPlugin(plugin);

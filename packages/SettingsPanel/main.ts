@@ -8,14 +8,27 @@ export default class UserPanel extends EditorModule {
     super();
     app.component('settings-panel', _SettingsPanel);
     const graphOrchestratorStore = useOrchestratorStore();
-    const userPanel = new Plugin({
+    graphOrchestratorStore.addPlugin(new Plugin({
+      name: 'Settings Gutter Icon',
+      component: 'settings-panel',
+      icon: 'mdi-cog',
+      helpTopic: 'userPanel',
+      type: 'nav-panel-bottom-gutter-icons',
+      props: {
+        tabSet: 'nav-panel-settings-tabs',
+      },
+      order: 0,
+    }));
+    graphOrchestratorStore.addPlugin(new Plugin({
       name: 'Settings',
       component: 'settings-panel',
       icon: 'mdi-cog',
       helpTopic: 'userPanel',
-      type: 'nav-panel-tabs',
+      type: 'nav-panel-settings-tabs',
       order: 0,
-    });
-    graphOrchestratorStore.addPlugin(userPanel);
+    }));
   }
 };
+
+
+

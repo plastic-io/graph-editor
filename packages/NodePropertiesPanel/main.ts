@@ -8,14 +8,24 @@ export default class NodePropertiesPanel extends EditorModule {
     super();
     app.component('node-properties-panel', _NodePropertiesPanel);
     const graphOrchestratorStore =  useOrchestratorStore();
-    const plugin = new Plugin({
+     graphOrchestratorStore.addPlugin(new Plugin({
       name: 'Node',
       component: 'node-properties-panel',
       icon: 'mdi-vector-point',
       helpTopic: 'nodeProperties',
-      type: 'nav-panel-tabs',
+      type: 'nav-panel-top-gutter-icons',
+      props: {
+        tabSet: 'nav-panel-node-tabs',
+      },
+      order: 1,
+    }));
+    graphOrchestratorStore.addPlugin(new Plugin({
+      name: 'Node',
+      component: 'node-properties-panel',
+      icon: 'mdi-vector-point',
+      helpTopic: 'nodeProperties',
+      type: 'nav-panel-node-tabs',
       order: 0,
-    });
-    graphOrchestratorStore.addPlugin(plugin);
+    }));
   }
 };
