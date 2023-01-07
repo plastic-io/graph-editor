@@ -12,7 +12,7 @@
         </v-card-text>
     </v-card>
 </template>
-<script>
+<script lang="ts">
 import {mapState, mapActions} from "pinia";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";

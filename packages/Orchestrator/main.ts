@@ -59,7 +59,7 @@ export const useStore = defineStore('orchestrator', {
         },
         provider: '',
     },
-    notFound: null,
+    notFound: false,
     navWidth: 450,
     buttonMap: {
         "0": "lmb",

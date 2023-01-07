@@ -69,7 +69,7 @@
         </v-window>
     </v-card>
 </template>
-<script>
+<script lang="ts">
 import {mapActions, mapState} from "pinia";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";

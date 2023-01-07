@@ -8,7 +8,7 @@
       </v-expansion-panel>
   </v-expansion-panels>
 </template>
-<script>
+<script lang="ts">
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";

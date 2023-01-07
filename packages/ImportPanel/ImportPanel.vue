@@ -36,7 +36,7 @@
         </v-card-text>
     </v-card>
 </template>
-<script>
+<script lang="ts">
 import ImportPanelComponent from "./ImportPanelComponent.vue";
 import ImportPanelList from "./ImportPanelList.vue";
 import ImportPanelRegistry from "./ImportPanelRegistry.vue";

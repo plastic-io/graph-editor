@@ -1,7 +1,7 @@
 <template>
-    <v-app class="graph-editor" :style="`background: ${bgColor};`">
+    <v-app class="graph-editor" :style="workspaceBackground">
         <component is="script" v-for="script in scripts" :src="script"/>
-        <error-interstitial v-if="notFound" />
+        <error-interstitial/>
         <template v-if="graph && !graph.err">
             <v-system-bar
                 class="top-system-bar no-graph-target"
@@ -79,7 +79,6 @@ export default {
             'workspaceElement',
         ]),
         ...mapState(useOrchestratorStore, [
-            'notFound',
             'inRewindMode',
             'rewindVisible',
             'showInfo',
@@ -103,6 +102,11 @@ export default {
             'selectedConnectors',
             'hoveredConnector',
         ]),
+        workspaceBackground() {
+            return {
+                background: this.bgColor,
+            };
+        },
         scripts() {
             return this.preferences.componentScripts.split(',');
         },

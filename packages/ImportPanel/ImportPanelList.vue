@@ -32,7 +32,7 @@
         </v-list>
     </div>
 </template>
-<script>
+<script lang="ts">
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {mapActions, mapState} from "pinia";
 export default {
