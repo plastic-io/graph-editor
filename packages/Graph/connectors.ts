@@ -44,6 +44,7 @@ export default {
         name: string,
         type: string,
         external: boolean,
+        visible: boolean,
     }) {
         const node = this.graphSnapshot.nodes.find((v: any) => v.id === e.nodeId);
         if (!node) {
@@ -53,6 +54,7 @@ export default {
             name: e.name,
             type: e.type || "Object",
             external: e.external === undefined ? false : e.external,
+            visible: e.visible === undefined ? true : e.visible,
         });
         this.updateGraphFromSnapshot("Add Input");
     },
@@ -61,6 +63,7 @@ export default {
         name: string,
         type: string,
         external: boolean,
+        visible: boolean,
     }) {
         const node = this.graphSnapshot.nodes.find((v: any) => v.id === e.nodeId);
         if (!node) {
@@ -70,6 +73,7 @@ export default {
             name: e.name,
             type: e.type || "Object",
             external: e.external === undefined ? false : e.external,
+            visible: e.visible === undefined ? true : e.visible,
         });
         node.edges.push({
             field: e.name,

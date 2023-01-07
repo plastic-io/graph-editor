@@ -123,12 +123,12 @@ export default {
             'preferences',
         ]),
         ...mapWritableState(useOrchestratorStore, [
+            'showConnectorView',
             'translating',
             'presentation',
             'locked',
         ]),
         ...mapState(useOrchestratorStore, [
-            'showConnectorView',
             'notFound',
             'inRewindMode',
             'rewindVisible',

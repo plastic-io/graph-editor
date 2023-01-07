@@ -84,6 +84,7 @@ export default {
                 name,
                 type: 'Object',
                 external: false,
+                visible: false,
             });
         });
         Object.keys(component.emits || {}).forEach((name: any) => {
@@ -91,6 +92,7 @@ export default {
                 name,
                 type: 'Object',
                 external: false,
+                visible: false,
             });
             edges.push({
                 connectors: [],
@@ -165,6 +167,7 @@ export default {
                         id: v.id,
                         field: i.name,
                         type: i.type,
+                        visible: i.visible,
                         external: false,
                     } as any;
                 }
@@ -175,6 +178,7 @@ export default {
                         id: v.id,
                         field: i.name,
                         type: i.type,
+                        visible: i.visible,
                         external: false,
                     } as any;
                 }
@@ -241,6 +245,7 @@ export default {
             node.properties.inputs.push({
                 name: io.field,
                 external: false,
+                visible: true,
                 type: io.type,
             });
         });
@@ -248,6 +253,7 @@ export default {
             const io: any = linkedGraphOutputs[ioKey];
             node.properties.outputs.push({
                 name: io.field,
+                visible: true,
                 external: false
             });
             node.edges.push({
@@ -447,7 +453,8 @@ export default {
             hasChanges = true;
             // output changes
             if (d.path[0] === "properties" && d.path[1] === "outputs"
-                    && !isNaN(d.path[2]) && (d.path[3] === "name" || d.path[3] === "external" || d.path[3] === "type")) {
+                    && !isNaN(d.path[2])
+                    && (d.path[3] === "name" || d.path[3] === "external" || d.path[3] === "type" || d.path[3] === "visible")) {
                 applyChange(node, e.node, d);
                 if (d.path[3] === "name") {
                     // also apply the change to local edge names
@@ -459,7 +466,8 @@ export default {
             }
             // input changes
             if (d.path[0] === "properties" && d.path[1] === "inputs"
-                    && !isNaN(d.path[2]) && (d.path[3] === "name" || d.path[3] === "external" || d.path[3] === "type")) {
+                    && !isNaN(d.path[2])
+                    && (d.path[3] === "name" || d.path[3] === "external" || d.path[3] === "type" || d.path[3] === "visible")) {
                 applyChange(node, e.node, d);
                 if (d.path[3] === "name") {
                     // also apply the change to the edge connectors that interact with it

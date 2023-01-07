@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-show="selectedNode">
+    <div v-show="selectedNodes.length > 0">
       <v-system-bar :style="{position: 'absolute', top: '-25px', left: 0, width: '100%', 'justify-content': 'left'}">
         <v-divider class="mx-4" vertical></v-divider>
         <div @click="save" style="font-weight: bold;" label="file">Save</div>
@@ -12,7 +12,7 @@
         <div class="monaco-editor" ref="editor"></div>
       </div>
     </div>
-    <div class="ma-3" v-show="!selectedNode">
+    <div class="ma-3" v-show="selectedNodes.length === 0">
         <i>No nodes selected</i>
     </div>
   </div>

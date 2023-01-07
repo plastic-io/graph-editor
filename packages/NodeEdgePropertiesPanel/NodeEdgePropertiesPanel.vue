@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="selectedNode">
+        <div v-show="selectedNodes.length > 0">
             <v-tabs v-model="inputsTabs">
                 <v-tab v-for="ioKey in ['inputs', 'outputs']" :key="ioKey">
                     {{ioKey}}
@@ -47,6 +47,11 @@
                                         :disabled="controlsDisabled"
                                         v-model="io.type"
                                         :help-topic="ioKey + '-type'"/>
+                                    <v-checkbox
+                                        :disabled="controlsDisabled"
+                                        v-model="io.visible"
+                                        label="visible"
+                                        :help-topic="ioKey + '-visible'"/>
                                     <v-checkbox
                                         v-if="!controlsDisabled"
                                         v-model="io.external"
@@ -117,7 +122,7 @@
                 </v-card>
             </v-dialog>
         </div>
-        <div v-else class="ma-3">
+        <div v-show="selectedNodes.length === 0" class="ma-3">
             <i>No nodes selected</i>
         </div>
     </div>
@@ -361,6 +366,9 @@ export default {
         controlsDisabled() {
             return !!this.node.artifact;
         },
+        ...mapState(useGraphStore, [
+            'selectedNodes',
+        ]),
         ...mapWritableState(useGraphStore, [
             'ioTypes',
             'selectedNode',

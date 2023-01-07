@@ -52,6 +52,12 @@ export default {
     }
   },
   watch: {
+    graphSnapshot: {
+        handler() {
+            this.updateBoundingRect();
+        },
+        deep: true,
+    },
     selectedNodes() {
         this.updateBoundingRect();
     },

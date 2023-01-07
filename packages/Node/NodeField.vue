@@ -1,6 +1,6 @@
 <template>
     <div
-        v-if="!presentation"
+        v-if="!presentation && field.visible"
         @mouseover="hoverPort"
         :style="connectorWarn ? 'cursor: not-allowed;' : ''"
     >
