@@ -43,24 +43,23 @@
                                 <v-text-field
                                     help-topic="nodeUrl"
                                     label="URL"
-                                    @change="updateNodeUrl($event)"
                                     v-model="node.url"/>
                                 <v-text-field
                                     disabled
                                     help-topic="nodeId"
                                     label="ID"
-                                    @change="updateNodeUrl($event)"
                                     v-model="node.id"/>
-<!--                                 <v-combobox
+                                <v-text-field
+                                    disabled
                                     help-topic="nodeIcon"
-                                    :prepend-icon="node.properties.icon"
+                                    label="Icon"
                                     persistent-hint
                                     hint="https://cdn.materialdesignicons.com/4.9.95/"
-                                    :eager="true"
-                                    title="Icon"
-                                    :items="icons"
                                     v-model="node.properties.icon"/>
-                                <v-checkbox help-topic="nodeAppearsInExportedGraph" label="Appears In Exported Graph" v-model="node.properties.appearsInExportedGraph"/> -->
+                                <v-checkbox
+                                    help-topic="nodeAppearsInExportedGraph"
+                                    label="Appears In Exported Graph"
+                                    v-model="node.properties.appearsInExportedGraph"/>
                             </v-card-text>
                         </v-card>
                     </v-expansion-panel-text>
@@ -155,28 +154,15 @@
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
-
+import {deref} from "@plastic-io/graph-editor-vue3-utils";
 import {mapWritableState, mapActions, mapState} from "pinia";
-
-import * as mdi from "@mdi/js";
-
 export default {
     name: "node-properties",
     methods: {
-        hyphenateProperty(prop) {
-            var p = "";
-            Array.prototype.forEach.call(prop, function (char) {
-                if (char === char.toUpperCase()) {
-                    p += "-" + char.toLowerCase();
-                    return;
-                }
-                p += char;
-            });
-            return p;
-        },
-        updateNodeUrl(e) {
-            this.node.url = e;
-        },
+        ...mapActions(useGraphStore, [
+            'updateNodeProperties',
+            'updateNodeUrl',
+        ]),
         publish() {
             this.publishNode(this.node.id);
         },
@@ -185,25 +171,36 @@ export default {
         return {
             node: null,
             panel: 0,
+            updateTimer: 0,
+            updateTimeout: 1000,
         };
     },
     watch: {
         "node.url": {
             handler: function () {
-                // this.$store.commit("updateNodeUrl", {
-                //     nodeId: this.node.id,
-                //     url: this.node.url,
-                // });
+                if (this.node.url === this.selectedNode.url) {
+                    return;
+                }
+                clearTimeout(this.updateTimer);
+                this.updateTimer = setTimeout(() => {
+                    this.updateNodeUrl({
+                        nodeId: this.node.id,
+                        url: this.node.url,
+                    });
+                }, this.updateTimeout);
             },
             deep: true,
         },
         "node.properties": {
             handler: function () {
-                // this.$store.dispatch("updateNodeProperties", {
-                //     nodeId: this.node.id,
-                //     properties: JSON.parse(JSON.stringify(this.node.properties)),
-                //     version: this.graph.version,
-                // });
+                clearTimeout(this.updateTimer);
+                this.updateTimer = setTimeout(() => {
+                    this.updateNodeProperties({
+                        nodeId: this.node.id,
+                        properties: deref(this.node.properties),
+                        version: this.graph.version,
+                    });
+                }, this.updateTimeout);
             },
             deep: true,
         },
@@ -211,14 +208,14 @@ export default {
             if (!this.selectedNode) {
                 return;
             }
-            this.node = JSON.parse(JSON.stringify(this.selectedNode));
+            this.node = deref(this.selectedNode);
         },
     },
     mounted() {
         if (!this.selectedNode) {
             return;
         }
-        this.node = JSON.parse(JSON.stringify(this.selectedNode));
+        this.node = deref(this.selectedNode);
     },
     computed: {
         ...mapState(useGraphStore, [
@@ -229,9 +226,6 @@ export default {
           'selectedNode',
           'selectedNodes',
         ]),
-        icons() {
-            return Object.keys(mdi).map(this.hyphenateProperty);
-        },
     }
 };
 </script>

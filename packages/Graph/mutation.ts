@@ -5,6 +5,25 @@ import type {Graph} from "@plastic-io/plastic-io";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 const events = [];
 export default {
+    updateNodeUrl(e: {nodeId: string, url: string}) {
+        const node = this.graphSnapshot.nodes.find((v: any) => v.id === e.nodeId);
+        node.url = e.url;
+        this.updateGraphFromSnapshot("Change Node URL");
+    },
+    updateNodeProperties(e: {
+        nodeId: string,
+        properties: any,
+    }) {
+        const node = this.graphSnapshot.nodes.find((v:any) => v.id === e.nodeId);
+        if (!node) {
+            return this.raiseError(new Error("Cannot find node to update."));
+        }
+        if (!diff(node.properties, e.properties)) {
+            return;
+        }
+        node.properties = e.properties;
+        this.updateGraphFromSnapshot("Update Node Properties");
+    },
     async addItem(e: any) {
         const artifactPrefix = "artifacts/";
         let item, er;
