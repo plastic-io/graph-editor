@@ -33,8 +33,8 @@
                 class="no-select bottom-system-bar no-graph-target"
             >
                 <template
-                v-for="(plugin, index) in getPluginsByType('system-bar-bottom')"
-                :value="plugin.name"
+                    v-for="(plugin, index) in getPluginsByType('system-bar-bottom')"
+                    :value="plugin.name"
                 >
                     <component :is="plugin.component" v-bind="plugin.props"/>
                 </template>
@@ -132,12 +132,6 @@ export default {
                     this.noSelect = false;
                 }, 1);
             }
-        },
-        preferences: {
-            handler() {
-
-            },
-            deep: true
         },
     },
     methods: {

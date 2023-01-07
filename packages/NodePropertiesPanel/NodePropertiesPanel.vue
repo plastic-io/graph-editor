@@ -1,6 +1,6 @@
 <template>
-    <v-card flat v-if="node && selectedNode" style="overflow-y: auto;">
-        <v-card-text class="ma-0 pa-0">
+    <v-card flat style="overflow-y: auto;">
+        <v-card-text v-if="node && selectedNodes.length > 0" class="ma-0 pa-0">
             <v-expansion-panels flat v-model="panel">
                 <v-expansion-panel>
                     <v-expansion-panel-title>
@@ -146,6 +146,9 @@
                 </v-expansion-panel>
             </v-expansion-panels>
         </v-card-text>
+        <div class="ma-3" v-if="selectedNodes.length === 0">
+            <i>No nodes selected</i>
+        </div>
     </v-card>
 </template>
 <script lang="ts">

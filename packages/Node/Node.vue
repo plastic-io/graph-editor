@@ -140,21 +140,17 @@ export default {
             },
             deep: true,
         },
-        node: {
-            handler: function () {
-                console.log('recompile after change');
-                const changes = diff(this.localNodeSnapshot.template.vue, this.node.template.vue);
-                this.localNode = this.node;
-                this.localNodeSnapshot = JSON.parse(JSON.stringify(this.node, this.replacer));
-                if (changes) {
-                    this.styles = [];
-                    this.broken = null;
-                    // recompile template after change
-                    compileTemplate(this, this.localNode.id, this.localNode.template.vue, true);
-                }
-            },
-            deep: true,
-        }
+        'node.template.vue'() {
+            const changes = diff(this.localNodeSnapshot.template.vue, this.node.template.vue);
+            this.localNode = this.node;
+            this.localNodeSnapshot = JSON.parse(JSON.stringify(this.node, this.replacer));
+            if (changes) {
+                this.styles = [];
+                this.broken = null;
+                // recompile template after change
+                compileTemplate(this, this.localNode.id, this.localNode.template.vue, true);
+            }
+        },
     },
     data() {
         return {
@@ -277,7 +273,6 @@ export default {
             }
         },
         async importGraph(g) {
-            console.log("importGraph", g);
             await compileTemplate(this, this.nodeComponentName, g.properties.presentationTemplate);
             this.loaded[this.nodeComponentName] = true;
         },

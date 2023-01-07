@@ -1,118 +1,125 @@
 <template>
     <div>
-        <v-tabs v-model="inputsTabs">
-            <v-tab v-for="ioKey in ['inputs', 'outputs']" :key="ioKey">
-                {{ioKey}}
-            </v-tab>
-        </v-tabs>
-        <v-window v-model="inputsTabs" v-if="node" style="height: calc(100vh - 250px); overflow-y: auto;">
-            <v-window-item v-for="ioKey in ['inputs', 'outputs']" :key="ioKey">
-                <v-btn
-                    class="ma-5"
-                    @click.stop="add(ioKey)"
-                     :disabled="controlsDisabled"
-                    color="info"
-                    fab
-                    x-small
-                    absolute
-                    left
-                >
-                    Add {{ioKey.substring(0, ioKey.length - 1)}}<v-icon>mdi-plus-circle-outline</v-icon>
-                </v-btn>
-                <v-expansion-panels>
-                    <v-expansion-panel v-for="(io, index) in node.properties[ioKey]" :key="index">
-                        <v-expansion-panel-title :help-topic="ioKey">
-                            <v-icon :disabled="controlsDisabled" @click.stop="remove(ioKey, io)">mdi-delete</v-icon>
-                            <v-text-field
-                                @click.stop
-                                :disabled="controlsDisabled"
-                                v-model="io.name"
-                                :help-topic="ioKey + '-name'">
-                            </v-text-field>
-                            <template v-slot:actions="{ expanded }">
-                                <v-icon
-                                    :disabled="index === 0 || controlsDisabled"
-                                    @click.stop="moveUp(ioKey, io)">mdi-arrow-up-bold-box-outline</v-icon>
-                                <v-icon
-                                    :disabled="index === node.properties[ioKey].length - 1 || controlsDisabled"
-                                    @click.stop="moveDown(ioKey, io)">mdi-arrow-down-bold-box-outline</v-icon>
-                                <v-icon :icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'" style="margin-left: 10px;"></v-icon>
-                            </template>
-                        </v-expansion-panel-title>
-                        <v-expansion-panel-text>
-                            <v-combobox
-                                :items="ioTypes"
-                                :disabled="controlsDisabled"
-                                v-model="io.type"
-                                :help-topic="ioKey + '-type'"/>
-                            <v-checkbox
-                                v-if="!controlsDisabled"
-                                v-model="io.external"
-                                label="External"
-                                :help-topic="ioKey + '-external'"/>
-                            <v-card flat>
-                                <v-list two-line subheader class="connector-info">
-                                    <v-list-item
-                                        v-for="(connectorInfo, index) in getConnectors(ioKey, io.name)"
-                                        @mouseover="connectorHover(connectorInfo.connector);"
-                                        @click="connectorSelect(connectorInfo.connector);"
-                                        :title="`Field: ${connectorInfo.connector.field}\nNode Id: ${connectorInfo.connector.nodeId}\nConnector Id: ${connectorInfo.connector.id}\nGraph Id: ${connectorInfo.connector.graphId}\nVersion: ${connectorInfo.connector.version}`"
-                                        :key="index">
-                                        <template v-slot:prepend>
-                                          <v-avatar style="overflow: visible;">
-                                              <v-icon>mdi-transit-connection</v-icon>
-                                          </v-avatar>
-                                        </template>
-                                        {{connectorInfo.connector.field}}
-                                        <v-avatar style="overflow: visible;">
-                                            <table style="transform: scale(0.70) translate(5px, -20%); padding-top: 50px;"  help-topic="connectorOrder">
-                                                <tr>
-                                                    <td>
-                                                        <v-icon
-                                                            :disabled="index === 0 || controlsDisabled"
-                                                            @click="moveConnectorUp(connectorInfo)">mdi-arrow-up-bold-box-outline</v-icon>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <v-icon
-                                                            :disabled="index === node.properties[ioKey].length - 1 || controlsDisabled"
-                                                            @click="moveConnectorDown(connectorInfo)">mdi-arrow-down-bold-box-outline</v-icon>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <v-icon :disabled="controlsDisabled" @click="removeConnector(connectorInfo)">mdi-delete</v-icon>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </v-avatar>
-                                    </v-list-item>
-                                    <v-card flat v-if="getConnectors(ioKey, io.name).length === 0">
-                                        <v-card-text>
-                                            <i>No Connectors</i>
-                                        </v-card-text>
+        <div v-if="selectedNode">
+            <v-tabs v-model="inputsTabs">
+                <v-tab v-for="ioKey in ['inputs', 'outputs']" :key="ioKey">
+                    {{ioKey}}
+                </v-tab>
+            </v-tabs>
+            <v-window v-model="inputsTabs" v-if="node" style="height: calc(100vh - 250px); overflow-y: auto;">
+                <keep-alive>
+                    <v-window-item v-for="ioKey in ['inputs', 'outputs']" :key="ioKey">
+                        <v-btn
+                            class="ma-5"
+                            @click.stop="add(ioKey)"
+                             :disabled="controlsDisabled"
+                            color="info"
+                            fab
+                            x-small
+                            absolute
+                            left
+                        >
+                            Add {{ioKey.substring(0, ioKey.length - 1)}}<v-icon>mdi-plus-circle-outline</v-icon>
+                        </v-btn>
+                        <v-expansion-panels>
+                            <v-expansion-panel v-for="(io, index) in node.properties[ioKey]" :key="index">
+                                <v-expansion-panel-title :help-topic="ioKey">
+                                    <v-icon :disabled="controlsDisabled" @click.stop="remove(ioKey, io)">mdi-delete</v-icon>
+                                    <v-text-field
+                                        @click.stop
+                                        :disabled="controlsDisabled"
+                                        v-model="io.name"
+                                        :help-topic="ioKey + '-name'">
+                                    </v-text-field>
+                                    <template v-slot:actions="{ expanded }">
+                                        <v-icon
+                                            :disabled="index === 0 || controlsDisabled"
+                                            @click.stop="moveUp(ioKey, io)">mdi-arrow-up-bold-box-outline</v-icon>
+                                        <v-icon
+                                            :disabled="index === node.properties[ioKey].length - 1 || controlsDisabled"
+                                            @click.stop="moveDown(ioKey, io)">mdi-arrow-down-bold-box-outline</v-icon>
+                                        <v-icon :icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'" style="margin-left: 10px;"></v-icon>
+                                    </template>
+                                </v-expansion-panel-title>
+                                <v-expansion-panel-text>
+                                    <v-combobox
+                                        :items="ioTypes"
+                                        :disabled="controlsDisabled"
+                                        v-model="io.type"
+                                        :help-topic="ioKey + '-type'"/>
+                                    <v-checkbox
+                                        v-if="!controlsDisabled"
+                                        v-model="io.external"
+                                        label="External"
+                                        :help-topic="ioKey + '-external'"/>
+                                    <v-card flat>
+                                        <v-list two-line subheader class="connector-info">
+                                            <v-list-item
+                                                v-for="(connectorInfo, index) in getConnectors(ioKey, io.name)"
+                                                @mouseover="connectorHover(connectorInfo.connector);"
+                                                @click="connectorSelect(connectorInfo.connector);"
+                                                :title="`Field: ${connectorInfo.connector.field}\nNode Id: ${connectorInfo.connector.nodeId}\nConnector Id: ${connectorInfo.connector.id}\nGraph Id: ${connectorInfo.connector.graphId}\nVersion: ${connectorInfo.connector.version}`"
+                                                :key="index">
+                                                <template v-slot:prepend>
+                                                  <v-avatar style="overflow: visible;">
+                                                      <v-icon>mdi-transit-connection</v-icon>
+                                                  </v-avatar>
+                                                </template>
+                                                {{connectorInfo.connector.field}}
+                                                <v-avatar style="overflow: visible;">
+                                                    <table style="transform: scale(0.70) translate(5px, -20%); padding-top: 50px;"  help-topic="connectorOrder">
+                                                        <tr>
+                                                            <td>
+                                                                <v-icon
+                                                                    :disabled="index === 0 || controlsDisabled"
+                                                                    @click="moveConnectorUp(connectorInfo)">mdi-arrow-up-bold-box-outline</v-icon>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <v-icon
+                                                                    :disabled="index === node.properties[ioKey].length - 1 || controlsDisabled"
+                                                                    @click="moveConnectorDown(connectorInfo)">mdi-arrow-down-bold-box-outline</v-icon>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>
+                                                                <v-icon :disabled="controlsDisabled" @click="removeConnector(connectorInfo)">mdi-delete</v-icon>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </v-avatar>
+                                            </v-list-item>
+                                            <v-card flat v-if="getConnectors(ioKey, io.name).length === 0">
+                                                <v-card-text>
+                                                    <i>No Connectors</i>
+                                                </v-card-text>
+                                            </v-card>
+                                        </v-list>
                                     </v-card>
-                                </v-list>
-                            </v-card>
-                        </v-expansion-panel-text>
-                    </v-expansion-panel>
-                </v-expansion-panels>
-            </v-window-item>
-        </v-window>
-        <v-dialog absolute v-model="showMessage" max-width="290">
-            <v-card>
-                <v-card-title class="headline">Confirm</v-card-title>
-                <v-card-text>
-                    {{message}}
-                </v-card-text>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn @click="showMessage = false">Cancel</v-btn>
-                    <v-btn @click="messageClick">Delete</v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
+                                </v-expansion-panel-text>
+                            </v-expansion-panel>
+                        </v-expansion-panels>
+                    </v-window-item>
+                </keep-alive>
+            </v-window>
+            <v-dialog absolute v-model="showMessage" max-width="290">
+                <v-card>
+                    <v-card-title class="headline">Confirm</v-card-title>
+                    <v-card-text>
+                        {{message}}
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn @click="showMessage = false">Cancel</v-btn>
+                        <v-btn @click="messageClick">Delete</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+        </div>
+        <div v-else class="ma-3">
+            <i>No nodes selected</i>
+        </div>
     </div>
 </template>
 <script lang="typescript">

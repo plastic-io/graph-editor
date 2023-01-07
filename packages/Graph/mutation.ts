@@ -6,7 +6,6 @@ import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-or
 const events = [];
 export default {
     async addItem(e: any) {
-        console.log('addItem');
         const artifactPrefix = "artifacts/";
         let item, er;
         if (e.type === 'component') {
@@ -198,11 +197,11 @@ export default {
                 appearsInExport: false,
                 x: pos.x,
                 y: pos.y,
-                z: 0 + this.preferences.newNodeOffset.z,
+                z: 0 + this.preferencesStore.preferences.newNodeOffset.z,
                 presentation: {
                     x: pos.x,
                     y: pos.y,
-                    z: 0 + this.preferences.newNodeOffset.z,
+                    z: 0 + this.preferencesStore.preferences.newNodeOffset.z,
                 },
             },
             template: {
@@ -265,7 +264,6 @@ export default {
         this.updateGraphFromSnapshot("Drop New Item");
     },
     addNodeItem(e: any) {
-        console.log('addNodeItem');
         const pos = {
             x: (e.x - this.view.x) / this.view.k,
             y: (e.y - this.view.y) / this.view.k,

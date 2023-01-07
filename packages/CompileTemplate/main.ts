@@ -7,7 +7,7 @@ import {generate} from "escodegen";
 // longLoadingTimer
 // broken: null
 // styles: []
-export default function compileTemplate(hostComp: any, id: string, tmp: string, clearLoad: boolean) {
+export default function compileTemplate(hostComp: any, id: string, tmp: string = '<template><div></div></template>', clearLoad: boolean) {
     if (clearLoad) {
         hostComp.loaded[id] = undefined;
     }

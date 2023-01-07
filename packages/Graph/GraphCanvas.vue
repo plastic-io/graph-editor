@@ -52,6 +52,9 @@ export default {
     }
   },
   watch: {
+    selectedNodes() {
+        this.updateBoundingRect();
+    },
     view: {
         handler() {
             clearTimeout(this.positionTimeout);
@@ -95,6 +98,7 @@ export default {
     ...mapWritableState(usePreferencesStore, ['preferences']),
     ...mapWritableState(useGraphStore, [
         'addingConnector',
+        'updateBoundingRect',
         'systemBarOffset',
         'graph',
         'graphSnapshot',

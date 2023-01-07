@@ -3,9 +3,9 @@
         <v-card-text class="ma-0 pa-0">
             <v-list
               help-topic="graphNodeList"
-              @update:selected="updateSelected"
               :selected="list"
               :items="mappedNodes"
+              @update:selected="updateSelected"
               v-if="graphSnapshot.nodes.length > 0"
               select-strategy="classic"></v-list>
             <i v-else class="ma-5">No Nodes</i>
@@ -30,10 +30,7 @@ export default {
             "save",
         ]),
         updateSelected(e) {
-          this.list = [
-            ...e,
-          ];
-          this.selectNodes(this.list);
+          this.selectNodes(e);
         },
         copyNodeUrl(e, url) {
             navigator.clipboard.writeText(url).then(() => {
@@ -58,11 +55,17 @@ export default {
         ...mapState(usePreferencesStore, [
           'preferences'
         ]),
+        list() {
+            return this.selectedNodes.map(n => n.id);
+        },
         mappedNodes() {
           const nodes = this.graphSnapshot.nodes.map((node) => {
             return {
               title: node.properties.name || 'Untitled Node',
               value: node.id,
+              props: {
+                prependIcon: node.properties.icon,
+              },
             };
           });
           return nodes;
@@ -71,7 +74,6 @@ export default {
     data: () => {
         return {
             nodeList: 0,
-            list: [],
         };
     },
 };

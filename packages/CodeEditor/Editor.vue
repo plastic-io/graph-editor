@@ -1,14 +1,19 @@
 <template>
   <div>
-    <v-system-bar :style="{position: 'absolute', top: '-25px', left: 0, width: '100%', 'justify-content': 'left'}">
-      <v-divider class="mx-4" vertical></v-divider>
-      <div @click="save" style="font-weight: bold;" label="file">Save</div>
-      <v-divider class="mx-4" vertical></v-divider>
-      <div v-show="dirty" @click="revert" style="font-weight: bold;" label="file">Revert</div>
-      <v-divider v-show="dirty" class="mx-4" vertical></v-divider>
-    </v-system-bar>
-    <div>
-      <div class="monaco-editor" ref="editor"></div>
+    <div v-show="selectedNode">
+      <v-system-bar :style="{position: 'absolute', top: '-25px', left: 0, width: '100%', 'justify-content': 'left'}">
+        <v-divider class="mx-4" vertical></v-divider>
+        <div @click="save" style="font-weight: bold;" label="file">Save</div>
+        <v-divider class="mx-4" vertical></v-divider>
+        <div v-show="dirty" @click="revert" style="font-weight: bold;" label="file">Revert</div>
+        <v-divider v-show="dirty" class="mx-4" vertical></v-divider>
+      </v-system-bar>
+      <div>
+        <div class="monaco-editor" ref="editor"></div>
+      </div>
+    </div>
+    <div class="ma-3" v-show="!selectedNode">
+        <i>No nodes selected</i>
     </div>
   </div>
 </template>
@@ -64,6 +69,9 @@ export default {
   methods: {
     ...mapActions(useGraphStore, ['updateNodeTemplate']),
     init() {
+      if (!this.selectedNode) {
+        return;
+      }
       const editor = monaco.editor.create(this.$refs.editor, {
         language: this.language,
         theme: this.preferences.appearance.theme === 'dark' ? 'vs-dark' : 'vs',

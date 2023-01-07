@@ -1,5 +1,24 @@
 import type {Graph, Node} from "@plastic-io/plastic-io";
 export default {
+    externalIO() {
+        const info = {
+            inputs: [],
+            outputs: [],
+        } as any;
+        this.graphSnapshot.nodes.forEach((v) => {
+            ["inputs", "outputs"].forEach((io) => {
+                v.properties[io].forEach((i) => {
+                    if (i.external) {
+                        info[io].push({
+                            node: v,
+                            field: i,
+                        });
+                    }
+                });
+            });
+        });
+        return info;
+    },
     selectNodes(ids: string[]) {
         const selectedNodes = [] as any;
         ids.forEach((id: string) => {

@@ -11,15 +11,16 @@
                                 <v-text-field help-topic="graphDescription" label="Description" v-model="graphSnapshot.properties.description"></v-text-field>
                                 <v-text-field help-topic="graphUrl" label="URL" v-model="graphSnapshot.url"></v-text-field>
                                 <v-text-field help-topic="graphId" label="Graph Id" disabled v-model="graphSnapshot.id"></v-text-field>
-<!--                                 <v-combobox
+                                <v-text-field
                                     help-topic="graphIcon"
-                                    :prepend-icon="graphSnapshot.properties.icon"
                                     persistent-hint
+                                    v-model="graphSnapshot.properties.icon"
                                     hint="https://cdn.materialdesignicons.com/4.9.95/"
-                                    :eager="true"
-                                    title="Icon"
-                                    :items="icons"
-                                    v-model="graphSnapshot.properties.icon"/> -->
+                                    title="Icon">
+                                    <template v-slot:prepend>
+                                        <v-icon :icon="graphSnapshot.properties.icon"/>
+                                    </template>
+                                </v-text-field>
                                 <v-text-field help-topic="graphVersion" label="Version" disabled v-model="graphSnapshot.version"></v-text-field>
                             </v-card-text> 
                         </v-card>
@@ -106,11 +107,7 @@ import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 
-import {mapWritableState, mapActions, mapState} from "pinia";
-
-import moment from "moment";
-
-import * as mdi from "@mdi/js";
+import {mapActions, mapState, mapWritableState} from "pinia";
 
 export default {
     name: "graph-properties",
@@ -121,64 +118,42 @@ export default {
         ...mapActions(useGraphStore, [
             "save",
             "selectNode",
+            "updateGraphFromSnapshot",
         ]),
         fromNow(e) {
             return moment(new Date(e)).fromNow();
         },
-        hyphenateProperty(prop) {
-            var p = "";
-            Array.prototype.forEach.call(prop, function (char) {
-                if (char === char.toUpperCase()) {
-                    p += "-" + char.toLowerCase();
-                    return;
-                }
-                p += char;
-            });
-            return p;
-        },
     },
     data: () => {
         return {
+            updateTimeout: 1000,
             panel: 0,
+            saveTimeout: null,
         };
     },
     watch: {
-        "graphSnapshot.properties": {
-            handler: function () {
-                // this.save();
+        'graphSnapshot.properties': {
+            handler() {
+                clearTimeout(this.saveTimeout);
+                this.saveTimeout = setTimeout(() => {
+                    this.updateGraphFromSnapshot('Update Graph Properties');
+                }, this.updateTimeout);
             },
             deep: true,
         },
     },
     computed: {
-        icons() {
-            return Object.keys(mdi).map(this.hyphenateProperty);
-        },
-        externalIO() {
-            const info = {
-                inputs: [],
-                outputs: [],
-            };
-            this.graphSnapshot.nodes.forEach((v) => {
-                ["inputs", "outputs"].forEach((io) => {
-                    v.properties[io].forEach((i) => {
-                        if (i.external) {
-                            info[io].push({
-                                node: v,
-                                field: i,
-                            });
-                        }
-                    });
-                });
-            });
-            return info;
-        },
-        ...mapState(useGraphStore, [
+        ...mapWritableState(useGraphStore, [
             'graphSnapshot',
+        ]),
+        ...mapState(useGraphStore, [
+            'moment',
+            'externalIO',
         ]),
         ...mapState(useOrchestratorStore, [
             'domainTags',
         ]),
+
     }
 };
 </script>

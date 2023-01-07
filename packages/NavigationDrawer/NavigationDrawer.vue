@@ -24,7 +24,9 @@
             style="z-index: 1; overflow: hidden;">
             <v-window v-model="tabSet">
                 <v-window-item v-for="pluginPanel in getWindows"
-                    :value="pluginPanel.props.tabSet" :eager="true"
+                    :value="pluginPanel.props.tabSet"
+                    :reverse-transition="false"
+                    :transition="false"
                 >
                     <keep-alive>
                         <v-tabs v-model="tabSetTabs[tabSet]">
@@ -40,7 +42,9 @@
                     <v-window v-model="tabSetTabs[tabSet]">
                       <v-window-item
                         v-for="(plugin, index) in windowPlugins"
-                        :value="plugin.name" :eager="true"
+                        :value="plugin.name"
+                        :reverse-transition="false"
+                        :transition="false"
                       >
                         <keep-alive>
                             <component :is="plugin.component" v-bind="plugin.props"/>
@@ -117,7 +121,6 @@ export default {
                 return;
             }
             this.tabSetTabs[this.tabSet] = this.getPlugins(this.tabSet)[0].name;
-            console.log('watch tabSet', this.tabSet, this.tabSetTabs);
         },
         selectedTabSet() {
             this.tabSet = this.selectedTabSet;

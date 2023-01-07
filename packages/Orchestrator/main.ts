@@ -13,6 +13,19 @@ import SchedulerWorker from "./schedulerWorker?worker";
 import {useTheme} from 'vuetify';
 import {deref, newId} from "@plastic-io/graph-editor-vue3-utils";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+import * as mdi from "@mdi/js";
+import moment from "moment";
+const hyphenateProperty = (prop: any) => {
+    var p = "";
+    Array.prototype.forEach.call(prop, function (char) {
+        if (char === char.toUpperCase()) {
+            p += "-" + char.toLowerCase();
+            return;
+        }
+        p += char;
+    });
+    return p;
+};
 export default class GraphManager extends GraphEditorModule {
   constructor(config: Record<string, any>, app: App<Element>) {
     super();
@@ -29,6 +42,7 @@ export default class GraphManager extends GraphEditorModule {
 };
 export const useStore = defineStore('orchestrator', {
   state: () => ({
+    moment,
     graphStore: useGraphStore(),
     preferencesStore: usePreferencesStore(),
     token: null,
@@ -125,8 +139,10 @@ export const useStore = defineStore('orchestrator', {
     luts: {},
     keys: {},
     toc: null,
+    icons: Object.keys(mdi).map(hyphenateProperty),
   }),
   actions: {
+    hyphenateProperty,
     async getToc() {
       this.toc = await this.dataProviders.toc!.get("toc.json");
     },
