@@ -50,6 +50,13 @@ const defaultNewGraphTemplate = `<template>
     }
 </script>
 `;
+export const useStore = defineStore('UserPreferences', {
+  state: () => ({
+    remotePreferences: null as any,
+    preferences: null as null | UserPreferences,
+    originalPreferences: null as null | UserPreferences,
+  }),
+});
 export class UserPreferences {
     userName: string;
     email: string;
@@ -72,6 +79,7 @@ export class UserPreferences {
     registries: string;
     componentScripts: string;
     snapToGrid: boolean;
+    remoteConfiguration: string;
     gridSize: number;
     appearance: Appearance;
     uiSize: Record<string, number>;
@@ -98,7 +106,8 @@ export class UserPreferences {
         this.gridSize = 10;
         this.appearance = new Appearance();
         this.uiSize = {};
-        this.registries = 'https://unpkg.com/@plastic-io/registry@2.0.1';
+        this.remoteConfiguration = "https://unpkg.com/@plastic-io/registry/package.json";
+        this.registries = '';
         this.componentScripts = '';
     }
 }
@@ -112,12 +121,4 @@ export default abstract class PreferencesProvider {
   abstract set(value: UserPreferences): Promise<void>;
   abstract delete(): Promise<void>;
 }
-
-export const useStore = defineStore('UserPreferences', {
-  state: () => ({
-    preferences: null as null | UserPreferences,
-    originalPreferences: null as null | UserPreferences,
-  }),
-});
-
 

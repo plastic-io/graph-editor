@@ -4,7 +4,7 @@ import type Pinia from "pinia";
 export default abstract class GraphEditorModule {
   name: string;
   constructor(config?: Record<string, any>, app?: App, router?: Router, pinia?: Pinia.Store) {
-    this.name = '';
+    this.name = typeof this;
   }
 }
 export class Plugin {

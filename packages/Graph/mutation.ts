@@ -167,7 +167,7 @@ export default {
                         id: v.id,
                         field: i.name,
                         type: i.type,
-                        visible: i.visible,
+                        visible: i.visible === undefined ? true : i.visible,
                         external: false,
                     } as any;
                 }
@@ -178,7 +178,7 @@ export default {
                         id: v.id,
                         field: i.name,
                         type: i.type,
-                        visible: i.visible,
+                        visible: i.visible === undefined ? true : i.visible,
                         external: false,
                     } as any;
                 }
@@ -300,6 +300,12 @@ export default {
         // ensure connectors are not imported
         e.item.edges.forEach((edge: Edge) => {
             edge.connectors = [];
+        });
+        // make compatablie with pre visiblity artifacts
+        ['inputs', 'outputs'].forEach((io) => {
+            e.item.properties[io].forEach((i: any) => {
+                i.visible = i.visible === undefined ? true : i.visible;
+            });
         });
         const node = {
             id: id,

@@ -1,5 +1,5 @@
 <template>
-    <v-app class="graph-editor" :style="workspaceBackground">
+    <v-app class="graph-editor" :style="workspaceBackground" v-if="preferences">
         <component is="script" v-for="script in scripts" :src="script"/>
         <error-interstitial/>
         <template v-if="graph && !graph.err">
@@ -57,49 +57,24 @@ export default {
         route: Object,
     },
     computed: {
-        ...mapWritableState(usePreferencesStore, [
+        ...mapState(usePreferencesStore, [
             'preferences',
         ]),
-        ...mapWritableState(useOrchestratorStore, [
-            'translating',
-            'selectedNodes',
-            'bgColor',
-        ]),
-        ...mapWritableState(useInputStore, [
+        ...mapState(useInputStore, [
             'mouse',
             'keys',
-            'buttonMap',
+        ]),
+        ...mapState(useGraphStore, [
+            'graph',
         ]),
         ...mapWritableState(useGraphStore, [
-            'view',
-            'graph',
-            'selectionRect',
-            'hoveredNode',
-            'hoveredPort',
             'workspaceElement',
         ]),
         ...mapState(useOrchestratorStore, [
-            'inRewindMode',
-            'rewindVisible',
-            'showInfo',
-            'infoMessage',
-            'dataProviders',
-            'pendingEvents',
-            'activityConnectors',
-            'pathPrefix',
+            'bgColor',
             'showHelp',
             'panelVisibility',
-            'nodeMimeType',
-            'showError',
-            'error',
             'presentation',
-            'locked',
-            'historyPosition',
-            'primaryGroup',
-            'groupNodes',
-            'boundingRect',
-            'selectionRect',
-            'selectedConnectors',
             'hoveredConnector',
         ]),
         workspaceBackground() {
@@ -141,8 +116,6 @@ export default {
     methods: {
         ...mapActions(useGraphStore, [
             'scale',
-            'open',
-            'createNewNode',
             'evCut',
             'evPaste',
             'evCopy',
@@ -157,23 +130,10 @@ export default {
             'mousemove',
         ]),
         ...mapActions(useOrchestratorStore, [
-            'clearInfo',
+            'init',
             'setTheme',
             'getPluginsByType',
-            'undo',
-            'redo',
-            'duplicateSelection',
-            'groupSelected',
-            'ungroupSelected',
-            'bringForward',
-            'bringToFront',
-            'sendBackward',
-            'sendToBack',
-            'deleteSelected',
         ]),
-    },
-    created() {
-        this.setTheme(this.preferences.appearance.theme);
     },
     unmounted() {
         document.removeEventListener('cut', this.evCut);
@@ -204,11 +164,13 @@ export default {
             passive: false,
         });
         const graphId = window.location.pathname.substring(1);
-        this.open(graphId);
+        this.init(graphId);
+        this.setTheme(this.preferences.appearance.theme);
     },
     data: () => {
         return {
             spaceKeyCode: 32,
+            themeSet: false,
             translate: false,
             noSelect: false,
             showDialog: false,

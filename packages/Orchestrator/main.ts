@@ -32,8 +32,8 @@ export default class GraphManager extends GraphEditorModule {
     app.component('registry-settings-panel', RegistrySettingsPanel);
     const graphOrchestratorStore = useOrchestratorStore();
     graphOrchestratorStore.addPlugin(new Plugin({
-      name: 'Registry',
-      title: 'Registry',
+      name: 'Remotes',
+      title: 'Remotes',
       component: 'registry-settings-panel',
       type: 'settings-panel',
       order: 10,
@@ -143,6 +143,15 @@ export const useStore = defineStore('orchestrator', {
   }),
   actions: {
     hyphenateProperty,
+    async init(graphUrl: string) {
+      // application startup
+
+      // 1 authenticate
+
+      // now load the selected graph
+      this.graphStore.open(graphUrl);
+
+    },
     async getToc() {
       this.toc = await this.dataProviders.toc!.get("toc.json");
     },

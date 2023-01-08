@@ -109,10 +109,14 @@ const plugins = [
   Auth0AuthenticationProvider,
 ] as any;
 const pluginInstances = {} as any;
-plugins.forEach((_Plugin: any) => {
-  pluginInstances[_Plugin.name] = new _Plugin({}, app, router, pinia);
-});
-
+for (const _Plugin of plugins) {
+   const plugin = new _Plugin({}, app, router, pinia);
+   console.log(plugin);
+   pluginInstances[_Plugin.name] = plugin;
+   if (plugin instanceof Promise) {
+     await plugin
+   }
+}
 (self as any).plastic = {
   app,
   router,
