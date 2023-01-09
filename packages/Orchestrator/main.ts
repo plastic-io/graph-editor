@@ -325,7 +325,7 @@ export const useStore = defineStore('orchestrator', {
           ],
         });
         (scheduleWorker.onmessage as any) = (e: any) => {
-          const methodName = (this as any)[e.data.source];
+          const methodName = e.data.source;
           const args = fromJSON(e.data.event);
           if (methodName === 'beginconnector') {
             return beginconnector(args);
