@@ -438,7 +438,11 @@ export default {
       }
       // don't allow an opening graph to count as a history change
       this.graph = deref(this.graphSnapshot);
+      console.groupCollapsed('%cPlastic-IO: %cGraph',
+        "color: blue",
+        "color: lightblue");
       console.log(deref(this.graphSnapshot));
+      console.groupEnd()
       this.graphLoaded = true;
       graphOrchestrator.createScheduler();
     },

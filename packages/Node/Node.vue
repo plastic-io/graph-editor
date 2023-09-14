@@ -27,6 +27,7 @@
                             </v-btn>
                         </div>
                         <v-divider/>
+                        <pre class="no-graph-target">{{error.message}}</pre>
                         <pre class="no-graph-target">{{error.stack}}</pre>
                         <v-divider/>
                     </v-alert>
@@ -140,7 +141,7 @@ export default {
             },
             deep: true,
         },
-        'node.template.vue'() {
+        async 'node.template.vue'() {
             const changes = diff(this.localNodeSnapshot.template.vue, this.node.template.vue);
             this.localNode = this.node;
             this.localNodeSnapshot = JSON.parse(JSON.stringify(this.node, this.replacer));
@@ -148,12 +149,15 @@ export default {
                 this.styles = [];
                 this.broken = null;
                 // recompile template after change
-                compileTemplate(this, this.localNode.id, this.localNode.template.vue, true);
+                const template = 
+                    await compileTemplate(this, this.localNode.id, this.localNode.template.vue, true);
+                this.templateErrors = template.errors;
             }
         },
     },
     data() {
         return {
+            templateErrors: [],
             broken: false,
             longLoadingTimer: null,
             longLoading: false,
@@ -189,6 +193,7 @@ export default {
             this.longLoading = true;
         }, 500);
         await this.importRoot(this.localNode);
+        this.loaded[this.nodeComponentName] = true;
     },
     methods: {
         ...mapActions(useStore, [
@@ -269,11 +274,13 @@ export default {
                     value: vect,
                 };
                 this.setArtifact(l);
-                await compileTemplate(this, vect.id, vect.template.vue);
+                const template = await compileTemplate(this, vect.id, vect.template.vue);
+                this.templateErrors = template.errors;
             }
         },
         async importGraph(g) {
-            await compileTemplate(this, this.nodeComponentName, g.properties.presentationTemplate);
+            const template = await compileTemplate(this, this.nodeComponentName, g.properties.presentationTemplate);
+            this.templateErrors = template.errors;
             this.loaded[this.nodeComponentName] = true;
         },
         async importNode(v, artifactKey) {
@@ -287,7 +294,8 @@ export default {
             v.properties.presentation.x = this.node.properties.presentation.x;
             v.properties.presentation.y = this.node.properties.presentation.y;
             v.properties.presentation.z = this.node.properties.presentation.z;
-            await compileTemplate(this, artifactKey, v.template.vue);
+            const template = await compileTemplate(this, artifactKey, v.template.vue);
+            this.templateErrors = template.errors;
         },
     },
     computed: {
@@ -315,7 +323,13 @@ export default {
             return true;
         },
         errors: function () {
-            return this.scheduler.errors[this.localNode.id] || [];
+            const errs = [
+                ...(this.scheduler.errors[this.localNode.id] || []),
+                ...this.templateErrors,
+            ];
+            errs.map((err) => new Error(err));
+            errs.forEach(err => console.error(err));
+            return errs;
         },
         inputs: function () {
             return this.localNode.properties.inputs;

@@ -1,8 +1,8 @@
 <template>
-    <v-app class="graph-editor" :style="workspaceBackground" v-if="preferences">
+    <v-app class="graph-editor" :style="workspaceBackground">
         <component is="script" v-for="script in scripts" :src="script"/>
         <error-interstitial/>
-        <template v-if="graph && !graph.err">
+        <template v-if="graph && !graph.err && preferences">
             <v-system-bar
                 class="top-system-bar no-graph-target"
                 v-if="!presentation && panelVisibility"
@@ -39,6 +39,7 @@
                     <component :is="plugin.component" v-bind="plugin.props"/>
                 </template>
             </v-system-bar>
+            <connector-info v-if="showConnectorView" @close="showConnectorView = false;"/>
         </template>
     </v-app>
 </template>
@@ -70,6 +71,9 @@ export default {
         ...mapWritableState(useGraphStore, [
             'workspaceElement',
         ]),
+        ...mapWritableState(useOrchestratorStore, [
+            'showConnectorView',
+        ]),
         ...mapState(useOrchestratorStore, [
             'bgColor',
             'showHelp',
@@ -83,7 +87,9 @@ export default {
             };
         },
         scripts() {
-            return this.preferences.componentScripts.split(',');
+            return [
+                ...this.preferences.componentScripts.replace('\n', ',').split(','),
+            ]
         },
         graphContainerStyle: function() {
             let cursor = "";

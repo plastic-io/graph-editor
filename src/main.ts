@@ -109,14 +109,17 @@ const plugins = [
   Auth0AuthenticationProvider,
 ] as any;
 const pluginInstances = {} as any;
+console.groupCollapsed('%cPlastic-IO: %cGraph Editor Plugins',
+  "color: blue",
+  "color: lightblue");
 for (const _Plugin of plugins) {
    const plugin = new _Plugin({}, app, router, pinia);
-   console.log(plugin);
-   pluginInstances[_Plugin.name] = plugin;
    if (plugin instanceof Promise) {
-     await plugin
+     await plugin;
    }
+   console.log(plugin);
 }
+console.groupEnd();
 (self as any).plastic = {
   app,
   router,

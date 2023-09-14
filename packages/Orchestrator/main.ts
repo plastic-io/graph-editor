@@ -246,14 +246,16 @@ export const useStore = defineStore('orchestrator', {
           if (!this.preferencesStore.preferences!.showConnectorActivity) {
             return;
           }
-          const connectorEvent = {
-            activityType: "start",
-            key: e.connector.id,
-            event: e,
-          };
+          const arr = this.graphStore.activityConnectors[e.connector.id] || []
           this.graphStore.$patch({
             activityConnectors: {
-              [e.connector.id]: [connectorEvent],
+              [e.connector.id]: [
+              ...arr,
+              {
+                activityType: "start",
+                key: e.connector.id,
+                event: e,
+              }],
             },
           });
           if (this.preferencesStore.preferences!.debug) {
@@ -278,15 +280,18 @@ export const useStore = defineStore('orchestrator', {
           if (!this.preferencesStore.preferences!.showConnectorActivity) {
             return;
           }
-          const connectorEvent = {
-            activityType: "end",
-            key: e.connector.id,
-            end: Date.now(),
-            event: e,
-          };
+          const arr = this.graphStore.activityConnectors[e.connector.id] || [];
           this.graphStore.$patch({
             activityConnectors: {
-              [e.connector.id]: [connectorEvent]
+              [e.connector.id]: [
+                ...arr,
+                {
+                  activityType: "end",
+                  key: e.connector.id,
+                  end: Date.now(),
+                  event: e,
+                }
+              ]
             },
           });
           if (this.preferencesStore.preferences!.debug) {
@@ -337,7 +342,6 @@ export const useStore = defineStore('orchestrator', {
           if (!method) {
             return;
           }
-          console.log('onmessage', e.data.source);
           method(args);
         };
         (this.scheduler.instance as any) = {

@@ -17,10 +17,6 @@
                     <v-icon>mdi-folder-network</v-icon>
                     Public Graphs
                 </v-tab>
-                <v-tab help-topic="importLocal">
-                    <v-icon>mdi-vuejs</v-icon>
-                    Components
-                </v-tab>
             </v-tabs>
             <v-window v-model="importPanelTabs">
               <v-window-item>
@@ -28,9 +24,6 @@
               </v-window-item>
               <v-window-item>
                   <import-panel-registry/>
-              </v-window-item>
-              <v-window-item>
-                  <import-panel-component/>
               </v-window-item>
             </v-window>
         </v-card-text>

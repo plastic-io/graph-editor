@@ -85,6 +85,9 @@ export default {
       this.loadFromCache();
     },
     loadFromCache() {
+      if (!(this.$refs.editor && this.$refs.editor.pinstance)) {
+        return;
+      }
       const cache = localStorage.getItem(this.storeKey);
       this.dirty = !!cache;
       const val = cache !== null ? cache : this.selectedNode.template[this.templateType];

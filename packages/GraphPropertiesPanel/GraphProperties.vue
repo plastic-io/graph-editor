@@ -45,8 +45,8 @@
                             <v-card-text class="ma-0 pa-0" help-topic="graphMeta">
                                 <v-text-field disabled label="Created By" v-model="graphSnapshot.properties.createdBy"></v-text-field>
                                 <v-text-field disabled label="Last Updated By" v-model="graphSnapshot.properties.lastUpdatedBy"></v-text-field>
-                                <v-text-field disabled label="Created" :value="fromNow(graphSnapshot.properties.createdOn)"></v-text-field>
-                                <v-text-field disabled label="Updated" :value="fromNow(graphSnapshot.properties.lastUpdate)"></v-text-field>
+                                <v-text-field disabled label="Created" :value="graphSnapshot.properties.createdOn"></v-text-field>
+                                <v-text-field disabled label="Updated" :value="graphSnapshot.properties.lastUpdate"></v-text-field>
                             </v-card-text>
                         </v-card>
                     </v-expansion-panel-text>
@@ -120,9 +120,6 @@ export default {
             "selectNode",
             "updateGraphFromSnapshot",
         ]),
-        fromNow(e) {
-            return moment(new Date(e)).fromNow();
-        },
     },
     data: () => {
         return {
@@ -147,7 +144,6 @@ export default {
             'graphSnapshot',
         ]),
         ...mapState(useGraphStore, [
-            'moment',
             'externalIO',
         ]),
         ...mapState(useOrchestratorStore, [
