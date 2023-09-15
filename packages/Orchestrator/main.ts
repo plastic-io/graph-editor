@@ -124,6 +124,7 @@ export const useStore = defineStore('orchestrator', {
     },
     showError: false,
     connectorWarn: null,
+    errors: {} as any,
     scheduler: {
         state: {},
         errors: [] as any,
@@ -209,9 +210,19 @@ export const useStore = defineStore('orchestrator', {
         theme.global.name.value = isDark ? 'dark' : 'light';
         this.bgColor = isDark ? "#000000" : "#FFFFFF";
     },
-    clearArtifact() {},
-    clearSchedulerErrorItem() {},
-    clearSchedulerError() {},
+    clearArtifact(key: string) {
+
+    },
+    clearError(key: string, item: Error) {
+      const arr = (this.errors[key] || []);
+      const i = arr.indexOf(item);
+      if (i !== -1) {
+        arr.splice(i, 1);
+      }
+    },
+    clearErrors(key: string) {
+      this.errors[key] = [];
+    },
     getPluginsByType(type: string) {
       return this.plugins.filter(p => p.type === type).sort((a, b) => {
           return a.order - b.order;
@@ -221,6 +232,10 @@ export const useStore = defineStore('orchestrator', {
         this.plugins.push(plugin);
     },
     graphUrl(url: string) {},
+    raiseError(id: string, error: Error) {
+      (this.errors[id] ??= [])
+        .push({ id: newId(), error });
+    },
     error(e: any) {
       this.scheduler.errors.push(e);
     },

@@ -399,7 +399,6 @@ export default {
             return;
         }
         // there was an actual change detected
-        console.log('updateGraphFromSnapshot', description);
         // tick the version number by 1
         this.graphSnapshot.version += 1;
         const changes = diff(this.graph, this.graphSnapshot);

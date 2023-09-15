@@ -6,12 +6,11 @@ export default async function (sfc: string, id: string) {
     const SCRIPT_KEY = id + '-script';
     const TEMPLATE_KEY = id + '-template';
     const STYLE_KEY = id + '-style';
-
-    const blocks = compiler.parse(sfc, {
+    const errors = [];
+    const blocks = await compiler.parse(sfc, {
         filename: id + '.vue',
         sourceMap: true,
     });
-
     const template = compiler.compileTemplate({
         id,
         ...blocks.descriptor,

@@ -26,7 +26,9 @@ export default {
                 return n.id === id;
             }));
         });
+        const selectedNode = selectedNodes[0];
         this.$patch({
+            selectedNode,
             selectedNodes,
         });
     },

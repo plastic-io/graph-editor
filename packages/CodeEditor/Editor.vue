@@ -68,6 +68,22 @@ export default {
   },
   methods: {
     ...mapActions(useGraphStore, ['updateNodeTemplate']),
+    syncErrors() {
+      const model = this.$refs.editor.pinstance.getModel();
+      monaco.editor.setModelMarkers(model, 'owner', this.errors
+        .map((item) => {
+        const e = item.error;
+        e.loc = e.loc || {start:{column: 0, line: 0}, end:{column: 0, line: 0}};
+        return {
+            message: e.message,
+            severity: monaco.MarkerSeverity.Error,
+            startLineNumber: e.loc.start.line,
+            startColumn: e.loc.start.column,
+            endLineNumber: e.loc.end.line,
+            endColumn: e.loc.end.column,
+        }
+      }));
+    },
     init() {
       if (!this.selectedNode) {
         return;
@@ -83,6 +99,7 @@ export default {
       this.$refs.editor.pinstance = editor;
       this.resize();
       this.loadFromCache();
+      this.syncErrors();
     },
     loadFromCache() {
       if (!(this.$refs.editor && this.$refs.editor.pinstance)) {
@@ -131,13 +148,26 @@ export default {
     navWidth() {
       this.resize();
     },
+    errors() {
+      this.syncErrors();
+    },
   },
   computed: {
     ...mapState(useGraphStore, ['graph', 'selectedNodes', 'selectedNode']),
     ...mapState(usePreferencesStore, ['preferences']),
-    ...mapState(useOrchestratorStore, ['navWidth']),
+    ...mapState(useOrchestratorStore, {
+      "scheduler": "scheduler",
+      "nodeErrors": "errors",
+      "navWidth": "navWidth",
+    }),
     storeKey() {
       return this.selectedNode ? 'pinstance-editor-' + this.templateType + '-' + this.selectedNode.id : '';
+    },
+    errors() {
+      if (!this.selectedNode) {
+        return [];
+      }
+      return this.nodeErrors[this.selectedNode.id] || [];
     },
   },
 };

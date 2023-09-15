@@ -18,9 +18,5 @@ export default async function compileTemplate(hostComp: any, id: string, tmp: st
     } catch (err: any) {
         compSource = createErrorComponent([err]);
     }
-    const app = (self as any).plastic_app;
-    if (app) {
-        app.component('node-' + id, compSource.component);
-    }
     return compSource;
 }

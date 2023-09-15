@@ -1,8 +1,5 @@
 <template>
     <div ref="node-root">
-        <v-alert v-if="broken" type="error">
-            <pre>{{broken}}</pre>
-        </v-alert>
         <div
             v-if="loaded[nodeComponentName] && visible"
             ref="node"
@@ -10,29 +7,7 @@
             :key="localNode.id"
             :x-node-id="localNode.id"
             :style="nodeStyle">
-            <template v-if="errors.length > 0">
-                <div v-for="(error, index) in errors" :key="index">
-                    <v-alert type="error" class="node-error" style="pointer-events: all; cursor: text;">
-                        <div style="text-align: right;">
-                            <i style="font-weight: bold;padding-left: 10px;" v-if="errors.length > 1">(+ {{errors.length - 1}} more errors)</i>
-                        </div>
-                        <div
-                            :style="errors.length > 1 ? 'margin-top: -24px;' : ''"
-                            @click="clearSchedulerErrorItem({key: localNode.id, item: error});">
-                            <v-btn class="ma-3">
-                                Dismiss
-                            </v-btn>
-                            <v-btn class="ma-3" @click="clearSchedulerError({key: localNode.id})">
-                                Dismiss All
-                            </v-btn>
-                        </div>
-                        <v-divider/>
-                        <pre class="no-graph-target">{{error.message}}</pre>
-                        <pre class="no-graph-target">{{error.stack}}</pre>
-                        <v-divider/>
-                    </v-alert>
-                </div>
-            </template>
+            <node-error :nodeId="localNode.id"/>
             <div class="node-inputs" v-if="!hostNode">
                 <node-field
                     v-for="field in inputs"
@@ -47,15 +22,15 @@
                 :id="'node-' + localNode.id"
                 :class="translating && mouse.lmb ? 'no-select' : ''"
             >
-                <component
-                    :is="'node-' + nodeComponentName"
+                <node-component
+                    v-if="!broken"
+                    :component="component"
                     :graph="localNode.linkedGraph ? localNode.linkedGraph.graph : null"
                     :node="localNode"
                     :scheduler="scheduler"
                     :state="scheduler.state"
                     :nodeProps="nodeProps"
-                    v-bind="nodeProps[localNode.__contextId]"
-                    v-on="nodeEvents[localNode.__contextId]"
+                    :hostNode="hostNode"
                     @dataChange="dataChange"
                     @set="set"
                 />
@@ -92,11 +67,15 @@ import {Node, Graph} from "@plastic-io/plastic-io";
 import {mapWritableState, mapActions, mapState} from "pinia";
 
 import NodeField from "./NodeField.vue";
+import NodeError from "./NodeError.vue";
+import NodeComponent from "./NodeComponent.vue";
 
 import {diff} from "deep-diff";
+
+import {markRaw, shallowRef, h} from "vue";
 export default {
     name: "graph-node",
-    components: {NodeField},
+    components: {NodeField, NodeError, NodeComponent},
     props: {
         node: Node,
         hostNode: Node,
@@ -104,6 +83,16 @@ export default {
         presentation: Boolean,
     },
     watch: {
+        compiledTemplate: {
+            handler: function () {
+                this.compiledTemplate.errors.forEach((err) => {
+                    this.raiseError(this.localNode.id, err);
+                });
+                this.broken = this.compiledTemplate.errors.length > 0;
+                this.component = this.compiledTemplate.component;
+            },
+            deep: true,
+        },
         nodeProps: {
             handler: function () {
                 const changes = diff(this.localNodeDataSnapshot, this.node.data);
@@ -147,18 +136,28 @@ export default {
             this.localNodeSnapshot = JSON.parse(JSON.stringify(this.node, this.replacer));
             if (changes) {
                 this.styles = [];
-                this.broken = null;
                 // recompile template after change
-                const template = 
+                this.compiledTemplate = 
                     await compileTemplate(this, this.localNode.id, this.localNode.template.vue, true);
-                this.templateErrors = template.errors;
             }
         },
     },
     data() {
         return {
-            templateErrors: [],
-            broken: false,
+            component: markRaw({
+                render() {
+                    return h('div');
+                },
+            }),
+            compiledTemplate: markRaw({
+                component: {
+                    render() {
+                        return h('div');
+                    },
+                },
+                errors: [],
+            }),
+            broken: true,
             longLoadingTimer: null,
             longLoading: false,
             loaded: {} as any,
@@ -192,6 +191,7 @@ export default {
         this.longLoadingTimer = setTimeout(() => {
             this.longLoading = true;
         }, 500);
+        this.clearErrors(this.localNode.id);
         await this.importRoot(this.localNode);
         this.loaded[this.nodeComponentName] = true;
     },
@@ -199,14 +199,15 @@ export default {
         ...mapActions(useStore, [
             "replacer",
         ]),
+        ...mapActions(useOrchestratorStore, [
+            "clearErrors",
+            "raiseError",
+        ]),
         ...mapActions(useGraphStore, [
             "getNodeById",
-            "clearSchedulerErrorItem",
-            "clearSchedulerError",
             "setArtifact",
             "updateNodeData",
             "clearArtifact",
-            "raiseError",
         ]),
         setLinkedNode(e) {
             console.log("setLinkedNode", e);
@@ -218,14 +219,14 @@ export default {
                     this.scheduler.instance.url(this.node.url, val, output.name, this.hostNode);
                 };
             });
-            this.nodeEvents[vect.__contextId] = events;
+            this.nodeEvents = events;
         },
         bindNodeProps(vect) {
             const props = {};
             vect.properties.inputs.forEach((input) => {
                 props[input.name] = undefined;
             });
-            this.nodeProps[vect.__contextId] = props;
+            this.nodeProps = props;
         },
         updateContextId() {
             this.gaphReferences[this.localNode.__contextId] = this;
@@ -274,13 +275,11 @@ export default {
                     value: vect,
                 };
                 this.setArtifact(l);
-                const template = await compileTemplate(this, vect.id, vect.template.vue);
-                this.templateErrors = template.errors;
+                this.compiledTemplate = await compileTemplate(this, vect.id, vect.template.vue);
             }
         },
         async importGraph(g) {
-            const template = await compileTemplate(this, this.nodeComponentName, g.properties.presentationTemplate);
-            this.templateErrors = template.errors;
+            this.compiledTemplate = await compileTemplate(this, this.nodeComponentName, g.properties.presentationTemplate);
             this.loaded[this.nodeComponentName] = true;
         },
         async importNode(v, artifactKey) {
@@ -294,8 +293,7 @@ export default {
             v.properties.presentation.x = this.node.properties.presentation.x;
             v.properties.presentation.y = this.node.properties.presentation.y;
             v.properties.presentation.z = this.node.properties.presentation.z;
-            const template = await compileTemplate(this, artifactKey, v.template.vue);
-            this.templateErrors = template.errors;
+            this.compiledTemplate = await compileTemplate(this, artifactKey, v.template.vue);
         },
     },
     computed: {
@@ -321,15 +319,6 @@ export default {
                 return false;
             }
             return true;
-        },
-        errors: function () {
-            const errs = [
-                ...(this.scheduler.errors[this.localNode.id] || []),
-                ...this.templateErrors,
-            ];
-            errs.map((err) => new Error(err));
-            errs.forEach(err => console.error(err));
-            return errs;
         },
         inputs: function () {
             return this.localNode.properties.inputs;
@@ -388,10 +377,5 @@ export default {
         right: -10px;
         top: 0;
         width: 10px;
-    }
-    .node-error {
-        position: absolute;
-        left: 150%;
-        top: 150%;
     }
 </style>

@@ -54,7 +54,6 @@ onmessage = function(e: any) {
   }
   if (e.data.method === 'change') {
     store.graph = e.data.args[0];
-    console.log('scheduler graph update', store.graph);
     return;
   }
   (scheduler as any)[e.data.method].apply(scheduler, e.data.args);
