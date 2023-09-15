@@ -182,10 +182,9 @@ export default {
         this.styles = [];
         this.broken = null;
         this.localNode = this.node;
-        this.updateContextId();
         this.bindNodeEvents(this.localNode);
         this.bindNodeProps(this.localNode);
-        this.localNodeSnapshot = JSON.parse(JSON.stringify(this.node, this.replacer));
+        this.localNodeSnapshot = JSON.parse(JSON.stringify(this.node));
         this.localNodeDataSnapshot = JSON.parse(JSON.stringify(this.node.data));
         this.localSelectedNodes = this.selectedNodes;
         this.longLoadingTimer = setTimeout(() => {
@@ -205,7 +204,6 @@ export default {
         ]),
         ...mapActions(useGraphStore, [
             "getNodeById",
-            "setArtifact",
             "updateNodeData",
             "clearArtifact",
         ]),
@@ -227,9 +225,6 @@ export default {
                 props[input.name] = undefined;
             });
             this.nodeProps = props;
-        },
-        updateContextId() {
-            this.gaphReferences[this.localNode.__contextId] = this;
         },
         dataChange(e) {
             this.updateNodeData({
@@ -263,7 +258,6 @@ export default {
                     key: vect.artifact,
                     value: v,
                 };
-                this.setArtifact(l);
                 if (v.nodes) {
                     await this.importGraph(v);
                 } else {
@@ -274,7 +268,6 @@ export default {
                     key: vect.id,
                     value: vect,
                 };
-                this.setArtifact(l);
                 this.compiledTemplate = await compileTemplate(this, vect.id, vect.template.vue);
             }
         },

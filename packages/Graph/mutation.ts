@@ -188,7 +188,6 @@ export default {
         const id = newId();
         const node = {
             id,
-            __contextId: null,
             edges: [],
             version: this.graphSnapshot.version,
             graphId: this.graphSnapshot.id,
@@ -582,13 +581,6 @@ export default {
       const node = this.getNodeById(e.nodeId);
       node.data = e.data;
       this.updateGraphFromSnapshot("Update Node Data");
-    },
-    setArtifact(e: any) {
-      this.$patch({
-        artifacts: {
-          [e.key]: e.value
-        },
-      });
     },
     toggleSelectedNodePresentationMode() {
       this.selectedNodes.forEach((selectedNode: any) => {
