@@ -1,4 +1,4 @@
-import type {App} from "vue";
+import type {App, ref} from "vue";
 import type {Router} from "vue-router";
 import EditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-editor-module";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
@@ -18,6 +18,6 @@ export default class SetEditor extends EditorModule {
       },
       order: 3,
     });
-    graphOrchestratorStore.addPlugin(plugin);
+    // graphOrchestratorStore.addPlugin(plugin);
   }
 };

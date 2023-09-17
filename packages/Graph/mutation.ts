@@ -429,7 +429,10 @@ export default {
       }
       let graph: Graph | null = null;
       try {
-        this.graphSnapshot = await graphOrchestrator.dataProviders.graph.get(graphId);
+        this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
+        graphOrchestrator.dataProviders.graph.subscribe(graphId, async () => {
+            this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
+        });
       } catch (err: any) {
         const url = this.getCalculatedGraphUrl();
         this.graphSnapshot = this.createGraph(url, "");

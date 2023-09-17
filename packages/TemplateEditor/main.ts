@@ -18,6 +18,6 @@ export default class TemplateEditor extends EditorModule {
       },
       order: 2,
     });
-    graphOrchestratorStore.addPlugin(plugin);
+    // graphOrchestratorStore.addPlugin(plugin);
   }
 };

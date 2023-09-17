@@ -7,7 +7,7 @@
       style="pointer-events: all;">
       <div style="text-align: right;">
           <i style="font-weight: bold;padding-left: 10px;"
-              v-if="errors.length > 1">
+             v-if="hasErrors">
               {{index + 1}} of {{errors.length}}
           </i>
       </div>
@@ -15,12 +15,17 @@
           <v-card-text>
               <pre class="no-graph-target">{{error.error.stack}}</pre>
           </v-card-text>
+          <v-card-subtitle>
+            Field {{error.field}}<br/>
+            GraphId {{error.graphId}}
+          </v-card-subtitle>
       </v-card>
       <div>
-        <v-btn class="ma-3" :disabled="index === 0" @click="index = Math.max(index - 1, 0)">
+        <v-btn v-if="hasErrors" class="ma-3" :disabled="index === 0" @click="index = Math.max(index - 1, 0)">
             Previous
         </v-btn>
         <v-btn
+           v-if="hasErrors"
           class="ma-3"
           :disabled="index === errors.length - 1"
           @click="index = Math.min(index + 1, errors.length - 1)">
@@ -29,7 +34,7 @@
         <v-btn class="ma-3" @click="clearError(nodeId, error);">
             Dismiss
         </v-btn>
-        <v-btn class="ma-3" @click="clearErrors(nodeId)">
+        <v-btn v-if="hasErrors" class="ma-3" @click="clearErrors(nodeId)">
             Dismiss All
         </v-btn>
       </div>
@@ -59,6 +64,9 @@ export default {
       "scheduler": "scheduler",
       "nodeErrors": "errors",
     }),
+    hasErrors() {
+      return this.errors.length > 1;
+    },
     error: function () {
       return this.errors[this.index];
     },

@@ -27,10 +27,11 @@ const hyphenateProperty = (prop: any) => {
     return p;
 };
 export default class GraphManager extends GraphEditorModule {
-  constructor(config: Record<string, any>, app: App<Element>) {
+  constructor(config: Record<string, any>, app: App<Element>, hostRouter: any) {
     super();
     app.component('registry-settings-panel', RegistrySettingsPanel);
     const graphOrchestratorStore = useOrchestratorStore();
+    const preferencesStore = usePreferencesStore();
     graphOrchestratorStore.addPlugin(new Plugin({
       name: 'Remotes',
       title: 'Remotes',
@@ -38,6 +39,10 @@ export default class GraphManager extends GraphEditorModule {
       type: 'settings-panel',
       order: 10,
     }));
+    hostRouter.beforeEach(async (to: any, from: any, next: any) => {
+      await graphOrchestratorStore.init(to.params.documentId);
+      next();
+    });
   }
 };
 export const useStore = defineStore('orchestrator', {
@@ -232,9 +237,10 @@ export const useStore = defineStore('orchestrator', {
         this.plugins.push(plugin);
     },
     graphUrl(url: string) {},
-    raiseError(id: string, error: Error) {
-      (this.errors[id] ??= [])
-        .push({ id: newId(), error });
+    raiseError(nodeId: string, error: Error,
+      type: string, field?: string, graphId?: string) {
+      (this.errors[nodeId] ??= [])
+        .push({ id: newId(), error, type, field, graphId });
     },
     error(e: any) {
       this.scheduler.errors.push(e);
@@ -352,6 +358,11 @@ export const useStore = defineStore('orchestrator', {
           }
           if (methodName === 'endconnector') {
             return endconnector(args);
+          }
+          if (methodName === 'error') {
+            const err = new Error(args.message);
+            this.raiseError(args.nodeId, err, 'set', args.field, args.graphId);
+            return;
           }
           const method = (this as any)[methodName];
           if (!method) {

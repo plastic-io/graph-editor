@@ -7,7 +7,9 @@
             :key="localNode.id"
             :x-node-id="localNode.id"
             :style="nodeStyle">
-            <node-error :nodeId="localNode.id"/>
+            <node-editor
+                :nodeId="localNode.id"
+                :hovered="localHoveredNode"/>
             <div class="node-inputs" v-if="!hostNode">
                 <node-field
                     v-for="field in inputs"
@@ -22,6 +24,11 @@
                 :id="'node-' + localNode.id"
                 :class="translating && mouse.lmb ? 'no-select' : ''"
             >
+                <v-card v-if="broken">
+                    <v-card-title>
+                        <v-icon icon="mdi-robot-dead-outline" color="warning" size="xx-large"/>
+                    </v-card-title>
+                </v-card>
                 <node-component
                     v-if="!broken"
                     :component="component"
@@ -67,15 +74,15 @@ import {Node, Graph} from "@plastic-io/plastic-io";
 import {mapWritableState, mapActions, mapState} from "pinia";
 
 import NodeField from "./NodeField.vue";
-import NodeError from "./NodeError.vue";
 import NodeComponent from "./NodeComponent.vue";
+import NodeEditor from "./NodeEditor.vue";
 
 import {diff} from "deep-diff";
 
 import {markRaw, shallowRef, h} from "vue";
 export default {
     name: "graph-node",
-    components: {NodeField, NodeError, NodeComponent},
+    components: {NodeField, NodeComponent, NodeEditor},
     props: {
         node: Node,
         hostNode: Node,
@@ -86,7 +93,7 @@ export default {
         compiledTemplate: {
             handler: function () {
                 this.compiledTemplate.errors.forEach((err) => {
-                    this.raiseError(this.localNode.id, err);
+                    this.raiseError(this.localNode.id, err, 'vue');
                 });
                 this.broken = this.compiledTemplate.errors.length > 0;
                 this.component = this.compiledTemplate.component;
@@ -121,7 +128,7 @@ export default {
         },
         hoveredNode: {
             handler: function () {
-                this.localHoveredNode = this.hoveredNode;
+                this.localHoveredNode = this.hoveredNode && this.hoveredNode.id === this.localNode.id;
             },
         },
         selectedNodes: {
@@ -133,7 +140,7 @@ export default {
         async 'node.template.vue'() {
             const changes = diff(this.localNodeSnapshot.template.vue, this.node.template.vue);
             this.localNode = this.node;
-            this.localNodeSnapshot = JSON.parse(JSON.stringify(this.node, this.replacer));
+            this.localNodeSnapshot = JSON.parse(JSON.stringify(this.node));
             if (changes) {
                 this.styles = [];
                 // recompile template after change
@@ -157,7 +164,8 @@ export default {
                 },
                 errors: [],
             }),
-            broken: true,
+            showVueEditor: false,
+            showSetEditor: false,
             longLoadingTimer: null,
             longLoading: false,
             loaded: {} as any,
@@ -195,9 +203,6 @@ export default {
         this.loaded[this.nodeComponentName] = true;
     },
     methods: {
-        ...mapActions(useStore, [
-            "replacer",
-        ]),
         ...mapActions(useOrchestratorStore, [
             "clearErrors",
             "raiseError",

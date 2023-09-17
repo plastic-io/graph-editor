@@ -186,7 +186,7 @@ export default {
             ]
         },
         currentWidth() {
-            return this.navWidths[this.panelTopTabs] || this.defaultWidth;
+            return Math.max(this.navWidths[this.panelTopTabs], 40) || this.defaultWidth;
         },
         navStyle() {
             return {

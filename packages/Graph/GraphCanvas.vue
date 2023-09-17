@@ -4,7 +4,6 @@
             x-graph-canvas
             :style="graphCanvasStyle"
             v-if="graph"
-            :key="graph.version"
             @drop="drop($event)"
             @dragover="dragOver($event)"
         >
@@ -185,6 +184,7 @@ export default {
     pointer-events: none;
     position: absolute;
     border-style: solid;
+    z-index: 2;
 }
 .selection-rect {
     position: absolute;

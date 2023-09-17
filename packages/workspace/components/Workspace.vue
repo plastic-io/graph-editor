@@ -169,8 +169,6 @@ export default {
         document.addEventListener('wheel', this.onwheel, {
             passive: false,
         });
-        const graphId = window.location.pathname.substring(1);
-        this.init(graphId);
         this.setTheme(this.preferences.appearance.theme);
     },
     data: () => {
