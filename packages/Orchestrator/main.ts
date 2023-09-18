@@ -225,8 +225,14 @@ export const useStore = defineStore('orchestrator', {
         arr.splice(i, 1);
       }
     },
-    clearErrors(key: string) {
-      this.errors[key] = [];
+    clearErrors(key: string, type?: string) {
+      if (!type) {
+        this.errors[key] = [];
+        return;
+      }
+      this.errors[key] = this.errors[key].filter((error: any) => {
+        return error.type !== type;
+      });
     },
     getPluginsByType(type: string) {
       return this.plugins.filter(p => p.type === type).sort((a, b) => {
@@ -237,7 +243,7 @@ export const useStore = defineStore('orchestrator', {
         this.plugins.push(plugin);
     },
     graphUrl(url: string) {},
-    raiseError(nodeId: string, error: Error,
+    raiseError(nodeId: string, error: {message: string},
       type: string, field?: string, graphId?: string) {
       (this.errors[nodeId] ??= [])
         .push({ id: newId(), error, type, field, graphId });
@@ -360,8 +366,9 @@ export const useStore = defineStore('orchestrator', {
             return endconnector(args);
           }
           if (methodName === 'error') {
-            const err = new Error(args.message);
-            this.raiseError(args.nodeId, err, 'set', args.field, args.graphId);
+            this.raiseError(args.nodeId, {
+              message: args.message,
+            }, 'set', args.field, args.graphId);
             return;
           }
           const method = (this as any)[methodName];

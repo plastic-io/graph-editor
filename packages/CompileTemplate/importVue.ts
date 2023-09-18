@@ -25,6 +25,7 @@ const _createTextVNode = self.dependencies.vue.createTextVNode;
 const _createElementBlock = self.dependencies.vue.createElementBlock;
 const _resolveComponent = self.dependencies.vue.resolveComponent;
 const _withCtx = self.dependencies.vue.withCtx;
+const _createBlock = self.dependencies.vue.createBlock;
 `);
 
     const script = compiler.compileScript(blocks.descriptor, {

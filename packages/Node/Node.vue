@@ -1,5 +1,9 @@
 <template>
     <div ref="node-root">
+        <node-editor
+            :style="editorStyle"
+            :nodeId="node.id"
+            :hovered="true"/>
         <div
             v-if="loaded[nodeComponentName] && visible"
             ref="node"
@@ -7,9 +11,6 @@
             :key="localNode.id"
             :x-node-id="localNode.id"
             :style="nodeStyle">
-            <node-editor
-                :nodeId="localNode.id"
-                :hovered="localHoveredNode"/>
             <div class="node-inputs" v-if="!hostNode">
                 <node-field
                     v-for="field in inputs"
@@ -323,6 +324,17 @@ export default {
         },
         outputs: function () {
             return this.localNode.properties.outputs;
+        },
+        editorStyle() {
+            if (!this.localNode) {
+                return {};
+            }
+            return {
+                position: "absolute",
+                left: this.localNode.properties.x + "px",
+                top: this.localNode.properties.y + "px",
+                zIndex: 1000,
+            }
         },
         nodeStyle: function () {
             const hovered = this.hoveredNode && this.hoveredNode.id === this.localNode.id;

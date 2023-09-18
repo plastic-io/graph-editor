@@ -15,20 +15,14 @@ export default (router: Router) => {
       const route = useRoute();
       const nodeId = route.params.nodeId as string;
       const templateType = route.params.templateType as string;
-      let errors = ref([]);
-      let value = ref('');
-      
+      const getValue = (): string => {
+        return graphStore.graph.nodes.find((n: any) => n.id === nodeId).template[templateType];
+      };
       orchistratorStore.setTheme(preferencesStore.preferences!.appearance.theme);
-      watch(() => graphStore.graph, newVal => {
-        value = graphStore.graph.nodes.find((n: any) => n.id === nodeId).template[templateType]
-      });
-      watch(() => orchistratorStore.errors, newVal => {
-        errors = orchistratorStore.errors;
-      });
       return () => h(Editor, {
         ...route.params,
-        value,
-        errors,
+        value: getValue(),
+        errors: [],
         'onSave': (value: string) => {
           graphStore.updateNodeTemplate({
             nodeId,

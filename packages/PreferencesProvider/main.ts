@@ -3,23 +3,12 @@ import getRandomName from "@plastic-io/graph-editor-names"
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import {Appearance} from "@plastic-io/graph-editor-vue3-appearance"
 const defaultNewSetTemplate = `
-    // scheduler: scheduler instance
-    // graph: current graph
-    // cache: per node cache
-    // node: current node
-    // field: name of the input invoked
-    // state: shared state 
-    // value: value passed to the input field
-    // edges: collection of output edges.  Set to output (e.g.: edges.foo = 'bar')
-    // data: current node data
-    // properties: node properties
-    // require: JS require()
     console.info(value);
 `;
 const defaultNewVueTemplate = `<template>
-    <div>
+    <v-btn @click="$emit('edge-name', 'value-to-send');">
         New Node
-    </div>
+    </v-btn>
 </template>
 <script>
 export default {

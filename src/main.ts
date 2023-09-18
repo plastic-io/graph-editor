@@ -42,10 +42,8 @@ import NodeEdgePropertiesPanel from "@plastic-io/graph-editor-vue3-node-edge-pro
 import NodeListPanel from "@plastic-io/graph-editor-vue3-node-list-panel";
 import NodePropertiesPanel from "@plastic-io/graph-editor-vue3-node-properties-panel";
 import ProviderSettings from "@plastic-io/graph-editor-vue3-provider-settings";
-import SetEditor from "@plastic-io/graph-editor-vue3-set-editor";
 import SharedMouse from "@plastic-io/graph-editor-vue3-shared-mouse";
 import SharedUsers from "@plastic-io/graph-editor-vue3-shared-users";
-import TemplateEditor from "@plastic-io/graph-editor-vue3-template-editor";
 import SettingsPanel from "@plastic-io/graph-editor-vue3-settings-panel";
 import Workspace from "@plastic-io/graph-editor-vue3-workspace";
 import WorkspaceControlPanel from "@plastic-io/graph-editor-vue3-workspace-control-panel";
@@ -98,10 +96,8 @@ const plugins = [
   NodeListPanel,
   NodePropertiesPanel,
   ProviderSettings,
-  SetEditor,
   SharedMouse,
   SharedUsers,
-  TemplateEditor,
   SettingsPanel,
   WorkspaceControlPanel,
   WssDocumentProvider,

@@ -1,30 +1,36 @@
 <template>
   <div>
     <div class="position-absolute no-graph-targe">
-      <monaco-code-editor
-          v-if="showVueEditor"
-          templateType="vue"
-          language="html"
-          :nodeId="nodeId"
-          :graphUrl="graph.url"
-          :errors="errors.filter(e => e.type === 'vue')"
-          :value="node.template.vue"
-          @close="showVueEditor = false"
-          @dirty="vueIsDirty = $event"
-          @save="saveTemplate('vue', $event)"
-      />
-      <monaco-code-editor
-          v-if="showSetEditor"
-          templateType="set"
-          language="typescript"
-          :nodeId="nodeId"
-          :graphUrl="graph.url"
-          :errors="errors.filter(e => e.type === 'set')"
-          :value="node.template.set"
-          @close="showSetEditor = false"
-          @dirty="setIsDirty = $event"
-          @save="saveTemplate('set', $event)"
-      />
+      <keep-alive>
+        <monaco-code-editor
+            v-if="showVueEditor"
+            templateType="vue"
+            language="html"
+            :nodeId="nodeId"
+            :graphUrl="graph.url"
+            :errors="errors.filter(e => e.type === 'vue')"
+            :value="node.template.vue"
+            helpLink="https://vuejs.org/guide/essentials/component-basics.html"
+            @close="showVueEditor = false"
+            @dirty="vueIsDirty = $event"
+            @save="saveTemplate('vue', $event)"
+        />
+      </keep-alive>
+      <keep-alive>
+        <monaco-code-editor
+            v-if="showSetEditor"
+            templateType="set"
+            language="typescript"
+            :nodeId="nodeId"
+            :graphUrl="graph.url"
+            :errors="errors.filter(e => e.type === 'set')"
+            :value="node.template.set"
+            helpLink="https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html"
+            @close="showSetEditor = false"
+            @dirty="setIsDirty = $event"
+            @save="saveTemplate('set', $event)"
+        />
+      </keep-alive>
     </div>
     <div class="position-absolute no-graph-targe"
         style="top: -25px; width: 75px;">
@@ -76,14 +82,9 @@
     },
     methods: {
       ...mapActions(useGraphStore, ['updateNodeTemplate']),
+      ...mapActions(useOrchestratorStore, ['clearErrors']),
       saveTemplate(type, value) {
-
-        this.updateNodeTemplate({
-          nodeId: this.nodeId,
-          type: undefined,
-          value: undefined,
-        });
-
+        this.clearErrors(this.nodeId, type);
         this.updateNodeTemplate({
           nodeId: this.nodeId,
           type,

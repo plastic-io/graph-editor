@@ -14,11 +14,21 @@
           class="no-select"
           :style="{position: 'absolute', top: '-24px', left: 0, width: '100%', 'justify-content': 'left'}">
           <v-divider class="mx-4" vertical></v-divider>
-          <v-icon icon="mdi-content-save" @click="save"/>
+          <v-icon icon="mdi-content-save" @click="save" title="Save"/>
+          <v-icon :color="autosave ? 'green' : ''" icon="mdi-auto-upload" title="Autosave" @click="autosave = !autosave"/>
           <v-divider class="mx-4" vertical></v-divider>
-          <v-icon icon="mdi-file-undo" v-if="dirty" @click="revert"/>
+          <v-icon icon="mdi-file-undo" v-if="dirty" @click="revert" title="Revert"/>
           <v-divider v-show="dirty" class="mx-4" vertical></v-divider>
-          <v-icon v-if="!isPopout" icon="mdi-open-in-new" @click="popout" style="margin-left: auto; display: inline-block;"/>
+          <v-icon
+            icon="mdi-help-circle-outline"
+            @click="openHelp"
+            :style="{
+              marginLeft: 'auto',
+              display: 'inline-block',
+              opacity: helpLink ? '.6': '0'
+          }"/>
+          <v-icon
+            v-if="!isPopout" icon="mdi-open-in-new" @click="popout" style="display: inline-block;"/>
           <v-icon v-if="!isPopout" icon="mdi-close" @click="$emit('close')" style="display: inline-block;"/>
         </v-system-bar>
       </div>
@@ -27,10 +37,12 @@
 </template>
 <script lang="typescript">
 import {mapWritableState, mapActions, mapState} from "pinia";
+import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import {useRoute} from 'vue-router';
+import Scheduler from "@plastic-io/plastic-io"
 
 import * as monaco from "monaco-editor";
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
@@ -63,11 +75,67 @@ window.MonacoEnvironment = {
 
 export default {
   async mounted() {
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(`
+      /**
+       * The value that was passed to this node either by an edge connector
+       * or by direct exectuion.  This value can be of any type and is determined
+       * by the edge or the invoking function.
+       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+       */
+      declare var value: any;
+      /**
+       * The scheduler is responsible for executing nodes.
+       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+       */
+      declare var scheduler: any;
+      /**
+       * The current graph that this node is executing on.
+       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+       */
+      declare var graph: any;
+      /**
+       * Per node cache for this node.
+       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+       */
+      declare var cache: any;
+      /**
+       * The node this script belongs to.
+       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+       */
+      declare var node: any;
+      /**
+       * The edge field that triggered this script if any.
+       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+       */
+      declare var field: any;
+      /**
+       * The shared state of the graph execution.
+       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+       */
+      declare var state: any;
+      /**
+       * The collecton of output edge fields defined on this node if any;
+       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+       */
+      declare var edges: any;
+      /**
+       * The data value of this node.  Data can hold any value.
+       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+       */
+      declare var data: any;
+      /**
+       * The properties of this node.  Properties are read only.  Use events to update components.
+       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+       */
+      declare var properties: any;
+    `, 'global.d.ts');
+
     await this.initEditor();
     if (this.isPopout) {
       window.addEventListener('resize', this.debounceLayout);
       return;
     }
+    window.addEventListener('close', this.closePopoutWindow);
     document.addEventListener('mouseup', this.mouseup);
     document.addEventListener('mousemove', this.mousemove);
   },
@@ -76,6 +144,7 @@ export default {
       window.removeEventListener('resize', this.debounceLayout);
       return;
     }
+    window.removeEventListener('close', this.closePopoutWindow);
     document.removeEventListener('mouseup', this.mouseup);
     document.removeEventListener('mousemove', this.mousemove);
   },
@@ -85,14 +154,20 @@ export default {
     nodeId: String,
     value: String,
     graphUrl: String,
+    helpLink: String,
     errors: Array,
   },
   data() {
     return {
+      id: newId(),
+      autosave: true,
+      externalErrors: [],
       loaded: false,
       win: null,
       timer: 0,
+      broadcastChannel: null,
       debounceTimer: null,
+      saveDebounceTimer: null,
       dirty: false,
       editor: null,
       cursor: undefined,
@@ -110,11 +185,75 @@ export default {
     };
   },
   methods: {
+    async initEditor() {
+      this.broadcastChannel = new BroadcastChannel(this.storeKey);
+      this.broadcastChannel.onmessage = (e) => {
+        const message = e.data;
+        if (message.senderId === this.id) {
+          return;
+        }
+        if (message.type === 'errors') {
+          this.externalErrors = message.value;
+          this.syncErrors();
+        }
+        // update is when one of the other editors of the same key has changed
+        // or value is when the external node has chnaged
+        // either way we update the current value if it does not match
+        if (message.type === 'update' || message.type === 'value') {
+          if (!this.$refs.editor || !this.$refs.editor.pinstance) {
+            return;
+          }
+          const existingValue = this.getValue();
+          if (message.value !== existingValue) {
+            this.setValue(message.value);
+          }
+        }
+        if (message.type === 'dirty') {
+          this.$emit('dirty', message.value);
+        }
+      };
+      const editor = monaco.editor.create(this.$refs.editor, {
+        language: this.language,
+        theme: this.preferences.appearance.theme === 'dark' ? 'vs-dark' : 'vs',
+      });
+      editor.getModel().onDidChangeContent((event) => {
+        this.update();
+      });
+      // HACK: if editor is attached to "this" it will freeze the system
+      this.$refs.editor.pinstance = editor;
+      const getSize = (l, defaultSize) => {
+        return localStorage.getItem(this.storeKey + '-size-' + l) || defaultSize;
+      };
+
+      this.top = getSize('top', 0);
+      this.left = getSize('left', 0);
+      this.width = getSize('width', 500);
+      this.height = getSize('height', 500);
+
+      this.resize();
+      this.loadFromCache();
+      this.syncErrors();
+
+    },
+    openHelp() {
+      if (!this.helpLink) {return;}
+      window.open(this.helpLink, 'helpLink');
+    },
+    closePopoutWindow() {
+      if (this.win) {
+        this.win.close();
+      }
+    },
     popout() {
       this.$emit('close');
       const url = `/popout-editor/${this.graphUrl}/${this.nodeId}/${this.templateType}/${this.language}`;
-      window.open(url, this.storeKey,
+      this.win = window.open(url, this.storeKey,
         `popup,width=${this.width},height=${this.width},top=${this.top},left=${this.left}`);
+      for (let x = 500; x < 3000; x += 500) {
+        setTimeout(() => {
+          this.broadcastErrors();
+        }, x);
+      }
     },
     mousemove(e) {
       if (!this.$refs.dialog || this.isPopout) {
@@ -232,11 +371,11 @@ export default {
       this.debounceTimer = setTimeout(layout, 150);
     },
     syncErrors() {
-      if (!this.graph || !this.$refs.editor.pinstance) {
+      if (!this.$refs.editor || !this.$refs.editor.pinstance) {
         return;
       }
       const model = this.$refs.editor.pinstance.getModel();
-      monaco.editor.setModelMarkers(model, 'owner', this.errors
+      monaco.editor.setModelMarkers(model, 'owner', [...this.errors, ...this.externalErrors]
         .map((item) => {
         const e = item.error;
         e.loc = e.loc || {start:{column: 0, line: 0}, end:{column: 0, line: 0}};
@@ -249,30 +388,6 @@ export default {
             endColumn: e.loc.end.column,
         }
       }));
-    },
-    async initEditor() {
-      const editor = monaco.editor.create(this.$refs.editor, {
-        language: this.language,
-        theme: this.preferences.appearance.theme === 'dark' ? 'vs-dark' : 'vs',
-      });
-      editor.getModel().onDidChangeContent((event) => {
-        this.update();
-      });
-      // HACK: if editor is attached to "this" it will freeze the system
-      this.$refs.editor.pinstance = editor;
-      const getSize = (l, defaultSize) => {
-        return localStorage.getItem(this.storeKey + '-size-' + l) || defaultSize;
-      };
-
-      this.top = getSize('top', 0);
-      this.left = getSize('left', 0);
-      this.width = getSize('width', 500);
-      this.height = getSize('height', 500);
-
-      this.resize();
-      this.loadFromCache();
-      this.syncErrors();
-
     },
     loadFromCache() {
       if (!(this.$refs.editor && this.$refs.editor.pinstance)) {
@@ -295,6 +410,9 @@ export default {
       }
     },
     setValue(val) {
+      if (!this.$refs.editor || !this.$refs.editor.pinstance) {
+        return;
+      }
       this.$refs.editor.pinstance.setValue(val);
     },
     getValue() {
@@ -304,6 +422,21 @@ export default {
       const newValue = this.getValue();
       this.dirty = newValue !== this.value;
       localStorage.setItem(this.storeKey, this.getValue());
+
+      if (!this.dirty) { return; }
+
+      this.broadcastChannel.postMessage({
+        senderId: this.id,
+        type: 'update',
+        value: newValue,
+      });
+
+      if (this.autosave) {
+        clearTimeout(this.saveDebounceTimer);
+        this.saveDebounceTimer = setTimeout(() => {
+          this.save();
+        }, 500);
+      }
     },
     revert() {
       this.setValue(this.value);
@@ -314,15 +447,37 @@ export default {
       localStorage.removeItem(this.storeKey);
       this.$emit('save', this.getValue());
     },
+    broadcastErrors() {
+      this.broadcastChannel.postMessage({
+        senderId: this.id,
+        type: 'errors',
+        value: this.errors.map((err) => {
+          return {
+            ...err,
+            error: {message: err.error.message},
+          }
+        }),
+      });
+    },
   },
   watch: {
     dirty() {
+      this.broadcastChannel.postMessage({
+        senderId: this.id,
+        type: 'dirty',
+        value: this.dirty,
+      });
       this.$emit('dirty', this.dirty);
     },
     nodeId() {
       this.loadFromCache();
     },
     value() {
+      this.broadcastChannel.postMessage({
+        senderId: this.id,
+        type: 'value',
+        value: this.value,
+      });
       if (this.$refs.editor) {
         this.$refs.editor.pinstance.value = this.value;
       }
@@ -331,6 +486,7 @@ export default {
       this.resize();
     },
     errors() {
+      this.broadcastErrors();
       if (this.$refs.editor) {
         this.syncErrors();
       }
@@ -351,7 +507,7 @@ export default {
       return {
         maxWidth: this.isPopout ? '100vw !important' : undefined,
         width: this.isPopout ? '100vw !important' : undefined,
-        zIndex: '2',
+        zIndex: '3',
         position: 'absolute',
         background: this.cursor !== 'auto' ?
           'var(--color-border)' : 'var(--color-border-hover)',

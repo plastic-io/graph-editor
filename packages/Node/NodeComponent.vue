@@ -11,7 +11,6 @@
       nodeProps: Object,
     },
     setup(props: any, { slots, emit }: SetupContext) {
-
       const events = {};
       props.node.properties.outputs.forEach((output) => {
           events['on' + output.name[0].toUpperCase() + output.name.substring(1)] = (val) => {
