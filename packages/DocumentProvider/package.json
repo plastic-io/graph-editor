@@ -1,0 +1,10 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-document-provider",
+  "license": "BSD-3-Clause",
+  "author": "TonyGermaneri@gmail.com",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Abstract class for document provider classes.",
+  "main": "./main.ts",
+  "files": []
+}

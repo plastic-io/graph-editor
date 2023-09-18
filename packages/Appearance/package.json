@@ -1,0 +1,10 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-appearance",
+  "license": "BSD-3-Clause",
+  "author": "TonyGermaneri@gmail.com",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Appearance of the graph canvas.",
+  "main": "./main.ts",
+  "files": []
+}
