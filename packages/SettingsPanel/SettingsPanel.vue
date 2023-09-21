@@ -1,5 +1,5 @@
 <template>
-  <v-expansion-panels class="ma-0 pa-0" flat v-model="panel">
+  <v-expansion-panels flat v-model="panel" style="width: 300px;">
       <v-expansion-panel v-for="(plugin, index) in settingsPanels">
           <v-expansion-panel-title>{{plugin.title}}</v-expansion-panel-title>
           <v-expansion-panel-text>
@@ -23,7 +23,7 @@ export default {
     },
     data() {
         return {
-            panel: 0,
+            panel: null,
         };
     },
     computed: {

@@ -9,6 +9,7 @@
             ref="edge"
             :style="nodeFieldStyle"
             class="node-field"
+            :class="(type === 'output' ? 'field-output' : 'field-input')"
             :title="field.name"
             :key="preferences.showLabels"
             :id="`node-${type}-${node.id}-${field.name}`"
@@ -87,11 +88,20 @@ export default {
     height: 15px;
     width: 15px;
     margin-bottom: 5px;
+    opacity: 0.8;
+}
+.field-input {
+    border-top-left-radius: 15px;
+    border-bottom-left-radius: 15px;
+}
+.field-output {
+    border-top-right-radius: 15px;
+    border-bottom-right-radius: 15px;
 }
 .node-field-output, .node-field-input {
     position: absolute;
     white-space: nowrap;
-    transform: translate(0, -23px);
+    transform: translate(2px, -25px);
     text-shadow: 0 0 1px rgba(255,255,255,.1), 0 0 1px rgba(0,0,0,.5);
 }
 .node-field-output {

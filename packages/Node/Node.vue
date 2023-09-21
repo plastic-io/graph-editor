@@ -3,7 +3,7 @@
         <node-editor
             :style="editorStyle"
             :nodeId="node.id"
-            :hovered="true"/>
+            :hovered="localHoveredNode"/>
         <div
             v-if="loaded[nodeComponentName] && visible"
             ref="node"
@@ -378,7 +378,7 @@ export default {
 <style>
     .node-inputs {
         position: absolute;
-        left: -10px;
+        left: -15px;
         top: 0;
         width: 10px;
     }

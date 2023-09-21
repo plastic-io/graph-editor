@@ -7,25 +7,5 @@ export default class NodePropertiesPanel extends EditorModule {
   constructor(config: Record<string, any>, app: App<Element>, hostRouter: Router) {
     super();
     app.component('node-properties-panel', _NodePropertiesPanel);
-    const graphOrchestratorStore =  useOrchestratorStore();
-     graphOrchestratorStore.addPlugin(new Plugin({
-      name: 'Node',
-      component: 'node-properties-panel',
-      icon: 'mdi-vector-point',
-      helpTopic: 'nodeProperties',
-      type: 'nav-panel-top-gutter-icons',
-      props: {
-        tabSet: 'nav-panel-node-tabs',
-      },
-      order: 1,
-    }));
-    graphOrchestratorStore.addPlugin(new Plugin({
-      name: 'Node',
-      component: 'node-properties-panel',
-      icon: 'mdi-vector-point',
-      helpTopic: 'nodeProperties',
-      type: 'nav-panel-node-tabs',
-      order: 0,
-    }));
   }
 };

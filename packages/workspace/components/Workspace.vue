@@ -17,9 +17,6 @@
                     <component :is="plugin.component" v-bind="plugin.props"/>
                 </template>
             </v-system-bar>
-            <div :style="showHelp ? 'pointer-events: none;' : ''">
-                <navigation-drawer v-if="!presentation && panelVisibility" ref="panel"/>
-            </div>
             <mini-map-info v-if="preferences.showMap && !presentation"/>
             <div :class="presentation ? '' : 'graph-container'" :style="graphContainerStyle">
                 <graph-canvas

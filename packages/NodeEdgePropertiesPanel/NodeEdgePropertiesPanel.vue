@@ -1,12 +1,12 @@
 <template>
-    <div>
-        <div v-show="selectedNodes.length > 0">
+    <div @click.stop style="width: 500px;">
+        <div>
             <v-tabs v-model="inputsTabs">
                 <v-tab v-for="ioKey in ['inputs', 'outputs']" :key="ioKey">
                     {{ioKey}}
                 </v-tab>
             </v-tabs>
-            <v-window v-model="inputsTabs" v-if="node" style="height: calc(100vh - 250px); overflow-y: auto;">
+            <v-window v-model="inputsTabs" v-if="node">
                 <keep-alive>
                     <v-window-item v-for="ioKey in ['inputs', 'outputs']" :key="ioKey">
                         <v-btn
@@ -122,9 +122,6 @@
                 </v-card>
             </v-dialog>
         </div>
-        <div v-show="selectedNodes.length === 0" class="ma-3">
-            <i>No nodes selected</i>
-        </div>
     </div>
 </template>
 <script lang="typescript">
@@ -135,7 +132,10 @@ import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 export default {
-    name: "edge-properties",
+    name: "node-edge-properties-panel",
+    props: {
+        nodeId: String,
+    },
     data() {
         return {
             node: null,
@@ -321,20 +321,22 @@ export default {
             });
         },
         setLocalNode() {
-            const v = this.getSelectedNode();
+            const v = this.graph.nodes.find((n) => {
+                return n.id === this.nodeId;
+            });
             if (!v) {
                 return;
             }
             this.node = JSON.parse(JSON.stringify(v));
         },
-        getSelectedNode() {
+        getNode() {
             return JSON.parse(JSON.stringify(this.graphSnapshot.nodes.find((v) => v.id === this.nodeId)));
         },
     },
     watch: {
         graphSnapshot: {
             handler: function () {
-                if (diff(this.getSelectedNode(), this.node)) {
+                if (diff(this.getNode(), this.node)) {
                     this.setLocalNode();
                 }
             },
@@ -348,30 +350,17 @@ export default {
             },
             deep: true,
         },
-        selectedNode: function () {
-            if (!this.selectedNode) {
-                return;
-            }
-            this.nodeId = this.selectedNode.id;
-            this.setLocalNode();
-        },
     },
     mounted() {
-        if (this.selectedNode) {
-            this.nodeId = this.selectedNode.id;
-            this.setLocalNode();
-        }
+        this.setLocalNode();
     },
     computed: {
         controlsDisabled() {
             return !!this.node.artifact;
         },
-        ...mapState(useGraphStore, [
-            'selectedNodes',
-        ]),
         ...mapWritableState(useGraphStore, [
             'ioTypes',
-            'selectedNode',
+            'graph',
             'graphSnapshot',
         ]),
     },

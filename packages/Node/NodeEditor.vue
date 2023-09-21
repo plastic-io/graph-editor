@@ -3,6 +3,7 @@
     <div class="position-absolute no-graph-targe">
       <keep-alive>
         <monaco-code-editor
+            style="opacity: 0.98"
             v-if="showVueEditor"
             templateType="vue"
             language="html"
@@ -18,6 +19,7 @@
       </keep-alive>
       <keep-alive>
         <monaco-code-editor
+            style="opacity: 0.98"
             v-if="showSetEditor"
             templateType="set"
             language="typescript"
@@ -33,8 +35,22 @@
       </keep-alive>
     </div>
     <div class="position-absolute no-graph-targe"
-        style="top: -25px; width: 75px;">
-        <div v-show="errors.length > 0 || hovered || showVueEditor || showSetEditor">
+        style="top: -25px; width: 200px;">
+        <div :style="{opacity: show ? 1 : 0}" @mouseover="hoveredLocally = true" @mouseout="hoveredLocally = false">
+          <div style="top: -5px; display: inline-block;">
+            <v-menu style="opacity: 0.98">
+              <template v-slot:activator="{props}">
+                <v-icon icon="mdi-cog" v-bind="props"/>
+              </template>
+              <node-properties-panel :nodeId="nodeId"/>
+            </v-menu>
+            <v-menu style="opacity: 0.98">
+              <template v-slot:activator="{props}">
+                <v-icon icon="mdi-chart-sankey-variant" v-bind="props"/>
+              </template>
+              <node-edge-properties-panel :nodeId="nodeId"/>
+            </v-menu>
+          </div>
           <v-badge :color="vueIsDirty ? 'warning' : 'transparent'" dot>
             <v-icon
                 :color="showVueEditor ? 'secondary' : ''"
@@ -72,6 +88,7 @@
     },
     data() {
       return {
+        hoveredLocally: null,
         localNode: null,
         showVueEditor: false,
         showSetEditor: false,
@@ -99,6 +116,16 @@
       ...mapState(useGraphStore, [
         "graph"
       ]),
+      show() {
+        return this.hoveredLocally
+          || this.errors.length > 0
+          || this.hovered
+          || this.showVueEditor
+          || this.showSetEditor
+          || this.showError
+          || this.vueIsDirty
+          || this.setIsDirty;
+      },
       node() {
         if (!this.graph) {
           return {template: {vue: '', set: ''}};

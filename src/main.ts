@@ -35,7 +35,6 @@ import Input from "@plastic-io/graph-editor-vue3-input";
 import LocalStorageDocumentProvider from "@plastic-io/graph-editor-vue3-local-storage-document-provider";
 import LocalUserPreferences from "@plastic-io/graph-editor-vue3-local-user-preferences";
 import MiniMapInfo from "@plastic-io/graph-editor-vue3-mini-map-info";
-import NavigationDrawer from "@plastic-io/graph-editor-vue3-navigation-drawer";
 import Node from "@plastic-io/graph-editor-vue3-node";
 import NodeEdgeConnector from "@plastic-io/graph-editor-vue3-node-edge-connector";
 import NodeEdgePropertiesPanel from "@plastic-io/graph-editor-vue3-node-edge-properties-panel";
@@ -89,7 +88,6 @@ const plugins = [
   Input,
   LocalStorageDocumentProvider,
   MiniMapInfo,
-  NavigationDrawer,
   Node,
   NodeEdgeConnector,
   NodeEdgePropertiesPanel,

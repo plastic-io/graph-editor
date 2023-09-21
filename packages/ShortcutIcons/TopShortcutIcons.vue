@@ -9,7 +9,6 @@
             Rewinding...
         </span>
     </div>
-    <v-spacer style="margin-right: 5%;"/>
     <span help-topic="documentName" class="pa-1">
         {{ graph.properties.name || graph.url || "Untitled" }}
     </span>

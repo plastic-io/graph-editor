@@ -1,33 +1,35 @@
 <template>
-    <v-card flat>
-        <v-card-title help-topic="importPanel">
-            <v-icon left>mdi-library</v-icon>
-            Library
-        </v-card-title>
-        <v-card-subtitle>
-            Create, Import, and Export Components, Nodes, and Graphs
-        </v-card-subtitle>
-        <v-card-text>
-            <v-tabs grow icons-and-text hide-slider v-model="importPanelTabs">
-                <v-tab help-topic="importLocal">
-                    <v-icon>mdi-folder</v-icon>
-                    Local Graphs
-                </v-tab>
-                <v-tab help-topic="importPublic">
-                    <v-icon>mdi-folder-network</v-icon>
-                    Public Graphs
-                </v-tab>
-            </v-tabs>
-            <v-window v-model="importPanelTabs">
-              <v-window-item>
-                  <import-panel-list/>
-              </v-window-item>
-              <v-window-item>
-                  <import-panel-registry/>
-              </v-window-item>
-            </v-window>
-        </v-card-text>
-    </v-card>
+    <div>
+        <v-card flat>
+            <v-card-title help-topic="importPanel">
+                <v-icon left>mdi-library</v-icon>
+                Library
+            </v-card-title>
+            <v-card-subtitle>
+                Create, Import, and Export Components, Nodes, and Graphs
+            </v-card-subtitle>
+            <v-card-text>
+                <v-tabs grow icons-and-text hide-slider v-model="importPanelTabs">
+                    <v-tab help-topic="importLocal">
+                        <v-icon>mdi-folder</v-icon>
+                        Local Graphs
+                    </v-tab>
+                    <v-tab help-topic="importPublic">
+                        <v-icon>mdi-folder-network</v-icon>
+                        Public Graphs
+                    </v-tab>
+                </v-tabs>
+                <v-window v-model="importPanelTabs">
+                  <v-window-item>
+                      <import-panel-list/>
+                  </v-window-item>
+                  <v-window-item>
+                      <import-panel-registry/>
+                  </v-window-item>
+                </v-window>
+            </v-card-text>
+        </v-card>
+    </div>
 </template>
 <script lang="ts">
 import ImportPanelComponent from "./ImportPanelComponent.vue";
