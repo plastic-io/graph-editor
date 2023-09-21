@@ -5,6 +5,7 @@ import { resolve } from 'path';
 
 export default defineConfig((mode) => {
   return {
+    base: '/graph-editor/',
     server: {
       port: 8080,
     },
