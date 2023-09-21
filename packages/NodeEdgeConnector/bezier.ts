@@ -62,7 +62,7 @@ export default function bezierDraw(connector: any): void {
         const isAddingFromInput = connector.addingConnector && connector.addingConnector.type === 'input';
         const ltr = isMoving ? connector.ltrPct > 0.5 : !isAddingFromInput;
         const inSrc = isAddingFromInput ? connector.addingConnector : connector.input;
-        if (inSrc.field && (!connector.output.field.visible || !inSrc.field.visible)) {
+        if (inSrc.field && ((connector.output.field && !connector.output.field.visible) || !inSrc.field.visible)) {
             return;
         }
         const elOutPort = connector.output.field ? document.getElementById(`node-output-${connector.output.node.id}-${connector.output.field.name}`) : null;

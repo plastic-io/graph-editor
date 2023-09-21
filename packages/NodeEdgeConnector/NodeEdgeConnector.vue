@@ -85,8 +85,11 @@ export default {
             return this.hoveredConnector && this.hoveredConnector.connector.id === this.connector.id;
         },
         output() {
+            const node = (this.localGraph || this.graph).nodes.find((v) => {
+                return v.id === this.connector.nodeId;
+            }) ;
             const field = this.node.properties.outputs.find((output) => {
-                return this.edge.field === output.name;
+                return this.edge && this.edge.field === output.name;
             });
             const index = this.node.properties.outputs.indexOf(field);
             return {

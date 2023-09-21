@@ -246,7 +246,7 @@ export default class MouseAction {
                     connector.graphId = graphState.addingConnector.node.graphId;
                     connector.version = graphState.addingConnector.node.version;
                     edge.connectors.push(connector);
-                 }
+                }
                 this.applyGraphChanges("Add Connector");
                 graphState.addingConnector = null;
             } else {
