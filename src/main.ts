@@ -102,25 +102,27 @@ const plugins = [
   Workspace,
   Auth0AuthenticationProvider,
 ] as any;
-const pluginInstances = {} as any;
-console.groupCollapsed('%cPlastic-IO: %cGraph Editor Plugins',
-  "color: blue",
-  "color: lightblue");
-for (const _Plugin of plugins) {
-   const plugin = new _Plugin({}, app, router, pinia);
-   if (plugin instanceof Promise) {
-     await plugin;
-   }
-   console.log(plugin);
-}
-console.groupEnd();
-(self as any).plastic = {
-  app,
-  router,
-  pinia,
-  plugins: pluginInstances,
-}
+(async () => {
+  const pluginInstances = {} as any;
+  console.groupCollapsed('%cPlastic-IO: %cGraph Editor Plugins',
+    "color: blue",
+    "color: lightblue");
+  for (const _Plugin of plugins) {
+     const plugin = new _Plugin({}, app, router, pinia);
+     if (plugin instanceof Promise) {
+       await plugin;
+     }
+     console.log(plugin);
+  }
+  console.groupEnd();
+  (self as any).plastic = {
+    app,
+    router,
+    pinia,
+    plugins: pluginInstances,
+  }
 
-app.use(router);
+  app.use(router);
 
-app.mount("#app");
+  app.mount("#app");
+})();

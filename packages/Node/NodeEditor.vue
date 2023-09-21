@@ -74,7 +74,7 @@
     <node-error :nodeId="nodeId"/>
   </div>
 </template>
-<script>
+<script lang="ts">
   import {mapWritableState, mapActions, mapState} from "pinia";
   import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
   import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
