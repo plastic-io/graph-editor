@@ -50,7 +50,7 @@
         </v-card>
     </div>
 </template>
-<script>
+<script lang="ts">
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {mapWritableState, mapActions, mapState} from "pinia";

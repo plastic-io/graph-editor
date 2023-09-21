@@ -6,7 +6,7 @@
     <graph-properties @click.stop @mousemove.stop/>
   </v-menu>
 </template>
-<script>
+<script lang="ts">
   export default {
     name: 'graph-properties-menu',
   }

@@ -40,7 +40,7 @@
       </div>
   </v-alert>
 </template>
-<script>
+<script lang="ts">
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {mapWritableState, mapActions, mapState} from "pinia";
 export default {
