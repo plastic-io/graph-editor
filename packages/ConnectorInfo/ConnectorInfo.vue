@@ -25,13 +25,15 @@
             </v-card-actions>
             <v-card-title class="ml-3 pa-0">
                 <div v-if="!selectedActivity.empty" class="w-33 mx-0  d-inline-block pl-1">
-                    {{selectedActivity.event.connector.field}}
-                    <v-icon v-if="selectedActivityEnd.empty" icon="mdi-clock" color="primary"/>
                     <v-icon v-if="!selectedActivityEnd.empty" icon="mdi-arrow-right" color="info"/>
                     {{selectedActivityEnd.event.duration}}ms
+                    <v-icon v-if="selectedActivityEnd.empty" icon="mdi-clock" color="primary"/>
+                    <v-icon v-if="!selectedActivityEnd.empty" icon="mdi-arrow-right" color="info"/>
+                    {{selectedActivity.event.connector.field}}
                 </div>
                 <div v-else>
-                    <i>No Connector Selected</i>
+                    <i v-if="selectedConnectors.length === 0">No Connector Selected</i>
+                    <i v-if="selectedConnectors.length > 0 && selectedActivity.empty">No Activity</i>
                 </div>
             </v-card-title>
             <v-card-text class="pt-1">
