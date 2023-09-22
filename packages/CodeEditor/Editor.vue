@@ -13,23 +13,23 @@
         <v-system-bar
           class="no-select"
           :style="{position: 'absolute', top: '-24px', left: 0, width: '100%', 'justify-content': 'left'}">
-          <v-divider class="mx-4" vertical></v-divider>
-          <v-icon icon="mdi-content-save" @click="save" title="Save"/>
+          <v-icon v-if="!isPopout" size="small" icon="mdi-close" @click="$emit('close')"/>
+          <v-divider class="mx-3" vertical></v-divider>
+          <div style="margin-left: auto;"></div>
+          <v-divider class="mx-3" vertical></v-divider>
+          <v-icon v-show="!autosave" icon="mdi-content-save" @click="save" title="Save"/>
           <v-icon :color="autosave ? 'green' : ''" icon="mdi-auto-upload" title="Autosave" @click="autosave = !autosave"/>
-          <v-divider class="mx-4" vertical></v-divider>
-          <v-icon icon="mdi-file-undo" v-if="dirty" @click="revert" title="Revert"/>
-          <v-divider v-show="dirty" class="mx-4" vertical></v-divider>
+          <v-divider class="mx-3" vertical></v-divider>
           <v-icon
             icon="mdi-help-circle-outline"
             @click="openHelp"
             :style="{
-              marginLeft: 'auto',
-              display: 'inline-block',
               opacity: helpLink ? '.6': '0'
           }"/>
+          <v-divider class="mx-3" vertical></v-divider>
           <v-icon
-            v-if="!isPopout" icon="mdi-open-in-new" @click="popout" style="display: inline-block;"/>
-          <v-icon v-if="!isPopout" icon="mdi-close" @click="$emit('close')" style="display: inline-block;"/>
+            v-if="!isPopout" icon="mdi-open-in-new" @click="popout"/>
+          
         </v-system-bar>
       </div>
     </div>

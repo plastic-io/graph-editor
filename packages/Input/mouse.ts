@@ -84,8 +84,8 @@ export default class MouseAction {
     // adding a connector
     if (graphState.hoveredPort && !inputState.mouse.lmb && mouse.lmb && !graphState.movingConnector && !locked) {
         graphState.ltrPct = graphState.hoveredPort.type === "output" ? 0 : 1;
-        graphState.addingConnector = graphState.hoveredPort;
-        graphState.addingConnector.connector = {
+        graphState.startedAddingConnector =  graphState.hoveredPort;
+        graphState.startedAddingConnector.connector = {
             id: newId(),
             nodeId: null,
             field: null,
@@ -93,9 +93,15 @@ export default class MouseAction {
             version: null,
         };
     }
+    if (pastDeadZone && graphState.startedAddingConnector) {
+        graphState.addingConnector = graphState.startedAddingConnector;
+    }
     // moving a connector
     if (graphState.hoveredConnector && !inputState.mouse.lmb && mouse.lmb && !locked) {
-        graphState.movingConnector = graphState.hoveredConnector;
+        graphState.startedMovingConnector = graphState.hoveredConnector;
+    }
+    if (pastDeadZone && graphState.startedMovingConnector) {
+        graphState.movingConnector = graphState.startedMovingConnector;
     }
     // draw select box maybe
     if (graphState.selectionRect.visible ||
@@ -215,7 +221,6 @@ export default class MouseAction {
     // add a new connector to a port
     if (graphState.hoveredPort && graphState.addingConnector
             && graphState.addingConnector.node.id !== graphState.hoveredPort.node.id) {
-        
         const node = graphState.graphSnapshot.nodes.find((v: Node) => v.id === graphState.addingConnector.node.id);
         const edge = node.edges.find((e: {field: string}) => e.field === graphState.addingConnector.field.name);
         const connector = graphState.addingConnector.connector;
@@ -228,6 +233,8 @@ export default class MouseAction {
         }
         if (!mouse.lmb && inputState.mouse.lmb) {
             if (valid) {
+        console.log('started adding', graphState.hoveredPort,graphState.addingConnector
+            ,graphState.addingConnector.node.id,graphState.hoveredPort.node.id);
                 if (graphState.hoveredPort.type === "input" && graphState.addingConnector.type === 'output') {
                     connector.field = graphState.hoveredPort.field.name;
                     connector.nodeId = graphState.hoveredPort.node.id;
@@ -247,13 +254,18 @@ export default class MouseAction {
                     connector.version = graphState.addingConnector.node.version;
                     edge.connectors.push(connector);
                 }
-                this.applyGraphChanges("Add Connector");
                 graphState.addingConnector = null;
+                this.applyGraphChanges("Add Connector");
             } else {
                 this.orchestratorStore.showError = true;
                 this.orchestratorStore.error = "Cannot connect " + typeA + " to " + typeB;
             }
         }
+    }
+    // remove startMoving and startAdding refs
+    if (!mouse.lmb) {
+        graphState.startedAddingConnector = null
+        graphState.startedMovingConnector = null
     }
     // drop moving nodes and connectors
     if (!mouse.lmb && inputState.mouse.lmb &&
@@ -276,9 +288,11 @@ export default class MouseAction {
                 return c.field === graphState.movingConnector.output.field.name;
             });
             edge.connectors.splice(edge.connectors.indexOf(rmCon), 1);
+            graphState.startedMovingConnector = null;
             graphState.movingConnector = null;
         }
         if (graphState.addingConnector) {
+            graphState.startedAddingConnector = null;
             graphState.addingConnector = null;
         }
         graphState.translating = {};

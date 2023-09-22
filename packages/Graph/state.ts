@@ -22,6 +22,8 @@ export default () => {
         hoveredPort: null,
         addingConnector: null,
         movingConnector: null,
+        startedMovingConnector: null,
+        startedAddingConnector: null,
         ltrPct: 0,
         locked: null,
         groupNodes: [],

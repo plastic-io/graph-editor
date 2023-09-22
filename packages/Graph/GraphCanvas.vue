@@ -117,7 +117,7 @@ export default {
         let connectors = [];
         this.graph.nodes.forEach((node) => {
             node.edges.forEach((edge) => {
-                edge.connectors.forEach((connector) => {
+                edge.connectors.filter(c => !!c).forEach((connector) => {
                     connectors.push({
                         connector,
                         edge,

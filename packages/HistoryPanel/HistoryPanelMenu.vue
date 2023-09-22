@@ -3,6 +3,11 @@
     <template v-slot:activator="{props}">
       <v-icon icon="mdi-history" v-bind="props"/>
     </template>
+    <v-card>
+        <v-card-title>
+            History
+        </v-card-title>
+    </v-card>
     <history-panel @click.stop @mousemove.stop/>
   </v-menu>
 </template>
