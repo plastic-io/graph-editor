@@ -91,6 +91,7 @@ export const useStore = defineStore('orchestrator', {
     showConnectorView: false,
     connectionState: "closed",
     createdGraphId: null,
+    scheduleWorker: null as any,
     helpTopics,
     log: [] as any,
     pathPrefix: "/graph-editor-vue-2/",
@@ -157,6 +158,12 @@ export const useStore = defineStore('orchestrator', {
       // now load the selected graph
       this.graphStore.open(graphUrl);
 
+    },
+    panic() {
+      this.scheduleWorker.postMessage({
+        method: 'panic',
+        args: [],
+      });
     },
     async getToc() {
       this.toc = await this.dataProviders.toc!.get("toc.json");
@@ -340,14 +347,14 @@ export const useStore = defineStore('orchestrator', {
         };
         const sendMessage = (method: string) => {
           return (...args: any) => {
-            scheduleWorker.postMessage({
+            this.scheduleWorker.postMessage({
               method,
               args,
             });
           };
         }
-        const scheduleWorker = new SchedulerWorker();
-        scheduleWorker.postMessage({
+        this.scheduleWorker = new SchedulerWorker();
+        this.scheduleWorker.postMessage({
           method: 'init',
           args: [
             {
@@ -355,7 +362,7 @@ export const useStore = defineStore('orchestrator', {
             },
           ],
         });
-        (scheduleWorker.onmessage as any) = (e: any) => {
+        (this.scheduleWorker.onmessage as any) = (e: any) => {
           const methodName = e.data.source;
           const args = fromJSON(e.data.event);
           if (methodName === 'beginconnector') {
@@ -383,7 +390,7 @@ export const useStore = defineStore('orchestrator', {
           if (!state.graph) {
             return;
           }
-          scheduleWorker.postMessage({
+          this.scheduleWorker.postMessage({
             method: 'change',
             args: [deref(state.graph)],
           });

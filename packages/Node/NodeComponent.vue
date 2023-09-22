@@ -26,9 +26,6 @@
           state: props.state,
           ...props.nodeProps,
           ...events,
-          onSet(e: any) {
-            emit('set', e);
-          },
           onDataChange(e: any) {
             emit('dataChange', e);
           },
