@@ -1,12 +1,14 @@
 import type {App} from "vue";
 import type {Router} from "vue-router";
 import _NodeEdgePropertiesPanel from "./NodeEdgePropertiesPanel.vue";
+import ConnectorPropertiesPanel from "./ConnectorPropertiesPanel.vue";
 import EditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-editor-module";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 export default class NodeEdgePropertiesPanel extends EditorModule {
   constructor(config: Record<string, any>, app: App<Element>, hostRouter: Router) {
     super();
     app.component('node-edge-properties-panel', _NodeEdgePropertiesPanel);
+    app.component('connector-properties-panel', ConnectorPropertiesPanel);
     const graphOrchestratorStore =  useOrchestratorStore();
     const plugin = new Plugin({
       name: 'Edges',

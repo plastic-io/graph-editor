@@ -10,7 +10,7 @@
             :nodeId="nodeId"
             :graphUrl="graph.url"
             :errors="errors.filter(e => e.type === 'vue')"
-            :value="node.template.vue"
+            :value="vueTemplateValue"
             helpLink="https://vuejs.org/guide/essentials/component-basics.html"
             @close="showVueEditor = false"
             @dirty="vueIsDirty = $event"
@@ -26,7 +26,7 @@
             :nodeId="nodeId"
             :graphUrl="graph.url"
             :errors="errors.filter(e => e.type === 'set')"
-            :value="node.template.set"
+            :value="setTemplateValue"
             helpLink="https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html"
             @close="showSetEditor = false"
             @dirty="setIsDirty = $event"
@@ -37,20 +37,6 @@
     <div class="position-absolute no-graph-targe"
         style="top: -25px; width: 200px;">
         <div :style="{opacity: show ? 1 : 0}" @mouseover="hoveredLocally = true" @mouseout="hoveredLocally = false">
-          <div style="top: -5px; display: inline-block;">
-            <v-menu style="opacity: 0.98">
-              <template v-slot:activator="{props}">
-                <v-icon icon="mdi-cog" v-bind="props"/>
-              </template>
-              <node-properties-panel :nodeId="nodeId"/>
-            </v-menu>
-            <v-menu style="opacity: 0.98">
-              <template v-slot:activator="{props}">
-                <v-icon icon="mdi-chart-sankey-variant" v-bind="props"/>
-              </template>
-              <node-edge-properties-panel :nodeId="nodeId"/>
-            </v-menu>
-          </div>
           <v-badge :color="vueIsDirty ? 'warning' : 'transparent'" dot>
             <v-icon
                 :color="showVueEditor ? 'secondary' : ''"
@@ -69,6 +55,22 @@
                 color="warning"
                 icon="mdi-alert-circle-outline"/>
           </v-badge>
+          <v-menu style="opacity: 0.98">
+            <template v-slot:activator="{props}">
+              <v-badge color="transparent">
+                <v-icon icon="mdi-chart-sankey-variant" v-bind="props" class="mr-2"/>
+              </v-badge>
+            </template>
+            <node-edge-properties-panel :nodeId="nodeId"/>
+          </v-menu>
+          <v-menu style="opacity: 0.98">
+            <template v-slot:activator="{props}">
+              <v-badge color="transparent">
+                <v-icon icon="mdi-cog" v-bind="props"/>
+              </v-badge>
+            </template>
+            <node-properties-panel :nodeId="nodeId"/>
+          </v-menu>
         </div>
     </div>
     <node-error :nodeId="nodeId"/>
@@ -116,15 +118,19 @@
       ...mapState(useGraphStore, [
         "graph"
       ]),
+      setTemplateValue() {
+        return this.node.template.set;
+      },
+      vueTemplateValue() {
+        return this.node.template.vue;
+      },
       show() {
         return this.hoveredLocally
           || this.errors.length > 0
           || this.hovered
           || this.showVueEditor
           || this.showSetEditor
-          || this.showError
-          || this.vueIsDirty
-          || this.setIsDirty;
+          || this.showError;
       },
       node() {
         if (!this.graph) {

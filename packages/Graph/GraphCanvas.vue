@@ -117,7 +117,7 @@ export default {
         let connectors = [];
         this.graph.nodes.forEach((node) => {
             node.edges.forEach((edge) => {
-                edge.connectors.forEach((connector) => {
+                edge.connectors.filter(c => !!c).forEach((connector) => {
                     connectors.push({
                         connector,
                         edge,
@@ -160,7 +160,7 @@ export default {
         const classes = [];
         if (!this.presentation) {
             classes.push("graph-canvas-container");
-            if (this.preferences.showGrid) {
+            if (this.preferences!.appearance.showGrid) {
                 classes.push("grid");
             }
         }

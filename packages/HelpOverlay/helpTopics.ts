@@ -675,8 +675,6 @@ export const template = `<template>
             </ul>
         </v-card-subtitle>
         <v-card-text class="pa-2">
-            
-            Properties for this node
             <v-spacer class="pa-2"></v-spacer>
             Check out this source of this button to see how to invoke the node
             <v-btn class="ma-2" @click="buttonClick">

@@ -1,6 +1,6 @@
 <template>
-    <v-card elevation="0" flat style="height: calc(100vh - 200px);" class="pa-2">
-        <v-list style="height: calc(100vh - 121px);overflow-y: auto;">
+    <div @mousemove.stop>
+        <v-list style="width: 300px;min-height: 400px; max-height: calc(75vh);overflow-y: scroll;">
             <v-list-item
                 v-for="(event, index) in localEvents"
                 :key="index"
@@ -13,7 +13,7 @@
                 </template>
             </v-list-item>
         </v-list>
-    </v-card>
+    </div>
 </template>
 <script lang="ts">
 import {mapState, mapActions} from "pinia";

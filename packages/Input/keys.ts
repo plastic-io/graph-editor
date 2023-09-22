@@ -101,8 +101,4 @@ export const keys = (store: any, e: UIEvent) => {
         e.preventDefault();
         store.graphStore.duplicateSelection();
     }
-    if (keys[tabKeyCode]) {
-        e.preventDefault();
-        store.graphStore.togglePanelVisibility();
-    }
 }

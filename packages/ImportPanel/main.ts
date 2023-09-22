@@ -16,7 +16,7 @@ export default class ImportPanel extends EditorModule {
       component: 'import-panel-menu',
       helpTopic: 'importPanel',
       type: 'system-bar-bottom',
-      order: 0,
+      order: 5,
       divider: true,
     });
 

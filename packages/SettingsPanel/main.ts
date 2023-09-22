@@ -15,7 +15,7 @@ export default class UserPanel extends EditorModule {
       component: 'settings-panel-menu',
       helpTopic: 'settingsPanel',
       type: 'system-bar-bottom',
-      order: 0,
+      order: 6,
       divider: true,
     });
 

@@ -162,7 +162,6 @@ export const useStore = defineStore('orchestrator', {
       this.toc = await this.dataProviders.toc!.get("toc.json");
     },
     async publishGraph() {
-      console.log('publishGraph');
         const graph = this.graphStore.graph;
         await this.dataProviders.publish!.set(graph.id, {
             graph,

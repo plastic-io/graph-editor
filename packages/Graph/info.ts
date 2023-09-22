@@ -35,9 +35,6 @@ export default {
     raiseError(err: Error) {
         throw err;
     },
-    getCalculatedGraphUrl(): string {
-        return self.location.pathname.split('/')[1];
-    },
     isGraphTarget(e): boolean {
         let parentNode = e.target;
         const navEl = document.getElementsByClassName('graph-nav-drawer')[0];

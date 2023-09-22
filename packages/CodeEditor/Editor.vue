@@ -13,23 +13,23 @@
         <v-system-bar
           class="no-select"
           :style="{position: 'absolute', top: '-24px', left: 0, width: '100%', 'justify-content': 'left'}">
-          <v-divider class="mx-4" vertical></v-divider>
-          <v-icon icon="mdi-content-save" @click="save" title="Save"/>
+          <v-icon v-if="!isPopout" size="small" icon="mdi-close" @click="$emit('close')"/>
+          <v-divider class="mx-3" vertical></v-divider>
+          <div style="margin-left: auto;"></div>
+          <v-divider class="mx-3" vertical></v-divider>
+          <v-icon v-show="!autosave" icon="mdi-content-save" @click="save" title="Save"/>
           <v-icon :color="autosave ? 'green' : ''" icon="mdi-auto-upload" title="Autosave" @click="autosave = !autosave"/>
-          <v-divider class="mx-4" vertical></v-divider>
-          <v-icon icon="mdi-file-undo" v-if="dirty" @click="revert" title="Revert"/>
-          <v-divider v-show="dirty" class="mx-4" vertical></v-divider>
+          <v-divider class="mx-3" vertical></v-divider>
           <v-icon
             icon="mdi-help-circle-outline"
             @click="openHelp"
             :style="{
-              marginLeft: 'auto',
-              display: 'inline-block',
               opacity: helpLink ? '.6': '0'
           }"/>
+          <v-divider class="mx-3" vertical></v-divider>
           <v-icon
-            v-if="!isPopout" icon="mdi-open-in-new" @click="popout" style="display: inline-block;"/>
-          <v-icon v-if="!isPopout" icon="mdi-close" @click="$emit('close')" style="display: inline-block;"/>
+            v-if="!isPopout" icon="mdi-open-in-new" @click="popout"/>
+          
         </v-system-bar>
       </div>
     </div>
@@ -160,17 +160,22 @@ export default {
   data() {
     return {
       id: newId(),
+      editorHasFocus: false,
       autosave: true,
+      messageIds: [],
       externalErrors: [],
       loaded: false,
       win: null,
       timer: 0,
       broadcastChannel: null,
       debounceTimer: null,
+      broadcastUpdateTimer: null,
       saveDebounceTimer: null,
       dirty: false,
+      emptyMessageTimer: null,
       editor: null,
       cursor: undefined,
+      localValue: '',
       width: 0,
       height: 0,
       top: 0,
@@ -192,6 +197,18 @@ export default {
         if (message.senderId === this.id) {
           return;
         }
+        if (this.messageIds.indexOf(message.id) !== -1) {
+          return;
+        }
+        clearTimeout(this.emptyMessageTimer);
+        this.emptyMessageTimer = setTimeout(() => {
+          // let's make sure we don't cause a memory leak
+          // we'll clear out the deconflicting event id array
+          //  every n seconds of inactivity
+          this.messageIds = [];
+        }, 15000);
+
+        this.messageIds.push(message.id);
         if (message.type === 'errors') {
           this.externalErrors = message.value;
           this.syncErrors();
@@ -200,7 +217,7 @@ export default {
         // or value is when the external node has chnaged
         // either way we update the current value if it does not match
         if (message.type === 'update' || message.type === 'value') {
-          if (!this.$refs.editor || !this.$refs.editor.pinstance) {
+          if (this.editorHasFocus || !this.$refs.editor || !this.$refs.editor.pinstance) {
             return;
           }
           const existingValue = this.getValue();
@@ -215,6 +232,12 @@ export default {
       const editor = monaco.editor.create(this.$refs.editor, {
         language: this.language,
         theme: this.preferences.appearance.theme === 'dark' ? 'vs-dark' : 'vs',
+      });
+      editor.onDidFocusEditorText((event) => {
+        this.editorHasFocus = false;
+      });
+      editor.onDidBlurEditorText((event) => {
+        this.editorHasFocus = true;
       });
       editor.getModel().onDidChangeContent((event) => {
         this.update();
@@ -244,9 +267,19 @@ export default {
         this.win.close();
       }
     },
+    sendBroadcast({type, value}) {
+      const id = newId();
+      this.messageIds.push(id);
+      this.broadcastChannel.postMessage({
+        id,
+        senderId: this.id,
+        type,
+        value,
+      });
+    },
     popout() {
       this.$emit('close');
-      const url = `/popout-editor/${this.graphUrl}/${this.nodeId}/${this.templateType}/${this.language}`;
+      const url = `/graph-editor/popout-editor/${this.graphUrl}/${this.nodeId}/${this.templateType}/${this.language}`;
       this.win = window.open(url, this.storeKey,
         `popup,width=${this.width},height=${this.width},top=${this.top},left=${this.left}`);
       for (let x = 500; x < 3000; x += 500) {
@@ -393,9 +426,10 @@ export default {
       if (!(this.$refs.editor && this.$refs.editor.pinstance)) {
         return;
       }
+      this.localValue = this.value;
       const cache = localStorage.getItem(this.storeKey);
-      const val = cache !== null ? cache : this.value;
-      if (cache && cache !== this.value) {
+      const val = cache !== null ? cache : this.localValue;
+      if (cache && cache !== this.localValue) {
         this.dirty = true;
       }
       this.setValue(val);
@@ -413,23 +447,25 @@ export default {
       if (!this.$refs.editor || !this.$refs.editor.pinstance) {
         return;
       }
-      this.$refs.editor.pinstance.setValue(val);
+      this.$refs.editor.pinstance.setValue(val, monaco.editor.StableMarker);
     },
     getValue() {
       return this.$refs.editor.pinstance.getValue();
     },
     update() {
       const newValue = this.getValue();
-      this.dirty = newValue !== this.value;
+      this.dirty = newValue !== this.localValue;
       localStorage.setItem(this.storeKey, this.getValue());
 
       if (!this.dirty) { return; }
 
-      this.broadcastChannel.postMessage({
-        senderId: this.id,
-        type: 'update',
-        value: newValue,
-      });
+      clearTimeout(this.broadcastUpdateTimer);
+      this.broadcastUpdateTimer = setTimeout(() => {
+        this.sendBroadcast({
+          type: 'update',
+          value: newValue,
+        });
+      }, 1500)
 
       if (this.autosave) {
         clearTimeout(this.saveDebounceTimer);
@@ -439,7 +475,7 @@ export default {
       }
     },
     revert() {
-      this.setValue(this.value);
+      this.setValue(this.localValue);
       this.dirty = false;
     },
     save() {
@@ -448,8 +484,7 @@ export default {
       this.$emit('save', this.getValue());
     },
     broadcastErrors() {
-      this.broadcastChannel.postMessage({
-        senderId: this.id,
+      this.sendBroadcast({
         type: 'errors',
         value: this.errors.map((err) => {
           return {
@@ -462,8 +497,7 @@ export default {
   },
   watch: {
     dirty() {
-      this.broadcastChannel.postMessage({
-        senderId: this.id,
+      this.sendBroadcast({
         type: 'dirty',
         value: this.dirty,
       });
@@ -473,13 +507,10 @@ export default {
       this.loadFromCache();
     },
     value() {
-      this.broadcastChannel.postMessage({
-        senderId: this.id,
-        type: 'value',
-        value: this.value,
-      });
+      console.log('watch value update');
+      this.localValue = this.value;
       if (this.$refs.editor) {
-        this.$refs.editor.pinstance.value = this.value;
+        this.$refs.editor.pinstance.value = this.localValue;
       }
     },
     navWidth() {
