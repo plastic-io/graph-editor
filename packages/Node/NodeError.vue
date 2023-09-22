@@ -2,7 +2,7 @@
   <v-alert
       v-if="error"
       color="error"
-      :title="error.error.message"
+      :title="error.error.message.replace(/Error: Error:/g, 'Error:')"
       class="node-error"
       style="pointer-events: all;">
       <div style="text-align: right;">
@@ -10,14 +10,14 @@
              v-if="hasErrors">
               {{index + 1}} of {{errors.length}}
           </i>
+          <div v-if="error.graphId">GraphId {{error.graphId}}</div>
       </div>
       <v-card>
-          <v-card-text>
+          <v-card-text v-if="error.error.stack">
               <pre class="no-graph-target">{{error.error.stack}}</pre>
           </v-card-text>
           <v-card-subtitle>
-            Field {{error.field}}<br/>
-            GraphId {{error.graphId}}
+            <div v-if="error.field">Field {{error.field}}</div>
           </v-card-subtitle>
       </v-card>
       <div>
@@ -81,7 +81,7 @@ export default {
       position: absolute;
       left: 110%;
       top: 110%;
-      width: 1200px;
+      width: 700px;
       overflow: scroll;
   }
 </style>

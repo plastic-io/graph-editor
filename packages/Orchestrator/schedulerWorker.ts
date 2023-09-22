@@ -45,6 +45,14 @@ const rpc = {
   }
 } as any;
 onmessage = function(e: any) {
+  if (e.data.method === 'panic') {
+    const panic = () => {
+      scheduler.removeEventListener("beginedge", panic);
+      throw new Error('PANIC!');
+    };
+    scheduler.addEventListener("beginedge", panic);
+    return;
+  }
   if (e.data.method === 'init') {
     return rpc.init.apply(null, e.data.args);
   }

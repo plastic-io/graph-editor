@@ -14,6 +14,12 @@
     </span>
     <v-spacer/>
     <shared-users/>
+    <v-icon
+        help-topic="panic"
+        @click="panic"
+        title="PANIC!"
+        >mdi-exclamation-thick</v-icon>
+    <v-divider vertical class="mx-2"/>
     <v-icon :disabled="historyPosition === 0 || events.length === 0"
         @click="undo"
         help-topic="undo"
@@ -141,6 +147,7 @@ export default {
             'keyup',
         ]),
         ...mapActions(useOrchestratorStore, [
+            'panic',
             'clearInfo',
             'getPluginsByType',
         ]),
