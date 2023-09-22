@@ -66,7 +66,6 @@ export default {
         }
     },
     addComponentItem(e: any) {
-        console.log('addComponentItem', e);
         const id = newId();
         const pos = {
             x: (e.x - this.view.x) / this.view.k,
@@ -150,7 +149,6 @@ export default {
         this.updateGraphFromSnapshot("Import New Graph");
     },
     addGraphItem(e: any) {
-        console.log('addGraphItem');
         const pos = {
             x: (e.x - this.view.x) / this.view.k,
             y: (e.y - this.view.y) / this.view.k,
@@ -265,7 +263,6 @@ export default {
         this.updateGraphFromSnapshot("Import New Graph");
     },
     addDroppedItem(e: any) {
-        console.log('addDroppedItem');
         const pos = {
             x: (e.x - this.view.x) / this.view.k,
             y: (e.y - this.view.y) / this.view.k,
@@ -421,7 +418,7 @@ export default {
             graph: deref(this.graph),
         });
     },
-    async open(graphId: string) {
+    async open(graphUrl: string) {
       const graphOrchestrator = useOrchestratorStore();
       if (!graphOrchestrator.dataProviders.graph) {
         throw new Error('No data providers to open a graph with.');
@@ -429,12 +426,12 @@ export default {
       }
       let graph: Graph | null = null;
       try {
-        this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
-        graphOrchestrator.dataProviders.graph.subscribe(graphId, async () => {
-            this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
+        this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphUrl);
+        graphOrchestrator.dataProviders.graph.subscribe(graphUrl, async () => {
+            this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphUrl);
         });
       } catch (err: any) {
-        const url = this.getCalculatedGraphUrl();
+        const url = graphUrl;
         this.graphSnapshot = this.createGraph(url, "");
       }
       // don't allow an opening graph to count as a history change

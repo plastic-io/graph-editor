@@ -10,7 +10,7 @@
             :nodeId="nodeId"
             :graphUrl="graph.url"
             :errors="errors.filter(e => e.type === 'vue')"
-            :value="node.template.vue"
+            :value="setTemplateValue"
             helpLink="https://vuejs.org/guide/essentials/component-basics.html"
             @close="showVueEditor = false"
             @dirty="vueIsDirty = $event"
@@ -26,7 +26,7 @@
             :nodeId="nodeId"
             :graphUrl="graph.url"
             :errors="errors.filter(e => e.type === 'set')"
-            :value="node.template.set"
+            :value="setTemplateValue"
             helpLink="https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html"
             @close="showSetEditor = false"
             @dirty="setIsDirty = $event"
@@ -116,6 +116,12 @@
       ...mapState(useGraphStore, [
         "graph"
       ]),
+      setTemplateValue() {
+        return this.node.template.set;
+      },
+      vueTemplateValue() {
+        return this.node.template.vue;
+      },
       show() {
         return this.hoveredLocally
           || this.errors.length > 0
