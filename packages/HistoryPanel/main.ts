@@ -16,7 +16,7 @@ export default class HistoryPanel extends EditorModule {
       component: 'history-panel-menu',
       helpTopic: 'historyPanel',
       type: 'system-bar-bottom',
-      order: 0,
+      order: 4,
       divider: true,
     });
 

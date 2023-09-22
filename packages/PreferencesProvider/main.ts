@@ -82,7 +82,7 @@ export class UserPreferences {
         this.showLabels = true;
         this.debug = false;
         this.textLabels = true;
-        this.showConnectorActivity = false;
+        this.showConnectorActivity = true;
         this.showMap = false;
         this.useLocalStorage = true;
         this.showRemoteMouseMovements = true;

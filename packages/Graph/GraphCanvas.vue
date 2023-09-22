@@ -160,7 +160,7 @@ export default {
         const classes = [];
         if (!this.presentation) {
             classes.push("graph-canvas-container");
-            if (this.preferences.showGrid) {
+            if (this.preferences!.appearance.showGrid) {
                 classes.push("grid");
             }
         }

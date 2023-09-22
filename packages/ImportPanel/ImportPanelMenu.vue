@@ -1,7 +1,7 @@
 <template>
   <v-menu>
     <template v-slot:activator="{props}">
-      <v-icon icon="mdi-bookshelf" v-bind="props"/>
+      <v-icon icon="mdi-bookshelf" v-bind="props" class="ma-2"/>
     </template>
     <import-panel @click.stop @mousemove.stop/>
   </v-menu>

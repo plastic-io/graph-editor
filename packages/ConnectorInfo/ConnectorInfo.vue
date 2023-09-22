@@ -1,51 +1,49 @@
 <template>
     <div @wheel.stop @mousedown.stop @mouseup.stop @click.stop>
-        <v-card class="connector-info" v-if="activity" elevation="7">
-        <div class="connector-info-system-bar no-graph-target" :key="activity.length">
-            <v-icon title="Connector Information">
-                mdi-information-outline
-            </v-icon>
-            [{{selectedIndex + 1}}/{{activity.length}}]
-            <v-spacer></v-spacer>
-            <v-icon style="margin-left: 3px;" title="Previous" :disabled="selectedIndex <= 0" @click="goPrevious">
-                mdi-arrow-left-drop-circle-outline
-            </v-icon>
-            <v-icon title="Next" :disabled="!(selectedIndex < activity.length - 1)" @click="goNext">
-                mdi-arrow-right-drop-circle-outline
-            </v-icon>
-            <v-tooltip top>
-                <template v-slot:activator="{ props }">
-                    <span v-bind="props" style="padding: 5px;">{{selectedActivity.event.connector.field}}</span>
-                </template>
-                Field
-            </v-tooltip>
-            <v-tooltip top>
-                <template v-slot:activator="{ props }">
-                    <span v-bind="props" style="padding: 5px;">{{selectedActivity.activityType}}</span>
-                </template>
-                Event Type
-            </v-tooltip>
-            <v-tooltip top>
-                <template v-slot:activator="{ props }">
-                    <span v-bind="props" style="padding: 5px;">{{typeof selectedActivity.event.value}}</span>
-                </template>
-                typeof
-            </v-tooltip>
-            <v-tooltip top>
-                <template v-slot:activator="{ props }">
-                    <span v-bind="props" style="padding: 5px;">{{fromNow(selectedActivity.event.time)}}</span>
-                </template>
-                Occured
-            </v-tooltip>
-            <v-divider/>
-            <v-icon @click="$emit('close');">
-                mdi-close
-            </v-icon>
-        </div>
-            <v-card-text>
-                <div class="connector-info-value">
-                    <pre class="dont-propagate-copy">{{selectedActivity.event.value}}</pre>
+        <v-card min-width="400px" class="pa-2 connector-info">
+            <v-card-actions>
+                <div :key="activity.length">
+                    <v-icon
+                        color="secondary"
+                        class="ml-1" title="Previous"
+                        :disabled="selectedIndex <= 0"
+                        @click="goPrevious">
+                        mdi-arrow-left-drop-circle-outline
+                    </v-icon>
+                    <div class="px-2 d-inline-block">
+                        {{selectedIndex + 1}}/{{activity.length}}
+                    </div>
+                    <v-icon
+                        color="secondary"
+                        class="ml-1"
+                        title="Next"
+                        :disabled="!(selectedIndex < activity.length - 1)"
+                        @click="goNext">
+                        mdi-arrow-right-drop-circle-outline
+                    </v-icon>
                 </div>
+            </v-card-actions>
+            <v-card-title class="ml-3 pa-0">
+                <div v-if="!selectedActivity.empty" class="w-33 mx-0  d-inline-block pl-1">
+                    {{selectedActivity.event.connector.field}}
+                    <v-icon v-if="selectedActivityEnd.empty" icon="mdi-clock" color="primary"/>
+                    <v-icon v-if="!selectedActivityEnd.empty" icon="mdi-arrow-right" color="info"/>
+                    {{selectedActivityEnd.event.duration}}ms
+                </div>
+                <div v-else>
+                    <i>No Connector Selected</i>
+                </div>
+            </v-card-title>
+            <v-card-text class="pt-1">
+                <div v-show="selectedActivity.event.time">
+                    Occured {{fromNow(selectedActivity.event.time)}}
+                </div>
+                <div v-if="!selectedActivity.empty" class="connector-info-typeof">
+                    typeof {{typeof selectedActivity.event.value}}
+                </div>
+            </v-card-text>
+            <v-card-text class="pa-0 connector-info-system-bar no-graph-target" elevation="7">
+                <pre class="connector-info-value dont-propagate-copy">{{selectedActivity.event.value}}</pre>
             </v-card-text>
         </v-card>
     </div>
@@ -57,7 +55,25 @@ import {mapWritableState, mapActions, mapState} from "pinia";
 import moment from "moment";
 export default {
     name: "connector-info",
+    data: () => ({
+        selectedIndex: 0,
+        changeVersion: 0,
+        emptyActivity: {
+            empty: true,
+            activityType: 'No activity',
+            event: {
+                time: 0,
+                value: 'No value',
+                connector: {
+                    field: ''
+                }
+            }
+        },
+    }),
     watch: {
+        activityKey() {
+            this.selectedIndex = 0;
+        },
         activity: {
             handler() {
                 this.changeVersion += 1;
@@ -72,7 +88,6 @@ export default {
             }
         },
         goNext() {
-            console.log("Go next");
             if (this.selectedIndex < this.activity.length - 1) {
                 this.selectedIndex += 1;
             }
@@ -88,23 +103,36 @@ export default {
             'activityConnectors',
         ]),
         selectedActivity() {
-            return this.activity[this.selectedIndex];
+            const activity = this.activity[this.selectedIndex] || this.emptyActivity;
+            return activity;
         },
-        activity: function() {
-            if (!this.hoveredConnector && this.selectedConnectors.length === 0) {
-                return null;
+        selectedActivityEnd() {
+            const end = (this.activityConnectors[this.activityKey] || [])
+                .find(a => a.activityType === 'end' && this.selectedActivity.key === a.key);
+            return end || this.emptyActivity;
+        },
+        firstSelectedConnectorId() {
+            return this.selectedConnectors.length > 0 ? this.selectedConnectors[0].id : '';
+        },
+        activityKey() {
+            return this.hoveredConnector
+                ? this.hoveredConnector.connector.id
+                : this.firstSelectedConnectorId;
+        },
+        activity() {
+            if (!this.activityKey || (!this.hoveredConnector && this.selectedConnectors.length === 0)) {
+                return [];
             }
-            const key = this.hoveredConnector ? this.hoveredConnector.connector.id : this.selectedConnectors[0].id;
-            return this.activityConnectors[key];
+            return (this.activityConnectors[this.activityKey] || [])
+                .filter(a => a.activityType === 'start');
         },
     },
-    data: () => ({
-        selectedIndex: 0,
-        changeVersion: 0,
-    }),
 };
 </script>
 <style>
+.connector-info-typeof {
+    color: rgba(var(--v-theme-info));
+}
 .connector-info-value {
     max-width: 50vw;
     max-height: 50vh;
@@ -112,13 +140,13 @@ export default {
 }
 .connector-info {
     position: fixed;
-    bottom: 30px;
+    bottom: 35px;
     right: 10px;
+    height: 200px;
 }
 
 .connector-info-system-bar {
     cursor: grab;
-    height: 22px;
     font-size: 12px;
     padding-left: 5px;
     white-space: nowrap;

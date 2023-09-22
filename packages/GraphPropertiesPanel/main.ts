@@ -18,7 +18,7 @@ export default class GraphProperties extends EditorModule {
       divider: true,
       helpTopic: 'graphProperties',
       type: 'system-bar-bottom',
-      order: 2,
+      order: 3,
     });
 
     graphOrchestratorStore.addPlugin(plugin);

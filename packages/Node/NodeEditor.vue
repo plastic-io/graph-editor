@@ -136,7 +136,6 @@
         if (!this.graph) {
           return {template: {vue: '', set: ''}};
         }
-        console.log('graph changed');
         return this.graph.nodes.find(n => n.id === this.nodeId);
       },
       errors() {
