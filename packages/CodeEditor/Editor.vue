@@ -160,6 +160,8 @@ export default {
   data() {
     return {
       id: newId(),
+      cursorLocation: null,
+      updatingValue: false,
       editorHasFocus: false,
       autosave: true,
       messageIds: [],
@@ -241,6 +243,14 @@ export default {
       });
       editor.getModel().onDidChangeContent((event) => {
         this.update();
+        if (this.updatingValue && this.cursorLocation) {
+          this.$refs.editor.pinstance.setPosition(this.cursorLocation);
+        }
+      });
+      editor.onDidChangeCursorPosition(e => {
+        if (!this.updatingValue) {
+          this.cursorLocation = this.$refs.editor.pinstance.getPosition();
+        }
       });
       // HACK: if editor is attached to "this" it will freeze the system
       this.$refs.editor.pinstance = editor;
@@ -447,7 +457,9 @@ export default {
       if (!this.$refs.editor || !this.$refs.editor.pinstance) {
         return;
       }
-      this.$refs.editor.pinstance.setValue(val, monaco.editor.StableMarker);
+      this.updatingValue = true;
+      this.$refs.editor.pinstance.setValue(val);
+      this.updatingValue = false;
     },
     getValue() {
       return this.$refs.editor.pinstance.getValue();
@@ -507,10 +519,9 @@ export default {
       this.loadFromCache();
     },
     value() {
-      console.log('watch value update');
       this.localValue = this.value;
       if (this.$refs.editor) {
-        this.$refs.editor.pinstance.value = this.localValue;
+        this.setValue(this.localValue);
       }
     },
     navWidth() {

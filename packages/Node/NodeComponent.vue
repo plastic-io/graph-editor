@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { markRaw, h, defineComponent, SetupContext } from "vue";
+  import { markRaw, h, defineComponent, SetupContext, watch, onErrorCaptured, emit } from "vue";
   export default defineComponent({
     name: 'node-component',
     props: {
@@ -18,6 +18,14 @@
           };
       });
 
+      const mountError = (error) => {
+        emit('mountError', new Error('Error mounting node component. ' + error));
+        return false;
+      }
+
+      // Capture errors from child components
+      onErrorCaptured(mountError);
+
       return () => {
         const importedProps = {
           graph: props.graph,
@@ -30,10 +38,11 @@
             emit('dataChange', e);
           },
         };
-        return h(
+        const comp = h(
           {...props.component},
           importedProps,
         );
+        return comp;
       };
     }
   });

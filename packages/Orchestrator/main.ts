@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import type {Graph, Node} from "@plastic-io/plastic-io";
 import {fromJSON} from 'flatted';
 import RegistrySettingsPanel from "./RegistrySettings.vue";
+import {createDeepProxy, type Path} from "./proxy";
 import getRandomName from "@plastic-io/graph-editor-names";
 import {helpTopics} from "@plastic-io/graph-editor-vue3-help-overlay";
 import type AuthenticationProvider from "@plastic-io/graph-editor-vue3-authentication-provider";
@@ -273,6 +274,15 @@ export const useStore = defineStore('orchestrator', {
       }
     },
     createScheduler() {
+
+        this.scheduleWorker = new SchedulerWorker();
+
+        const sendUpdateToWorker = (path: Path, value: any): void => {
+          this.scheduleWorker.postMessage({ path, value });
+        };
+
+        const mainObjProxy = createDeepProxy(this.scheduler.state, [], sendUpdateToWorker);
+
         // performance hack.  Avoid using the store on messages from
         // scheduler to avoid any sort of long term memory leaks/GCing
         const beginconnector = (e: any) => {
@@ -353,7 +363,6 @@ export const useStore = defineStore('orchestrator', {
             });
           };
         }
-        this.scheduleWorker = new SchedulerWorker();
         this.scheduleWorker.postMessage({
           method: 'init',
           args: [
@@ -365,6 +374,16 @@ export const useStore = defineStore('orchestrator', {
         (this.scheduleWorker.onmessage as any) = (e: any) => {
           const methodName = e.data.source;
           const args = fromJSON(e.data.event);
+          if (methodName === 'state-update') {
+            const { path, value } = args;
+            let obj: any = this.scheduler.state;
+            for (let i = 0; i < path.length - 1; i++) {
+              obj = obj[path[i]];
+            }
+            obj[path[path.length - 1]] = value;
+            return;
+          }
+          
           if (methodName === 'beginconnector') {
             return beginconnector(args);
           }
@@ -378,10 +397,10 @@ export const useStore = defineStore('orchestrator', {
             return;
           }
           const method = (this as any)[methodName];
-          if (!method) {
+          if (method) {
+            method(args);
             return;
           }
-          method(args);
         };
         (this.scheduler.instance as any) = {
           url: sendMessage('url'),
