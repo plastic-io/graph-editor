@@ -5,7 +5,7 @@
             :nodeId="node.id"
             :hovered="localHoveredNode"/>
         <div
-            v-if="loaded[nodeComponentName] && visible"
+            v-if="loaded && visible"
             ref="node"
             class="node"
             :key="localNode.id"
@@ -28,6 +28,7 @@
                 <v-card v-if="broken">
                     <v-card-title>
                         <v-icon icon="mdi-robot-dead-outline" color="warning" size="xx-large"/>
+                        <pre v-if="errorMessage">{{errorMessage}}</pre>
                     </v-card-title>
                 </v-card>
                 <node-component
@@ -39,6 +40,7 @@
                     :state="scheduler.state"
                     :nodeProps="nodeProps"
                     :hostNode="hostNode"
+                    @mountError="mountError"
                     @dataChange="dataChange"
                     @set="set"
                 />
@@ -89,6 +91,9 @@ export default {
         hostNode: Node,
         graph: Graph,
         presentation: Boolean,
+    },
+    errorCaptured(err) {
+        this.mountError(err);
     },
     watch: {
         compiledTemplate: {
@@ -169,7 +174,8 @@ export default {
             showSetEditor: false,
             longLoadingTimer: null,
             longLoading: false,
-            loaded: {} as any,
+            loaded: false,
+            errorMessage: "",
             localHoveredNode: null,
             localSelectedNodes: [],
             nodeEvents: {},
@@ -201,7 +207,7 @@ export default {
         }, 500);
         this.clearErrors(this.localNode.id);
         await this.importRoot(this.localNode);
-        this.loaded[this.nodeComponentName] = true;
+        this.loaded = true;
     },
     methods: {
         ...mapActions(useOrchestratorStore, [
@@ -213,6 +219,10 @@ export default {
             "updateNodeData",
             "clearArtifact",
         ]),
+        mountError(err) {
+            this.broken = true;
+            this.raiseError(this.localNode.id, err, 'vue');
+        },
         setLinkedNode(e) {
             console.log("setLinkedNode", e);
         },
@@ -279,7 +289,7 @@ export default {
         },
         async importGraph(g) {
             this.compiledTemplate = await compileTemplate(this, this.nodeComponentName, g.properties.presentationTemplate);
-            this.loaded[this.nodeComponentName] = true;
+            this.loaded = true;
         },
         async importNode(v, artifactKey) {
             v.artifact = this.node.artifact;
