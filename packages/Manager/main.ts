@@ -6,7 +6,7 @@ export default class GraphManager extends EditorModule {
   constructor(config: Record<string, any>, app: App<Element>, hostRouter: Router) {
     super();
     hostRouter.addRoute('GraphManager', {
-      path: "/graphs",
+      path: "/",
       name: "GraphManager",
       component: _GraphManager,
     });
