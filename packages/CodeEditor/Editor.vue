@@ -289,7 +289,7 @@ export default {
     },
     popout() {
       this.$emit('close');
-      const url = `/graph-editor/popout-editor/${this.graphUrl}/${this.nodeId}/${this.templateType}/${this.language}`;
+      const url = `/${this.pathPrefix}/popout-editor/${this.graphUrl}/${this.nodeId}/${this.templateType}/${this.language}`;
       this.win = window.open(url, this.storeKey,
         `popup,width=${this.width},height=${this.width},top=${this.top},left=${this.left}`);
       for (let x = 500; x < 3000; x += 500) {
@@ -541,6 +541,7 @@ export default {
       "scheduler": "scheduler",
       "nodeErrors": "errors",
       "navWidth": "navWidth",
+      "pathPrefix": "pathPrefix",
     }),
     isPopout() {
       return /popout-editor/.test(window.location.pathname);
