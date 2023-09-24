@@ -41,7 +41,9 @@ export default class GraphManager extends GraphEditorModule {
       order: 10,
     }));
     hostRouter.beforeEach(async (to: any, from: any, next: any) => {
-      await graphOrchestratorStore.init(to.params.documentId);
+      if (to.name === "Workspace") {
+        await graphOrchestratorStore.init(to.params.documentId);
+      }
       next();
     });
   }
