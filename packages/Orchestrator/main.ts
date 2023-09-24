@@ -49,6 +49,11 @@ export default class GraphManager extends GraphEditorModule {
 export const useStore = defineStore('orchestrator', {
   state: () => ({
     moment,
+    webWorkerProxy: {
+      state: {},
+      nodes: {},
+    },
+    graphComponents: {} as any,
     graphStore: useGraphStore(),
     preferencesStore: usePreferencesStore(),
     token: null,
@@ -280,8 +285,7 @@ export const useStore = defineStore('orchestrator', {
         const sendUpdateToWorker = (path: Path, value: any): void => {
           this.scheduleWorker.postMessage({ path, value });
         };
-
-        const mainObjProxy = createDeepProxy(this.scheduler.state, [], sendUpdateToWorker);
+        const mainObjProxy = createDeepProxy(this.webWorkerProxy, [], sendUpdateToWorker);
 
         // performance hack.  Avoid using the store on messages from
         // scheduler to avoid any sort of long term memory leaks/GCing
@@ -376,14 +380,13 @@ export const useStore = defineStore('orchestrator', {
           const args = fromJSON(e.data.event);
           if (methodName === 'state-update') {
             const { path, value } = args;
-            let obj: any = this.scheduler.state;
+            let obj: any = this.webWorkerProxy;
             for (let i = 0; i < path.length - 1; i++) {
               obj = obj[path[i]];
             }
             obj[path[path.length - 1]] = value;
             return;
           }
-          
           if (methodName === 'beginconnector') {
             return beginconnector(args);
           }

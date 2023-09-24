@@ -236,10 +236,10 @@ export default {
         theme: this.preferences.appearance.theme === 'dark' ? 'vs-dark' : 'vs',
       });
       editor.onDidFocusEditorText((event) => {
-        this.editorHasFocus = false;
+        this.editorHasFocus = true;
       });
       editor.onDidBlurEditorText((event) => {
-        this.editorHasFocus = true;
+        this.editorHasFocus = false;
       });
       editor.getModel().onDidChangeContent((event) => {
         this.update();
@@ -454,7 +454,7 @@ export default {
       }
     },
     setValue(val) {
-      if (!this.$refs.editor || !this.$refs.editor.pinstance) {
+      if (this.editorHasFocus || !this.$refs.editor || !this.$refs.editor.pinstance) {
         return;
       }
       this.updatingValue = true;

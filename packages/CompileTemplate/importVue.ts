@@ -19,6 +19,7 @@ export default async function (sfc: string, id: string) {
     }).code
         .replace(/import {.*} from "vue"/,
             `const _createElementVNode = self.dependencies.vue.createElementVNode;
+const _guardReactiveProps = self.dependencies.vue.guardReactiveProps;
 const _createVNode = self.dependencies.vue.createVNode;
 const _openBlock = self.dependencies.vue.openBlock;
 const _createTextVNode = self.dependencies.vue.createTextVNode;
@@ -28,6 +29,8 @@ const _withCtx = self.dependencies.vue.withCtx;
 const _createBlock = self.dependencies.vue.createBlock;
 const _withDirectives = self.dependencies.vue.withDirectives;
 const _vModelText = self.dependencies.vue.vModelText;
+const _toDisplayString = self.dependencies.vue.toDisplayString;
+const _normalizeProps = self.dependencies.vue.normalizeProps;
 `);
 
     const script = compiler.compileScript(blocks.descriptor, {

@@ -1,6 +1,5 @@
 <template>
     <v-app class="graph-editor" :style="workspaceBackground">
-        <component is="script" v-for="script in scripts" :src="script"/>
         <error-interstitial/>
         <template v-if="graph && !graph.err && preferences">
             <v-system-bar
@@ -82,11 +81,6 @@ export default {
             return {
                 background: this.bgColor,
             };
-        },
-        scripts() {
-            return [
-                ...this.preferences.componentScripts.replace('\n', ',').split(','),
-            ]
         },
         graphContainerStyle: function() {
             let cursor = "";
