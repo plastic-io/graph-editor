@@ -153,7 +153,7 @@ export default {
         ]),
         openGraph() {
             window.open(
-                this.pathPrefix + "graphs",
+                this.pathPrefix,
                 "_graphs",
             );
         },
