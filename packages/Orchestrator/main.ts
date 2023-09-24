@@ -100,7 +100,7 @@ export const useStore = defineStore('orchestrator', {
     scheduleWorker: null as any,
     helpTopics,
     log: [] as any,
-    pathPrefix: "/graph-editor-vue-2/",
+    pathPrefix: "/graph-editor/",
     ioTypes: [
         "Object",
         "String",

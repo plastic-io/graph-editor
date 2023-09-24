@@ -5,6 +5,10 @@ import EditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 export default class GraphManager extends EditorModule {
   constructor(config: Record<string, any>, app: App<Element>, hostRouter: Router) {
     super();
-    app.component('graph-manager', _GraphManager);
+    hostRouter.addRoute('GraphManager', {
+      path: "/graphs",
+      name: "GraphManager",
+      component: _GraphManager,
+    });
   }
 };

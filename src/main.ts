@@ -22,7 +22,7 @@ import EndpointListPanel from "@plastic-io/graph-editor-vue3-endpoint-list-panel
 import ErrorInterstitial from "@plastic-io/graph-editor-vue3-error-interstitial";
 import EventLoggerPanel from "@plastic-io/graph-editor-vue3-event-logger-panel";
 import Graph from "@plastic-io/graph-editor-vue3-graph";
-import Manager from "@plastic-io/graph-editor-vue3-manager";
+import Manager from "@plastic-io/graph-editor-vue3-graph-manager";
 import Presentation from "@plastic-io/graph-editor-vue3-presentation";
 import PresentationPanel from "@plastic-io/graph-editor-vue3-presentation-panel";
 import GraphPropertiesPanel from "@plastic-io/graph-editor-vue3-graph-properties-panel";

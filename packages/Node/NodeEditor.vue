@@ -114,6 +114,7 @@
     computed: {
       ...mapState(useOrchestratorStore, {
         "nodeErrors": "errors",
+        "locked": "locked",
       }),
       ...mapState(useGraphStore, [
         "graph"
@@ -125,6 +126,9 @@
         return this.node.template.vue;
       },
       show() {
+        if (this.locked) {
+          return false;
+        }
         return this.hoveredLocally
           || this.errors.length > 0
           || this.hovered
