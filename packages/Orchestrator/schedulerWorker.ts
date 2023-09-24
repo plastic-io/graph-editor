@@ -47,6 +47,16 @@ const logger = {
 };
 const rpc = {
   init(e: any) {
+
+    const nodes = {} as any;
+    e.graph.nodes.forEach((node: any) => {
+      nodes[node.id] = {};
+      node.properties.inputs.forEach((input: any) => {
+        nodes[node.id][input.field] = {};
+      });
+    });
+    workerObjProxy.nodes = nodes;
+
     scheduler = new Scheduler(e.graph, e, workerObjProxy, logger);
     scheduler.addEventListener("load", loader);
     scheduler.addEventListener("beginconnector", messenger('beginconnector'));

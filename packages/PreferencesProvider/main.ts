@@ -2,13 +2,13 @@ import { defineStore } from 'pinia';
 import getRandomName from "@plastic-io/graph-editor-names"
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import {Appearance} from "@plastic-io/graph-editor-vue3-appearance"
-const defaultNewSetTemplate = `
-    console.info(value);
-`;
+const defaultNewSetTemplate = `state.nodes[node.id][field] = value;`;
 const defaultNewVueTemplate = `<template>
-    <v-btn @click="$emit('edge-name', 'value-to-send');">
-        New Node
-    </v-btn>
+    <div>
+        <v-btn @click="$emit('output-name', 'value-to-send');">
+            New Node
+        </v-btn>
+    </div>
 </template>
 <script>
 export default {

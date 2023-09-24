@@ -705,5 +705,5 @@ export default {
 <style>
 </style>
 `;
-export const set = `console.info(value);`;
+export const set = `state.nodes[node.id][field] = value;`;
 

@@ -38,7 +38,7 @@
                     :node="localNode"
                     :scheduler="scheduler"
                     :state="scheduler.state"
-                    :nodeProps="nodeProps"
+                    v-bind="nodeProps"
                     :hostNode="hostNode"
                     @mountError="mountError"
                     @dataChange="dataChange"
@@ -82,7 +82,7 @@ import NodeEditor from "./NodeEditor.vue";
 
 import {diff} from "deep-diff";
 
-import {markRaw, shallowRef, h} from "vue";
+import {markRaw, shallowRef, h, watch} from "vue";
 export default {
     name: "graph-node",
     components: {NodeField, NodeComponent, NodeEditor},
@@ -208,6 +208,15 @@ export default {
         this.clearErrors(this.localNode.id);
         await this.importRoot(this.localNode);
         this.loaded = true;
+        this.webWorkerProxy.nodes[this.nodeId] = {};
+        this.localNode.properties.inputs.forEach((input) => {
+            this.webWorkerProxy.nodes[this.nodeId] = {
+                [input.name]: null,
+            };
+        });
+        watch(() => this.webWorkerProxy, () => {
+            this.nodeProps = this.webWorkerProxy.nodes[this.localNode.id];
+        }, { deep: true });
     },
     methods: {
         ...mapActions(useOrchestratorStore, [
@@ -311,6 +320,7 @@ export default {
         ]),
         ...mapState(useOrchestratorStore, [
             'dataProviders',
+            'webWorkerProxy',
             'scheduler',
         ]),
         ...mapState(useGraphStore, [
