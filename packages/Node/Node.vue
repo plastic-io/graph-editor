@@ -43,6 +43,7 @@
                     @mountError="mountError"
                     @dataChange="dataChange"
                     @set="set"
+                    :key="renderVersion"
                 />
                 <component
                     v-for="(style, index) in styles"
@@ -101,34 +102,27 @@ export default {
                 this.compiledTemplate.errors.forEach((err) => {
                     this.raiseError(this.localNode.id, err, 'vue');
                 });
+                this.renderVersion = this.renderVersion + 1;
                 this.broken = this.compiledTemplate.errors.length > 0;
                 this.component = this.compiledTemplate.component;
+                this.webWorkerProxy.nodes[this.nodeId] = {};
+                this.localNode.properties.inputs.forEach((input) => {
+                    this.webWorkerProxy.nodes[this.nodeId] = {
+                        [input.name]: null,
+                    };
+                });
             },
             deep: true,
         },
         nodeProps: {
             handler: function () {
-                const changes = diff(this.localNodeDataSnapshot, this.node.data);
-                this.localNodeDataSnapshot = JSON.parse(JSON.stringify(this.node.data));
-                if (changes) {
-                    this.updateNodeData({
-                        nodeId: this.node.id,
-                        data: this.node.data,
-                    });
-                }
+                this.setNodeData();
             },
             deep: true,
         },
         localNode: {
             handler: function () {
-                const changes = diff(this.localNodeDataSnapshot, this.node.data);
-                this.localNodeDataSnapshot = JSON.parse(JSON.stringify(this.node.data));
-                if (changes) {
-                    this.updateNodeData({
-                        nodeId: this.node.id,
-                        data: this.node.data,
-                    });
-                }
+                this.setNodeData();
             },
             deep: true,
         },
@@ -152,6 +146,7 @@ export default {
                 // recompile template after change
                 this.compiledTemplate = 
                     await compileTemplate(this, this.localNode.id, this.localNode.template.vue, true);
+
             }
         },
     },
@@ -186,7 +181,7 @@ export default {
             localNodeDataSnapshot: null,
             template: null,
             stateVersion: 0,
-            compileCount: 0,
+            renderVersion: 0,
             contextId: null,
             artifactNodes: {},
             styles: [],
@@ -208,12 +203,6 @@ export default {
         this.clearErrors(this.localNode.id);
         await this.importRoot(this.localNode);
         this.loaded = true;
-        this.webWorkerProxy.nodes[this.nodeId] = {};
-        this.localNode.properties.inputs.forEach((input) => {
-            this.webWorkerProxy.nodes[this.nodeId] = {
-                [input.name]: null,
-            };
-        });
         watch(() => this.webWorkerProxy, () => {
             this.nodeProps = this.webWorkerProxy.nodes[this.localNode.id];
         }, { deep: true });
@@ -228,6 +217,16 @@ export default {
             "updateNodeData",
             "clearArtifact",
         ]),
+        setNodeData() {
+            const changes = diff(this.localNodeDataSnapshot, this.node.data);
+            this.localNodeDataSnapshot = JSON.parse(JSON.stringify(this.node.data));
+            if (changes) {
+                this.updateNodeData({
+                    nodeId: this.node.id,
+                    data: this.node.data,
+                });
+            }
+        },
         mountError(err) {
             this.broken = true;
             this.raiseError(this.localNode.id, err, 'vue');

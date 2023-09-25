@@ -51,6 +51,15 @@
         :color="showConnectorView ? 'info' : ''"
         >mdi-information-outline</v-icon>
     <v-icon
+        help-topic="showConnectorActivity"
+        title="Show Connector Information"
+        @click="preferences.showConnectorActivity = !preferences.showConnectorActivity"
+        style="cursor: pointer;"
+        class="mx-2"
+        :color="preferences.showConnectorActivity ? 'info' : ''"
+        icon="mdi-creation"
+        />
+    <v-icon
         help-topic="toggleLabels"
         title="Toggle Input/Output Labels"
         @click="preferences.showLabels = !preferences.showLabels"
