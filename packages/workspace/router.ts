@@ -4,7 +4,6 @@ import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-pre
 
 export default (router: Router) => {
   router.beforeEach(async (to, from, next) => {
-    console.log('Route', to, from);
     const scripts = (usePreferencesStore() as any).preferences.componentScripts.replace('\n', ',').split(',');
     const promises = scripts.filter((s: string) => !!s).map((src: string) => {
       return new Promise((resolve, reject) => {
