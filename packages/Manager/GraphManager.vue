@@ -9,7 +9,7 @@
           </router-link>
         </v-toolbar-title>
         <v-spacer/>
-        <v-btn color="info" @click="create">
+        <v-btn color="info" @click="showCreateDialog = true;">
           New Graph
           <v-icon right>
             mdi-plus-circle-outline
@@ -19,7 +19,7 @@
     <v-container fluid class="graphs-container">
       <v-row align="center" justify="center">
         <v-col v-for="graph in filteredToc" :key="graph.id" cols="4">
-          <v-card>
+          <v-card :color="deletingGraph.id === graph.id ? 'warning' : ''">
             <v-card-item>
               <v-card-title>
                 <v-icon
@@ -34,16 +34,50 @@
               </v-card-text>
               <v-card-actions>
                   <v-btn @click="() => $router.push(graph.url)">Open</v-btn>
-                  <v-btn>Delete</v-btn>
+                  <v-btn @click="deletingGraph = graph; showDeleteDialog = true;">Delete</v-btn>
               </v-card-actions>
             </v-card-item>
           </v-card>
         </v-col>
       </v-row>
     </v-container>
+    <v-dialog max-width="500px" v-model="showCreateDialog">
+      <v-card>
+        <v-card-title>
+          Create a New Graph
+        </v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model="newGraphUrl"
+            :rules="newGraphRules"
+            label="New Graph URL"
+            hint="This is the URL to get to your graph">
+            <template v-slot:append>
+              <v-icon icon="mdi-dice-multiple" @click="getRandomUrl"/>
+            </template>
+          </v-text-field>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="showCreateDialog = false">Cancel</v-btn>
+          <v-btn @click="create">Create</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog max-width="700px" v-model="showDeleteDialog">
+      <v-card>
+        <v-card-title>
+          Are you sure you want to delete {{deletingGraph.name || deletingGraph.url}}?
+        </v-card-title>
+        <v-card-actions>
+          <v-btn @click="showDeleteDialog = false; deletingGraph = {}">Cancel</v-btn>
+          <v-btn @click="deleteGraph" color="warning">Delete</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-app>
 </template>
 <script lang="ts">
+  import getName from "@plastic-io/graph-editor-names";
   import {mapWritableState, mapActions, mapState} from "pinia";
   import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
   import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
@@ -53,7 +87,19 @@
     async mounted() {
       this.setTheme(this.preferences.appearance.theme);
       await this.getToc();
-      console.log(this.toc);
+      this.getRandomUrl();
+    },
+    data() {
+      return {
+        showDeleteDialog: false,
+        showCreateDialog: false,
+        newGraphUrl: '',
+        deletingGraph: {},
+        newGraphRules: [
+          value => !!value || 'Field must not be empty',
+          value => !!Object.keys(this.toc).indexOf(value) || 'This URL is already taken by another graph.'
+        ],
+      }
     },
     methods: {
       ...mapActions(useOrchestratorStore, [
@@ -62,19 +108,35 @@
           'getToc',
           'getPluginsByType',
       ]),
-      openGraph(url) {
-        window.open(`${this.pathPrefix}${url}`, url);
+      async deleteGraph() {
+        this.showDeleteDialog = false;
+        await this.dataProviders.graph.delete(this.deletingGraph.url);
+        await this.dataProviders.toc.updateToc({[this.deletingGraph.url]: undefined});
+        await this.getToc();
+        this.deletingGraph = {};
       },
       create() {
-
-      }
+        this.$router.push(`/${this.newGraphUrl}`);
+        setTimeout(() => {
+          // long after the component is hidden
+          // make sure we don't use a different value
+          this.getRandomUrl();
+        }, 2000);
+      },
+      getRandomUrl() {
+        this.newGraphUrl = getName().replace(' ', '');
+      },
     },
     computed: {
         ...mapWritableState(useOrchestratorStore, [
           'toc',
+          'dataProviders',
           'pathPrefix',
         ]),
         ...mapWritableState(usePreferencesStore, ['preferences']),
+        isCreateButtonDisabled() {
+          return this.newGraphUrl === '' || !this.newGraphRules.every(rule => typeof rule(this.newGraphUrl) === 'boolean');
+        },
         filteredToc() {
           if (!this.toc) {
             return [];
@@ -90,6 +152,7 @@
 <style scoped>
   .graphs-container {
     margin-top: 55px;
+    min-width: 100vw;
     overflow-y: auto;
   }
 </style>
