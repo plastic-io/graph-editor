@@ -233,8 +233,6 @@ export default class MouseAction {
         }
         if (!mouse.lmb && inputState.mouse.lmb) {
             if (valid) {
-        console.log('started adding', graphState.hoveredPort,graphState.addingConnector
-            ,graphState.addingConnector.node.id,graphState.hoveredPort.node.id);
                 if (graphState.hoveredPort.type === "input" && graphState.addingConnector.type === 'output') {
                     connector.field = graphState.hoveredPort.field.name;
                     connector.nodeId = graphState.hoveredPort.node.id;

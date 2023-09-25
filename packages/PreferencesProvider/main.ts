@@ -2,7 +2,11 @@ import { defineStore } from 'pinia';
 import getRandomName from "@plastic-io/graph-editor-names"
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import {Appearance} from "@plastic-io/graph-editor-vue3-appearance"
-const defaultNewSetTemplate = `state.nodes[node.id][field] = value;`;
+const defaultNewSetTemplate = `if (edges.hasOwnProperty(field)) {
+   edges[field] = value;
+} else {
+    state.nodes[node.id][field] = value;
+}`;
 const defaultNewVueTemplate = `<template>
     <div>
         <v-btn @click="$emit('output-name', 'value-to-send');">

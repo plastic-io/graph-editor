@@ -260,7 +260,7 @@ export default {
 
       this.top = getSize('top', 0);
       this.left = getSize('left', 0);
-      this.width = getSize('width', 500);
+      this.width = getSize('width', 700);
       this.height = getSize('height', 500);
 
       this.resize();
