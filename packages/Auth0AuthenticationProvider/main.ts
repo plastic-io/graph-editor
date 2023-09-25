@@ -91,7 +91,6 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
       this.preferencesStore.$subscribe(setup, { detached: true });
     }
     async init() {
-
       // begin login/redirect flow
 
       const isCallbackUrl = /auth-callback/.test(self.location.toString());
@@ -117,7 +116,8 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
       if (!isAuthenticated && !isCallbackUrl) {
         // save the current location in localStore so we can send
         // user back there when they respawn
-        localStorage.setItem(STORE_KEY, self.location.pathname);
+        localStorage.setItem(STORE_KEY, self.location.pathname
+          .replace(this.router.options.history.base, ''));
         // user must authenticate
         this.login();
       }
@@ -167,7 +167,7 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
         try {
             return await this.client.logout({
               logoutParams: {
-                returnTo: 'http://localhost:8080/graph-editor/graphs'
+                returnTo: 'http://localhost:8080/graph-editor/'
               }
             });
         } catch (err) {
