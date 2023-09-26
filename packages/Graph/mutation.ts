@@ -1,5 +1,5 @@
 import {template, set} from "@plastic-io/graph-editor-vue3-help-overlay";
-import {newId, deref} from "@plastic-io/graph-editor-vue3-utils";
+import {newId, deref, loadScripts} from "@plastic-io/graph-editor-vue3-utils";
 import {diff, applyChange, revertChange, observableDiff} from "deep-diff";
 import type {Graph} from "@plastic-io/plastic-io";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
@@ -434,6 +434,9 @@ export default {
         const url = graphUrl;
         this.graphSnapshot = this.createGraph(url, "");
       }
+      // block loading until graph scripts are loaded if any
+      const scripts = (this.graphSnapshot.properties.scripts || '').replace('\n', ',').split(',');
+      await loadScripts(scripts);
       // don't allow an opening graph to count as a history change
       this.graph = deref(this.graphSnapshot);
       console.groupCollapsed('%cPlastic-IO: %cGraph',

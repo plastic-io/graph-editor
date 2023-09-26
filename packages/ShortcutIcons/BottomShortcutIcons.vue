@@ -52,7 +52,7 @@
         >mdi-information-outline</v-icon>
     <v-icon
         help-topic="showConnectorActivity"
-        title="Show Connector Information"
+        title="Show Connector Activity"
         @click="preferences.showConnectorActivity = !preferences.showConnectorActivity"
         style="cursor: pointer;"
         class="mx-2"

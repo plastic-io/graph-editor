@@ -6,6 +6,7 @@ import CanvasAppearance from "./CanvasAppearance.vue";
 import ConnectorAppearancePanel from "./ConnectorAppearance.vue";
 import GeneralAppearance from "./GeneralAppearance.vue";
 import GraphAppearance from "./GraphAppearance.vue";
+import GraphDefaults from "./GraphDefaults.vue";
 export default class AppearancePanels extends EditorModule {
   constructor(config: Record<string, any>, app: App<Element>, hostRouter: Router) {
     super();
@@ -13,31 +14,39 @@ export default class AppearancePanels extends EditorModule {
     app.component('connector-appearance', ConnectorAppearancePanel);
     app.component('general-appearance', GeneralAppearance);
     app.component('graph-appearance', GraphAppearance);
+    app.component('graph-defaults', GraphDefaults);
     const graphOrchestratorStore =  useOrchestratorStore();
     graphOrchestratorStore.addPlugin(new Plugin({
-      name: 'General Appearance',
-      title: 'General Appearance',
+      name: 'General',
+      title: 'General',
       component: 'general-appearance',
       type: 'settings-panel',
       order: 0,
     }));
     graphOrchestratorStore.addPlugin(new Plugin({
-      name: 'Canvas Appearance',
-      title: 'Canvas Appearance',
+      name: 'Defaults',
+      title: 'Defaults',
+      component: 'graph-defaults',
+      type: 'settings-panel',
+      order: 0,
+    }));
+    graphOrchestratorStore.addPlugin(new Plugin({
+      name: 'Canvas',
+      title: 'Canvas',
       component: 'canvas-appearance',
       type: 'settings-panel',
       order: 0,
     }));
     graphOrchestratorStore.addPlugin(new Plugin({
-      name: 'Connector Appearance',
-      title: 'Connector Appearance',
+      name: 'Connector',
+      title: 'Connector',
       component: 'connector-appearance',
       type: 'settings-panel',
       order: 0,
     }));
     graphOrchestratorStore.addPlugin(new Plugin({
-      name: 'Graph Appearance',
-      title: 'Graph Appearance',
+      name: 'Graph',
+      title: 'Graph',
       component: 'graph-appearance',
       type: 'settings-panel',
       order: 0,

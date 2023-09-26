@@ -1,6 +1,6 @@
 <template>
-    <v-expansion-panels flat v-model="panel" style="width: 300px;">
-        <v-expansion-panel>
+    <v-expansion-panels flat v-model="panel" style="width: 300px;" class="ma-0 pa-0">
+        <v-expansion-panel class="ma-0 pa-0">
             <v-expansion-panel-title>General</v-expansion-panel-title>
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat>
@@ -24,7 +24,13 @@
                 </v-card>
             </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel>
+        <v-expansion-panel class="ma-0 pa-0">
+            <v-expansion-panel-title>Global Scripts</v-expansion-panel-title>
+            <v-expansion-panel-text>
+                <v-textarea persistent-hint hint="csv list of script sources that will be loaded before the graph loads" v-model="graphSnapshot.properties.scripts" label="Graph Scripts" help-topic="graph-scripts" />
+            </v-expansion-panel-text>
+            </v-expansion-panel>
+        <v-expansion-panel class="ma-0 pa-0">
             <v-expansion-panel-title>Presentation</v-expansion-panel-title>
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat>
@@ -36,7 +42,7 @@
                 </v-card>
             </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel>
+        <v-expansion-panel class="ma-0 pa-0">
             <v-expansion-panel-title>Meta</v-expansion-panel-title>
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat>
@@ -49,7 +55,7 @@
                 </v-card>
             </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel>
+        <v-expansion-panel class="ma-0 pa-0">
             <v-expansion-panel-title>Publishing</v-expansion-panel-title>
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat>
@@ -77,7 +83,7 @@
                 </v-card>
             </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel>
+        <v-expansion-panel class="ma-0 pa-0">
             <v-expansion-panel-title>External Graph IO</v-expansion-panel-title>
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat help-topic="graphIOList">
