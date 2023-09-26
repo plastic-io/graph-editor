@@ -1,6 +1,6 @@
 <template>
-  <v-expansion-panels flat v-model="panel" style="width: 300px;">
-      <v-expansion-panel v-for="(plugin, index) in settingsPanels">
+  <v-expansion-panels flat v-model="panel" style="width: 400px;">
+      <v-expansion-panel v-for="(plugin, index) in settingsPanels" class="ma-0 pa-0">
           <v-expansion-panel-title>{{plugin.title}}</v-expansion-panel-title>
           <v-expansion-panel-text>
             <component :is="plugin.component" v-bind="plugin.props" v-model="preferences"/>

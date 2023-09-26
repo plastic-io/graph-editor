@@ -8,3 +8,20 @@ export function newId() {
 export function deref(e: any) {
     return JSON.parse(JSON.stringify(e));
 }
+
+export  async function loadScripts(scripts: string[]): Promise<void> {
+  console.info('Loading scripts', scripts);
+  const promises = scripts.filter((s: string) => !!s).map((src: string) => {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.async = false;
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = (err) => {
+        console.error(`Error loading script (src: ${src}) from preferences: ${err}`);
+      };
+      document.head.appendChild(script);
+    });
+  });
+  await Promise.all(promises);
+}
