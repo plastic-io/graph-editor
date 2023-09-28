@@ -1,6 +1,7 @@
 import type {App} from "vue";
 import type {Router, RouteLocation} from "vue-router";
 import Auth0SettingsPanel from './Auth0SettingsPanel.vue';
+import Auth0LogOffMenu from './Auth0LogOffMenu.vue';
 import type { Store } from 'pinia';
 import {createAuth0Client} from "@auth0/auth0-spa-js";
 import AuthenticationProvider, {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
@@ -11,6 +12,7 @@ const STORE_KEY = 'auth0-redirect';
 export default class Auth0 extends EditorModule {
   constructor(config: Record<string, any>, app: App<Element>, router: Router) {
     super();
+    app.component('auth0-log-off-menu', Auth0LogOffMenu);
     app.component('auth0-settings-panel', Auth0SettingsPanel);
     const graphOrchestratorStore = useOrchestratorStore();
     
@@ -18,12 +20,27 @@ export default class Auth0 extends EditorModule {
     
     const settingsPanel = new Plugin({
       name: 'Auth0',
-      title: 'Auth0 Provider Settings',
+      title: 'Authentication',
       component: 'auth0-settings-panel',
       icon: 'mdi-account-key',
       helpTopic: 'auth0',
       type: 'settings-panel',
       order: 0,
+    });
+
+    const logoffIconManager = new Plugin({
+      name: 'Auth0',
+      title: 'Logout',
+      component: 'auth0-log-off-menu',
+      props: {
+        alt: 'Logout of your current session',
+        title: 'Logout of your current session',
+        icon: 'mdi-logout',
+      },
+      divider: true,
+      helpTopic: 'logoff',
+      type: 'manager-top-bar-bottom',
+      order: 2,
     });
 
     const logoffIcon = new Plugin({
@@ -46,6 +63,7 @@ export default class Auth0 extends EditorModule {
 
     graphOrchestratorStore.addPlugin(logoffIcon);
     graphOrchestratorStore.addPlugin(settingsPanel);
+    graphOrchestratorStore.addPlugin(logoffIconManager);
     
     authProvider.router = router;
     graphOrchestratorStore.authProvider = authProvider;
@@ -58,21 +76,21 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
     redirectUri: string = '';
     router: Router;
     loaded: boolean = false;
-    authenticationStore: Store;
-    preferencesStore: Store;
+    authenticationStore: any;
+    preferencesStore: any;
     constructor(router: Router) {
       super();
       this.router = router;
       this.authenticationStore = useAuthenticationStore();
       this.preferencesStore = usePreferencesStore();
-      const setup = (mutation: any, state: any) => {
+      const setup = async () => {
         // if setup has already run or preferences isn't loaded yet then wait
-        if (!state.preferences || this.loaded) {
+        if (!this.preferencesStore.preferences || this.loaded) {
           return;
         }
         this.loaded = true;
         // grab the auth0 data from prefs
-        const config = (state.preferences as any).auth0;
+        const config = (this.preferencesStore.preferences as any).auth0;
         // validate data
         if (!config || !config.clientId || !config.domain) {
           console.warn('Missing auth0 configuration information.  Go to Settings > Auth0 and add your information to finish setting up auth0');
@@ -86,9 +104,9 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
         this.domain = config.domain;
         this.clientId = config.clientId;
         // init auth0 client
-        this.init();
+        await this.init();
       }
-      this.preferencesStore.$subscribe(setup, { detached: true });
+      this.authenticationStore.init = setup;
     }
     async init() {
       // begin login/redirect flow
@@ -105,7 +123,6 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
 
       // coming back from logging in
       if (isCallbackUrl) {
-        console.log('callback');
         await this.client.handleRedirectCallback();
         const rdr = localStorage.getItem(STORE_KEY);
         this.router.push(rdr || '/');

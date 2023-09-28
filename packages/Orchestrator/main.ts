@@ -5,7 +5,6 @@ import RegistrySettingsPanel from "./RegistrySettings.vue";
 import {createDeepProxy, type Path} from "./proxy";
 import getRandomName from "@plastic-io/graph-editor-names";
 import {helpTopics} from "@plastic-io/graph-editor-vue3-help-overlay";
-import type AuthenticationProvider from "@plastic-io/graph-editor-vue3-authentication-provider";
 import type DocumentProvider from "@plastic-io/graph-editor-vue3-document-provider";
 import GraphEditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-editor-module";
 import {useStore as useGraphStore, useGraphSnapshotStore} from "@plastic-io/graph-editor-vue3-graph";
@@ -14,6 +13,7 @@ import SchedulerWorker from "./schedulerWorker?worker";
 import {useTheme} from 'vuetify';
 import {deref, newId} from "@plastic-io/graph-editor-vue3-utils";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
+import AuthenticationProvider, {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
 import * as mdi from "@mdi/js";
 import moment from "moment";
 const hyphenateProperty = (prop: any) => {
@@ -31,6 +31,7 @@ export default class GraphManager extends GraphEditorModule {
   constructor(config: Record<string, any>, app: App<Element>, hostRouter: any) {
     super();
     app.component('registry-settings-panel', RegistrySettingsPanel);
+    const authenticationStore = useAuthenticationStore();
     const graphOrchestratorStore = useOrchestratorStore();
     const preferencesStore = usePreferencesStore();
     graphOrchestratorStore.addPlugin(new Plugin({
@@ -41,6 +42,11 @@ export default class GraphManager extends GraphEditorModule {
       order: 10,
     }));
     hostRouter.beforeEach(async (to: any, from: any, next: any) => {
+      await authenticationStore.init();
+      if (/auth-callback/.test(self.location.toString())) {
+        next();
+        return;
+      }
       if (to.name === "Workspace") {
         await graphOrchestratorStore.init(to.params.documentId);
       }
@@ -159,13 +165,7 @@ export const useStore = defineStore('orchestrator', {
   actions: {
     hyphenateProperty,
     async init(graphUrl: string) {
-      // application startup
-
-      // 1 authenticate
-
-      // now load the selected graph
       this.graphStore.open(graphUrl);
-
     },
     panic() {
       this.scheduleWorker.postMessage({

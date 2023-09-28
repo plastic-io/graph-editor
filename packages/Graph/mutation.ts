@@ -39,6 +39,10 @@ export default {
             } catch (err) {
                 er = err;
             }
+        } else if (e.url && /api\.github\.com/.test(e.url)) {
+            const data = await fetch(e.url);
+            const dataJson = await data.json();
+            item = JSON.parse(atob(dataJson.content));
         } else if (e.url) {
             try {
                 item = await fetch(e.url);
@@ -57,6 +61,8 @@ export default {
             this.raiseError(new Error("Cannot open item. " + er));
         } else {
             e.item = item;
+            delete e.item.artifact;
+            delete e.item.url;
             const method = ({
                 publishedNode: "addNodeItem",
                 publishedGraph: "addGraphItem",
@@ -318,6 +324,7 @@ export default {
                 groups: [],
                 name: e.name,
                 description: e.description,
+                scripts: e.scripts || '',
                 tags: e.item.properties.tags,
                 icon: e.item.properties.icon,
                 positionAbsolute: false,
@@ -418,6 +425,21 @@ export default {
             graph: deref(this.graph),
         });
     },
+    async loadAllScripts(graphSnapshot: any) {
+      // Extracting the root-level scripts
+      const rootScripts = (graphSnapshot.properties.scripts || '')
+        .replace('\n', ',')
+        .split(',')
+        .filter((script: any) => script); // Filter out empty strings
+      // Extracting node-level scripts
+      const nodeScripts = graphSnapshot.nodes
+        .map((node: any) => node.properties.scripts || '')
+        .map((scripts: any) => scripts.replace('\n', ',').split(','))
+        .reduce((acc: any, curr: any) => acc.concat(curr), []) // Flatten the array
+        .filter((script: any) => script); // Filter out empty strings
+      // Combine and load all scripts
+      await loadScripts([...rootScripts, ...nodeScripts]);
+    },
     async open(graphUrl: string) {
       const graphOrchestrator = useOrchestratorStore();
       if (!graphOrchestrator.dataProviders.graph) {
@@ -436,14 +458,14 @@ export default {
       }
       // block loading until graph scripts are loaded if any
       const scripts = (this.graphSnapshot.properties.scripts || '').replace('\n', ',').split(',');
-      await loadScripts(scripts);
+      await this.loadAllScripts(this.graphSnapshot);
       // don't allow an opening graph to count as a history change
       this.graph = deref(this.graphSnapshot);
       console.groupCollapsed('%cPlastic-IO: %cGraph',
         "color: blue",
         "color: lightblue");
       console.log(deref(this.graphSnapshot));
-      console.groupEnd()
+      console.groupEnd();
       this.graphLoaded = true;
       graphOrchestrator.createScheduler();
     },

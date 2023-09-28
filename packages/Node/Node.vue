@@ -265,35 +265,21 @@ export default {
             }
             return key.replace(/\/|\./g, "_").replace(/@/g, "_at_").replace(/:/g, "_col_");
         },
-        async importRoot(vect) {
-            if (vect.artifact) {
-                let v;
-                if (/^https?:\/\//.test(vect.artifact)) {
-                    try {
-                        const seralizedV = await fetch(vect.artifact);
-                        v = await seralizedV.json();
-                    } catch (err) {
-                        this.raiseError(new Error(`Cannot load remote resource. ${err}.`));
-                    }
-                } else {
-                    v = await this.dataProviders.publish.get(vect.artifact);
-                }
-                const l = {
-                    key: vect.artifact,
-                    value: v,
-                };
-                if (v.nodes) {
-                    await this.importGraph(v);
-                } else {
-                    await this.importNode(v, this.artifactKey(vect.artifact));
-                }
-            } else {
-                const l = {
-                    key: vect.id,
-                    value: vect,
-                };
-                this.compiledTemplate = await compileTemplate(this, vect.id, vect.template.vue);
+        async downloadNode(artifact) {
+            if (artifact && /api\.github\.com/.test(artifact)) {
+                const data = await fetch(artifact);
+                const dataJson = await data.json();
+                return JSON.parse(atob(dataJson.content));
             }
+            const seralizedV = await fetch(artifact);
+            return await seralizedV.json();
+        },
+        async importRoot(vect) {
+            const l = {
+                key: vect.id,
+                value: vect,
+            };
+            this.compiledTemplate = await compileTemplate(this, vect.id, vect.template.vue);
         },
         async importGraph(g) {
             this.compiledTemplate = await compileTemplate(this, this.nodeComponentName, g.properties.presentationTemplate);

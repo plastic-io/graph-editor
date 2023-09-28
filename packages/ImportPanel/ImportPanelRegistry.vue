@@ -1,5 +1,5 @@
 <template>
-    <v-card style="height: calc(100vh - 220px);">
+    <v-card style="height: calc(80vh - 220px);">
         <v-card-title>
             <v-combobox
                 help-topic="importPublicRegistryList"
@@ -13,17 +13,18 @@
             </v-tab>
         </v-tabs>
         <v-window v-model="tabs">
-          <v-window-item v-for="(category, index) in selectedRegistryCollection" :key="index" style="overflow-y: auto; height: calc(100vh - 370px);">
+          <v-window-item v-for="(category, index) in selectedRegistryCollection" :key="index" style="overflow-y: auto;">
               <v-expansion-panels flat accordion v-if="registry[category.artifact] !== undefined">
                   <v-expansion-panel v-for="(subCategory, index) in registry[category.artifact].toc.items" :key="index" help-topic="importPublicSecondLevel">
                       <v-expansion-panel-title>
                           {{subCategory.name}}
                       </v-expansion-panel-title>
-                      <v-expansion-panel-text class="pb-0" v-for="(item, index) in groupItems(subCategory.items)" :key="index">
+                      <v-expansion-panel-text class="pb-0" >
+                        <div v-for="(item, index) in groupItems(subCategory.items)" :key="index">
                           <v-list dense help-topic="importPublicList">
                               <v-list-group>
                                   <template v-slot:activator>
-                                      <span draggable="true" style="cursor: copy;" @dragstart="dragStart($event, item)">
+                                      <span draggable="true" style="cursor: copy;" @dragstart.stop="dragStart($event, item)">
                                           <v-icon :title="item.type === 'publishedGraph' ? 'Graph' : 'Node'">
                                               {{item.icon || iconType(item.type)}}
                                           </v-icon>
@@ -49,7 +50,7 @@
                                       </span>
                                   </template>
                                   <v-list-item dense v-for="(artifact, index) in detailItems(subCategory.items, item)" :key="index">
-                                      <span draggable="true" style="cursor: copy; margin-left: 25px;" @dragstart="dragStart($event, artifact)">
+                                      <span draggable="true" style="cursor: copy; margin-left: 25px;" @dragstart.stop="dragStart($event, artifact)">
                                           <v-icon>{{artifact.icon}}</v-icon>
                                       </span>
                                       <div>
@@ -62,6 +63,7 @@
                                   </v-list-item>
                               </v-list-group>
                           </v-list>
+                        </div>
                       </v-expansion-panel-text>
                   </v-expansion-panel>
               </v-expansion-panels>

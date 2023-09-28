@@ -3,7 +3,7 @@
     <template v-slot:activator="{props}">
       <v-icon icon="mdi-bookshelf" v-bind="props" class="ma-2"/>
     </template>
-    <import-panel @click.stop @mousemove.stop/>
+    <import-panel @mousedown.stop @click.stop @mousemove.stop/>
   </v-menu>
 </template>
 <script lang="ts">
