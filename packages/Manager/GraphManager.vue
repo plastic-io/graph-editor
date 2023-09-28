@@ -1,20 +1,23 @@
 <template>
   <v-app class="graph-editor">
     <v-app-bar>
-        <v-toolbar-title>
-          <router-link to="/">
-            <v-avatar size="40px" color="primary" class="ma-5">
-              <v-img src="https://avatars1.githubusercontent.com/u/60668496?s=200&v=4"/>
-            </v-avatar>
-          </router-link>
-        </v-toolbar-title>
-        <v-spacer/>
-        <v-btn color="info" @click="showCreateDialog = true;">
-          New Graph
-          <v-icon right>
-            mdi-plus-circle-outline
-          </v-icon>
-        </v-btn>
+      <v-toolbar-title>
+        <router-link to="/">
+          <v-avatar size="40px" color="primary" class="ma-5">
+            <v-img src="https://avatars1.githubusercontent.com/u/60668496?s=200&v=4"/>
+          </v-avatar>
+        </router-link>
+      </v-toolbar-title>
+      <v-btn  variant="tonal" color="secondary" @click="showCreateDialog = true;">
+        New Graph
+        <v-icon right>
+          mdi-plus-circle-outline
+        </v-icon>
+      </v-btn>
+      <v-spacer/>
+      <template v-for="(plugin, index) in getPluginsByType('manager-top-bar-bottom')" :value="plugin.name">
+          <component :is="plugin.component" v-bind="plugin.props"/>
+      </template>
     </v-app-bar>
     <v-container fluid class="graphs-container">
       <v-row align="center" justify="center">
@@ -151,7 +154,7 @@
 </script>
 <style scoped>
   .graphs-container {
-    margin-top: 55px;
+    margin-top: 65px;
     min-width: 100vw;
     overflow-y: auto;
   }

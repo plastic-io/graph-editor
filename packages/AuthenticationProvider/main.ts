@@ -13,6 +13,7 @@ export default abstract class AuthenticationProvider {
 
 export const useStore = defineStore('authentication', {
     state: () => ({
+        init: () => {},
         orchistratorStore: useOrchistratorStore(),
         identity: {
             isAuthenticated: false,

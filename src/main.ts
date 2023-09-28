@@ -47,6 +47,7 @@ import SettingsPanel from "@plastic-io/graph-editor-vue3-settings-panel";
 import Workspace from "@plastic-io/graph-editor-vue3-workspace";
 import WorkspaceControlPanel from "@plastic-io/graph-editor-vue3-workspace-control-panel";
 import WssDocumentProvider from "@plastic-io/graph-editor-vue3-wss-document-provider-info";
+import GitHubProvider from "@plastic-io/graph-editor-vue3-github-provider";
 
 // must come before plugin install
 const pinia = createPinia();
@@ -101,6 +102,7 @@ const plugins = [
   WssDocumentProvider,
   Workspace,
   Auth0AuthenticationProvider,
+  GitHubProvider,
 ] as any;
 (async () => {
   const pluginInstances = {} as any;

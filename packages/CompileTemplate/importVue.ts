@@ -31,6 +31,7 @@ const _withDirectives = self.dependencies.vue.withDirectives;
 const _vModelText = self.dependencies.vue.vModelText;
 const _toDisplayString = self.dependencies.vue.toDisplayString;
 const _normalizeProps = self.dependencies.vue.normalizeProps;
+const _resolveDynamicComponent = self.dependencies.vue.resolveDynamicComponent;
 `);
 
     const script = compiler.compileScript(blocks.descriptor, {

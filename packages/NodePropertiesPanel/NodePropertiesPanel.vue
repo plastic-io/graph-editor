@@ -98,45 +98,12 @@
                 </v-card>
             </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel v-if="!node.artifact">
-            <v-expansion-panel-title>Publishing</v-expansion-panel-title>
+        <v-expansion-panel>
+            <v-expansion-panel-title>Node Scripts</v-expansion-panel-title>
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat>
-                    <v-card-text class="ma-0 pa-3">
-                        <v-btn color="info" @click="publish" help-topic="nodePublish">
-                            Publish<br>Node
-                            <v-icon right>
-                                mdi-share-variant
-                            </v-icon>
-                        </v-btn>
-                        <v-combobox
-                            help-topic="nodeTags"
-                            :items="tags"
-                            chips
-                            deletable-chips
-                            clearable
-                            multiple
-                            hide-selected
-                            label="Tags"
-                            persistent-hint
-                            hint="Which domains this resource works in"
-                            prepend-icon="mdi-tag-multiple-outline"
-                            v-model="node.properties.tags"/>
-                    </v-card-text>
-                </v-card>
-            </v-expansion-panel-text>
-        </v-expansion-panel>
-        <v-expansion-panel v-if="!node.artifact">
-            <v-expansion-panel-title>Testing</v-expansion-panel-title>
-            <v-expansion-panel-text>
-                <v-card class="ma-0 pa-0" flat>
-                    <v-card-text class="ma-0 pa-3">
-                        <v-btn @click="runTest" color="info" block help-topic="nodeTests">
-                            Run Tests
-                            <v-icon right>
-                                mdi-flask
-                            </v-icon>
-                        </v-btn>
+                    <v-card-text class="ma-0 pa-0" help-topic="nodeScripts">
+                        <v-textarea label="Scripts" v-model="node.properties.scripts"></v-textarea>
                     </v-card-text>
                 </v-card>
             </v-expansion-panel-text>
@@ -158,6 +125,9 @@ export default {
         ...mapActions(useGraphStore, [
             'updateNodeProperties',
             'updateNodeUrl',
+        ]),
+        ...mapActions(useOrchestratorStore, [
+          'getPluginsByType',
         ]),
         publish() {
             this.publishNode(this.node.id);

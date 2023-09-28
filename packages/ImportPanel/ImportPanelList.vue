@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <v-text-field placeholder="Search" v-model="search" help-topic="importLocalSearch">
+    <div style="height: calc(80vh - 220px);">
+        <v-text-field placeholder="Search" class="pr-3" v-model="search" help-topic="importLocalSearch">
             <template v-slot:prepend>
                 <v-icon>mdi-magnify</v-icon>
             </template>
@@ -89,7 +89,7 @@ export default {
             this.list.filter((item) => {
                 return (this.search === "" || item.tags.split(",").find((tag) => regEx.test(tag)) || (regEx.test(item.name) || regEx.test(item.description)));
             }).sort((a, b) => {
-                return a.name.localeCompare(b.name);
+                return (a.name || '').localeCompare(b.name);
             }).forEach((item) => {
                 if (/published/.test(item.type)) {
                     if (!items[item.id] || items[item.id].version < item.version) {
