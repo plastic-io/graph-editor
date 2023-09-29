@@ -1,33 +1,59 @@
 import type {Graph, Node} from "@plastic-io/plastic-io";
+import * as JSZip from "jszip";
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
 export default {
+    async unzip(file: any, fileName: string): Promise<any> {
+        const zip = new (JSZip as any)();
+        await zip.loadAsync(file);
+        const nodes = [] as any;
+        const files = [] as any;
+        zip.forEach((relativePath: string, file: any) => {
+            if (!/\.json$/.test(file.name)) {
+                return;
+            }
+            files.push(file);
+        });
+        for (const file of files) {
+            const unzipedFile = await zip.file(file.name).async('string');
+            const node = JSON.parse(unzipedFile);
+            if (!(node.id && node.version !== undefined && node.graphId)) {
+                return;
+            }
+            nodes.push(node);
+        }
+        return nodes;
+    },
     drop(e: DragEvent) {
         if (!e.dataTransfer) { return; }
         if (e.dataTransfer.files.length > 0) {
             e.preventDefault();
             for (let x = 0; x < e.dataTransfer.files.length; x += 1) {
                 const file = e.dataTransfer.files[x];
-                if (file.type !== this.jsonMimeType) {
+                if (file.type !== this.jsonMimeType
+                    && file.type !== this.zipMimeType) {
                     continue;
                 }
                 const reader = new FileReader();
-                reader.onload = (ev: any) => {
-                    const parsedResult = JSON.parse(ev.target.result);
-                    //  context.commit(e.type === "publishedNode" ? "addNodeItem" : "addGraphItem", e);
-                    this.addDroppedItem({
-                        x: e.clientX,
-                        y: e.clientY,
-                        ...{
-                            id: newId(),
-                            lastUpdate: file.lastModified,
-                            description: file.name,
-                            name: file.name.split("_")[0],
-                            icon: parsedResult.properties.icon,
-                            item: parsedResult,
-                            version: parsedResult.version,
-                            type: "droppedFile",
-                        },
-                    });
+                reader.onload = async (ev: any) => {
+                    let results = file.type === this.zipMimeType
+                        ? (await this.unzip(file))
+                        : [JSON.parse(ev.target.result)];
+                    for (const result of results) {
+                        this.addDroppedItem({
+                            x: e.clientX,
+                            y: e.clientY,
+                            ...{
+                                id: newId(),
+                                lastUpdate: file.lastModified,
+                                description: file.name,
+                                name: file.name.split("_")[0],
+                                icon: result.properties.icon,
+                                item: result,
+                                version: result.version,
+                                type: "droppedFile",
+                            },
+                        });
+                    }
                 };
                 reader.readAsText(file);
             }

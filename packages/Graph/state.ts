@@ -37,6 +37,7 @@ export default () => {
         artifacts: {} as Record<string, any>,
         nodeMimeType: "application/json+plastic-io",
         jsonMimeType: "application/json",
+        zipMimeType: "application/zip",
         buttonMap: {
           "0": "lmb",
           "2": "rmb",

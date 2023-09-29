@@ -55,6 +55,9 @@
                 color="warning"
                 icon="mdi-alert-circle-outline"/>
           </v-badge>
+          <v-badge color="transparent">
+            <v-icon @click="downloadNode" icon="mdi-download"/>
+          </v-badge>
           <v-menu style="opacity: 0.98">
             <template v-slot:activator="{props}">
               <v-badge color="transparent">
@@ -80,6 +83,8 @@
   import {mapWritableState, mapActions, mapState} from "pinia";
   import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
   import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
+  import * as JSZip from "jszip";
+  import { saveAs } from "file-saver";
   import NodeError from "./NodeError.vue";
   export default {
     name: 'node-editor',
@@ -102,6 +107,14 @@
     methods: {
       ...mapActions(useGraphStore, ['updateNodeTemplate']),
       ...mapActions(useOrchestratorStore, ['clearErrors']),
+      async downloadNode() {
+        const fileName = `${this.node.properties.name || 'unnamed'}_${this.node.id}_v${this.node.version}`;
+        const zip = new JSZip();
+        const jsonString = JSON.stringify(this.node, null, 2);
+        zip.file(fileName + '.json', jsonString);
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        saveAs(zipBlob, fileName + '.zip');
+      },
       saveTemplate(type, value) {
         this.clearErrors(this.nodeId, type);
         this.updateNodeTemplate({
