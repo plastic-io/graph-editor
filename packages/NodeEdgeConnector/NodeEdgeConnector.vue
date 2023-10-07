@@ -13,7 +13,6 @@
         </div>
         <div
             v-if="!presentation"
-            :class="connectorClass"
             :style="connectorStyle">
             <canvas
                 ref="canvas"
@@ -132,12 +131,6 @@ export default {
                 field,
             };
         },
-        connectorClass() {
-            if (this.activeConnector === null) {
-                return "edge-connector";
-            }
-            return this.activeConnector ? "edge-connector edge-active" : "edge-connector edge-inactive";
-        },
         connectorValueStyle() {
             const w = this.width * this.ratio;
             const h = this.height * this.ratio;
@@ -177,7 +170,7 @@ export default {
                         clearTimeout(this.connectorTimeout);
                         this.connectorTimeout = setTimeout(() => {
                             this.activeConnector = false;
-                        }, 3000);
+                        }, 1000);
                     }
                 }
             },
@@ -304,7 +297,7 @@ export default {
         border-width: 1px;
         overflow: scroll;
         z-index: 2;
-        transition: all 0.3s ease-out;
+        transition: height, width, opacity 0.3s ease-out;
         opacity: 0.8;
         padding: 7px;
         padding-left: 10px;
@@ -312,38 +305,15 @@ export default {
     .connector-info-value-expanded {
         height: inherit;
         width: inherit;
-        transition: all 0.3s ease-in;
+        transition: height, width, opacity 0.3s ease-out;
         opacity: 1;
-    }
-    .edge-inactive {
-        animation-duration: 0.5s;
-        animation-name: edge-deactivate;
-    }
-    .edge-active {
-        animation-duration: 0.5s;
-        animation-name: edge-activate;
     }
     .edge-connector {
         pointer-events: none;
         position: absolute;
         z-index: -1597463006;
     }
-    @keyframes edge-deactivate {
-        from {
-            opacity: 0.5;
-        }
-        to {
-            opacity: 1;
-        }
-    }
-    @keyframes edge-activate {
-        from {
-            opacity: 1;
-        }
-        to {
-            opacity: 0.5;
-        }
-    }
+
 
     .drop {
       width: 10px;
@@ -353,7 +323,7 @@ export default {
       top: 50%;
       left: 50%;
       border-radius: 50%;
-      animation: dropAnimation 1.5s;
+      animation: dropAnimation 0.9s infinite;
       animation-timing-function: cubic-bezier(0.1, 0.7, 0.1);
       transform: translate(-20px, -60px) scale(2);
     }

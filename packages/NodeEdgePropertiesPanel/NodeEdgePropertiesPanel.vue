@@ -135,7 +135,7 @@ export default {
     add(ioKey) {
       // if a key with this name exists, don't do it
       const isInput = ioKey === "inputs";
-      const newName = isInput ? "new input" : "new output";
+      const newName = isInput ? "input" : "output";
       if (isInput && this.node.properties[ioKey].map(i => i.name).indexOf(newName) !== -1) {
         return;
       }
