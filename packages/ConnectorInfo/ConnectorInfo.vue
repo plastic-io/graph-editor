@@ -1,8 +1,8 @@
 <template>
-    <div @wheel.stop @mousedown.stop @mouseup.stop @click.stop>
-        <v-card min-width="400px" class="pa-2 connector-info">
-            <v-card-actions>
-                <div :key="activity.length">
+    <div class="connector-info-container" @wheel.stop @mousedown.stop @mouseup.stop @click.stop>
+        <v-card min-width="400px" class="pa-2" height="100%">
+            <v-card-actions class="py-0">
+                <div :key="activity.length" class="py-0">
                     <v-icon
                         color="secondary"
                         class="ml-1" title="Previous"
@@ -23,7 +23,7 @@
                     </v-icon>
                 </div>
             </v-card-actions>
-            <v-card-title class="ml-3 pa-0">
+            <v-card-title class="ml-3 pa-0 connector-meta-info">
                 <div v-if="!selectedActivity.empty" class="w-33 mx-0  d-inline-block pl-1">
                     <v-icon v-if="!selectedActivityEnd.empty" icon="mdi-arrow-right" color="info"/>
                     {{selectedActivityEnd.event.duration}}ms
@@ -36,7 +36,7 @@
                     <i v-if="selectedConnectors.length > 0 && selectedActivity.empty">No Activity</i>
                 </div>
             </v-card-title>
-            <v-card-text class="pt-1">
+            <v-card-text class="pt-1 connector-meta-info-sub">
                 <div v-show="selectedActivity.event.time">
                     Occured {{fromNow(selectedActivity.event.time)}}
                 </div>
@@ -45,7 +45,15 @@
                 </div>
             </v-card-text>
             <v-card-text class="pa-0 connector-info-system-bar no-graph-target" elevation="7">
-                <pre class="connector-info-value dont-propagate-copy">{{selectedActivity.event.value}}</pre>
+                <v-icon
+                    @click="copy(selectedActivity.event.value)"
+                    icon="mdi-content-copy"
+                    size="x-small"
+                    style="float: right;margin-left: -25px;z-index: 2;"
+                />
+                <pre class="connector-info-value dont-propagate-copy"
+                    v-html="formatActivityValue(selectedActivity.event.value)"/>
+                
             </v-card-text>
         </v-card>
     </div>
@@ -54,6 +62,7 @@
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {mapWritableState, mapActions, mapState} from "pinia";
+import {fromJSON} from 'flatted';
 import moment from "moment";
 export default {
     name: "connector-info",
@@ -84,6 +93,14 @@ export default {
         },
     },
     methods: {
+        ...mapActions(useOrchestratorStore, ['copyToClipboard']),
+        copy(val) {
+            try {
+                this.copyToClipboard(fromJSON(val));
+            } catch (err) {
+                console.error("Unable to copy to clipboard:", err);
+            }
+        },
         goPrevious() {
             if (this.selectedIndex > 0) {
                 this.selectedIndex -= 1;
@@ -96,6 +113,18 @@ export default {
         },
         fromNow(e) {
             return moment(new Date(e)).fromNow();
+        },
+        formatActivityValue(val) {
+            let out;
+            if (typeof val === 'object') {
+                return JSON.stringify(val)
+            }
+            try {
+                out = JSON.stringify(JSON.parse(val), null, '  ');
+            } catch (_) {
+                out = val
+            }
+            return val;
         }
     },
     computed: {
@@ -135,18 +164,26 @@ export default {
 .connector-info-typeof {
     color: rgba(var(--v-theme-info));
 }
-.connector-info-value {
-    max-width: 50vw;
-    max-height: 50vh;
-    overflow: auto;
+.connector-meta-info {
+    height: 25px;
+    overflow: hidden;
 }
-.connector-info {
+.connector-meta-info-sub {
+    height: 50px;
+    overflow: hidden;
+}
+.connector-info-value {
+    overflow: auto;
+    height: 295px;
+    background: #00000055;
+}
+.connector-info-container {
     position: fixed;
     bottom: 35px;
     right: 10px;
-    height: 200px;
+    height: 440px;
+    width: 400px;
 }
-
 .connector-info-system-bar {
     cursor: grab;
     font-size: 12px;

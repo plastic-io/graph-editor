@@ -39,7 +39,7 @@ export default class Auth0 extends EditorModule {
       },
       divider: true,
       helpTopic: 'logoff',
-      type: 'manager-top-bar-bottom',
+      type: 'manager-top-bar-right',
       order: 2,
     });
 

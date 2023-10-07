@@ -74,6 +74,8 @@ export class UserPreferences {
     snapToGrid: boolean;
     remoteConfiguration: string;
     gridSize: number;
+    graphWSSServer: string;
+    graphHTTPServer: string;
     appearance: Appearance;
     uiSize: Record<string, number>;
     constructor() {
@@ -95,6 +97,8 @@ export class UserPreferences {
         this.defaultNewGraphTemplate = defaultNewGraphTemplate;
         this.defaultNewSetTemplate = defaultNewSetTemplate;
         this.defaultNewVueTemplate = defaultNewVueTemplate;
+        this.graphWSSServer = "";
+        this.graphHTTPServer = "";
         this.snapToGrid = true;
         this.gridSize = 10;
         this.appearance = new Appearance();

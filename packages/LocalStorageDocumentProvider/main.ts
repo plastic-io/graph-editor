@@ -3,6 +3,7 @@ import type {Node, Graph} from "@plastic-io/plastic-io";
 import type {Toc, TocItem, GraphDiff, NodeArtifact, GraphArtifact} from "@plastic-io/graph-editor-vue3-document-provider";
 import {useStore as useOrchistratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useGraphSnapshotStore, useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
+import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import EditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 import DocumentProvider from "@plastic-io/graph-editor-vue3-document-provider";
 import {Appearance} from "@plastic-io/graph-editor-vue3-appearance";
@@ -23,6 +24,10 @@ export default class LocalStorageDocumentProvider extends EditorModule {
     const graphSnapshotStore = useGraphSnapshotStore();
     const graphStore = useGraphStore();
     const localDataProvider = new LocalDataProvider();
+    const preferencesStore = usePreferencesStore();
+    if (!preferencesStore.preferences!.useLocalStorage) {
+        return;
+    }
     orchistratorStore.dataProviders.graph = localDataProvider;
     let writeDebounceTimer: any;
     graphStore.$subscribe((mutation: any, state: any) => {
@@ -37,7 +42,7 @@ export default class LocalStorageDocumentProvider extends EditorModule {
               changes,
               description: '',
           };
-          localDataProvider.set(localDataProvider.graph!.url, ev as any);
+          localDataProvider.set(localDataProvider.graph!.id, ev as any);
         }
     }, { detached: true });
     orchistratorStore.dataProviders.publish = localDataProvider;

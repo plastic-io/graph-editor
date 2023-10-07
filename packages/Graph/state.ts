@@ -35,9 +35,10 @@ export default () => {
         graphSnapshot: null as any,
         keys: {} as Record<string, string>,
         artifacts: {} as Record<string, any>,
-        nodeMimeType: "application/json+plastic-io",
+        nodeMimeType: "application/json",
         jsonMimeType: "application/json",
         zipMimeType: "application/zip",
+        textMimeType: "text/plain",
         buttonMap: {
           "0": "lmb",
           "2": "rmb",

@@ -41,7 +41,7 @@
                     v-bind="nodeProps"
                     :hostNode="hostNode"
                     @mountError="mountError"
-                    @dataChange="dataChange"
+                    @data="dataChange"
                     @set="set"
                     :key="renderVersion"
                 />

@@ -1,7 +1,7 @@
 <template>
   <v-menu v-if="identity">
     <template v-slot:activator="{props}">
-      <div style="height: 50px; width: 50px; border-radius: 50px; overflow: hidden;">
+      <div style="height: 40px; width: 40px; border-radius: 40px; overflow: hidden;" class="mr-5">
       <v-img
         v-bind="props"
         :title="identity.user.email"

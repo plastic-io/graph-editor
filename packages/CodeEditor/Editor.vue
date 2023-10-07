@@ -5,7 +5,7 @@
     class="no-graph-target"
     :style="editorContainerStyle"
     @mousedown.stop="mousedown($event)">
-    <div>
+    <div style="position: relative;">
       <div
         class="monaco-editor"
         ref="editor"
@@ -41,6 +41,7 @@ import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
+import {editorLibSrc} from "@plastic-io/graph-editor-vue3-help-overlay";
 import {useRoute} from 'vue-router';
 import Scheduler from "@plastic-io/plastic-io"
 
@@ -75,61 +76,25 @@ window.MonacoEnvironment = {
 
 export default {
   async mounted() {
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(`
-      /**
-       * The value that was passed to this node either by an edge connector
-       * or by direct exectuion.  This value can be of any type and is determined
-       * by the edge or the invoking function.
-       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
-       */
-      declare var value: any;
-      /**
-       * The scheduler is responsible for executing nodes.
-       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
-       */
-      declare var scheduler: any;
-      /**
-       * The current graph that this node is executing on.
-       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
-       */
-      declare var graph: any;
-      /**
-       * Per node cache for this node.
-       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
-       */
-      declare var cache: any;
-      /**
-       * The node this script belongs to.
-       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
-       */
-      declare var node: any;
-      /**
-       * The edge field that triggered this script if any.
-       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
-       */
-      declare var field: any;
-      /**
-       * The shared state of the graph execution.
-       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
-       */
-      declare var state: any;
-      /**
-       * The collecton of output edge fields defined on this node if any;
-       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
-       */
-      declare var edges: any;
-      /**
-       * The data value of this node.  Data can hold any value.
-       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
-       */
-      declare var data: any;
-      /**
-       * The properties of this node.  Properties are read only.  Use events to update components.
-       * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
-       */
-      declare var properties: any;
-    `, 'global.d.ts');
-
+    const libUri = 'global.d.ts';
+    const diagParams = {
+        noSemanticValidation: false,
+        noSyntaxValidation: false,
+        diagnosticCodesToIgnore: [
+          /* top-level return */ 1108,
+          /* top-level async */ 1375,
+          /* replace require with import */ 80005,
+        ]
+    };
+    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions(diagParams);
+    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions(diagParams);
+    monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+        target: monaco.languages.typescript.ScriptTarget.ESNext,
+        allowNonTsExtensions: true
+    });
+    console.log('editorLibSrc');
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(editorLibSrc, libUri);
+    // monaco.editor.createModel(editorLibSrc, 'typescript', monaco.Uri.parse(libUri));
     await this.initEditor();
     if (this.isPopout) {
       window.addEventListener('resize', this.debounceLayout);

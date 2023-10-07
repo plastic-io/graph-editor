@@ -1,12 +1,24 @@
 <template>
-    <div
-        v-if="!presentation"
-        :class="connectorClass"
-        :style="connectorStyle">
-        <canvas
-            ref="canvas"
-            :height="height * ratio"
-            :width="width * ratio"/>
+    <div>
+        <div :class="{'connector-info-value': true, 'connector-info-value-expanded': expand}"
+            v-if="preferences.showConnectorActivity && activityValue"
+            @mousemove.stop
+            @mousedown.stop
+            @mouseover="expand = true;"
+            @mouseout="expand = false;"
+            :style="connectorValueStyle"
+        >
+            <div :class="{drop: activeConnector}"></div>
+            {{activityValue}}
+        </div>
+        <div
+            v-if="!presentation"
+            :style="connectorStyle">
+            <canvas
+                ref="canvas"
+                :height="height * ratio"
+                :width="width * ratio"/>
+        </div>
     </div>
 </template>
 <script lang="ts">
@@ -27,9 +39,11 @@ export default {
     },
     data() {
         return {
+            connectorTimeout: null,
             graphStore: useGraphStore(),
             durations: [],
             duration: 0,
+            expand: false,
             activeConnector: null,
             localGraph: null,
             connections: null,
@@ -69,6 +83,11 @@ export default {
           'activityConnectors',
           'movingConnector',
         ]),
+        activityValue() {
+            return (this.activityInfo && this.activityInfo[0])
+                ? this.activityInfo[0].event.value
+                : ''
+        },
         activityInfo() {
             return this.activityConnectors[this.connector.id];
         },
@@ -112,11 +131,14 @@ export default {
                 field,
             };
         },
-        connectorClass() {
-            if (this.activeConnector === null) {
-                return "edge-connector";
-            }
-            return this.activeConnector ? "edge-connector edge-active" : "edge-connector edge-inactive";
+        connectorValueStyle() {
+            const w = this.width * this.ratio;
+            const h = this.height * this.ratio;
+            return {
+                position: "absolute",
+                left: this.x + ((w / 2) - 75) + "px",
+                top: this.y + (h / 1.8) + "px",
+            };
         },
         connectorInfoStyle() {
             return {
@@ -137,9 +159,6 @@ export default {
         },
     },
     watch: {
-        activeConnector() {
-            this.redraw();
-        },
         activityConnectors: {
             handler: function () {
                 const key = this.connector.id;
@@ -147,8 +166,11 @@ export default {
                 if (activity && activity.length > 0) {
                     if (activity[activity.length - 1].activityType === "start") {
                         this.activeConnector = true;
-                    } else {
-                        this.activeConnector = false;
+                        this.redraw();
+                        clearTimeout(this.connectorTimeout);
+                        this.connectorTimeout = setTimeout(() => {
+                            this.activeConnector = false;
+                        }, 1000);
                     }
                 }
             },
@@ -261,34 +283,65 @@ export default {
 };
 </script>
 <style>
-    .edge-inactive {
-        animation-duration: 0.5s;
-        animation-name: edge-deactivate;
+    .connector-info-value {
+        pointer-events: all;
+        position: absolute;
+        height: 40px;
+        width: 150px;
+        min-height: 25px;
+        min-width: 150px;
+        border-radius: 5px;
+        background: rgba(var(--v-theme-info));
+        border-color: rgba(var(--v-border-color));
+        border-style: solid;
+        border-width: 1px;
+        overflow: scroll;
+        z-index: 2;
+        transition: height, width, opacity 0.3s ease-out;
+        opacity: 0.8;
+        padding: 7px;
+        padding-left: 10px;
     }
-    .edge-active {
-        animation-duration: 0.5s;
-        animation-name: edge-activate;
+    .connector-info-value-expanded {
+        height: inherit;
+        width: inherit;
+        transition: height, width, opacity 0.3s ease-out;
+        opacity: 1;
     }
     .edge-connector {
         pointer-events: none;
         position: absolute;
         z-index: -1597463006;
     }
-    @keyframes edge-deactivate {
-        from {
-            opacity: 0.5;
-        }
-        to {
-            opacity: 1;
-        }
-    }
-    @keyframes edge-activate {
-        from {
-            opacity: 1;
-        }
-        to {
-            opacity: 0.5;
-        }
+
+
+    .drop {
+      width: 10px;
+      height: 10px;
+      background-color: white;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      border-radius: 50%;
+      animation: dropAnimation 0.9s infinite;
+      animation-timing-function: cubic-bezier(0.1, 0.7, 0.1);
+      transform: translate(-20px, -60px) scale(2);
     }
 
+    @keyframes dropAnimation {
+      0% {
+        width: 10px;
+        height: 10px;
+        top: 50%;
+        left: 50%;
+        opacity: 1;
+      }
+      100% {
+        width: 200px;
+        height: 200px;
+        top: 0;
+        left: 0;
+        opacity: 0;
+      }
+}
 </style>

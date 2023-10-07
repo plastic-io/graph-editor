@@ -131,7 +131,13 @@ export default {
             return;
         }
         console.warn("Clipboard paste captured by graph editor");
-        const data = e.clipboardData.getData(this.nodeMimeType);
+        let data = e.clipboardData.getData(this.nodeMimeType);
+        if (!data) {
+            data = e.clipboardData.getData(this.jsonMimeType);
+        }
+        if (!data) {
+            data = e.clipboardData.getData(this.textMimeType);
+        }
         this.tryPasteNodeString(data);
         e.preventDefault();
     },

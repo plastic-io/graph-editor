@@ -16,10 +16,12 @@
                             hint="https://cdn.materialdesignicons.com/4.9.95/"
                             title="Icon">
                             <template v-slot:prepend>
-                                <v-icon :icon="graphSnapshot.properties.icon"/>
+                                <v-icon :icon="graphSnapshot.properties.icon || 'mdi-graph'"/>
                             </template>
                         </v-text-field>
                         <v-text-field help-topic="graphVersion" label="Version" disabled v-model="graphSnapshot.version"></v-text-field>
+                        <v-text-field help-topic="timeout" label="Timeout (ms)" v-model.number="graphSnapshot.properties.timeout"></v-text-field>
+                        <v-text-field help-topic="logLevel" label="Log Level (1-4)" v-model.number="graphSnapshot.properties.logLevel"></v-text-field>
                     </v-card-text> 
                 </v-card>
             </v-expansion-panel-text>
