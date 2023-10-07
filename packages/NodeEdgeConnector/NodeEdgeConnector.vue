@@ -13,6 +13,7 @@
         </div>
         <div
             v-if="!presentation"
+            class="edge-connector"
             :style="connectorStyle">
             <canvas
                 ref="canvas"
@@ -138,14 +139,6 @@ export default {
                 position: "absolute",
                 left: this.x + ((w / 2) - 75) + "px",
                 top: this.y + (h / 1.8) + "px",
-            };
-        },
-        connectorInfoStyle() {
-            return {
-                position: "fixed",
-                width: "500px",
-                left: ((this.mouse.x - this.view.x) / this.view.k) + 10 + "px",
-                top: ((this.mouse.y - this.view.y) / this.view.k) + 10 + "px",
             };
         },
         connectorStyle() {
@@ -313,35 +306,33 @@ export default {
         position: absolute;
         z-index: -1597463006;
     }
-
-
     .drop {
-      width: 10px;
-      height: 10px;
-      background-color: white;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      border-radius: 50%;
-      animation: dropAnimation 0.9s infinite;
-      animation-timing-function: cubic-bezier(0.1, 0.7, 0.1);
-      transform: translate(-20px, -60px) scale(2);
+        width: 10px;
+        height: 10px;
+        background-color: white;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        border-radius: 50%;
+        animation: dropAnimation 0.9s infinite;
+        animation-timing-function: cubic-bezier(0.1, 0.7, 0.1);
+        transform: translate(-20px, -60px) scale(2);
     }
 
     @keyframes dropAnimation {
-      0% {
-        width: 10px;
-        height: 10px;
-        top: 50%;
-        left: 50%;
-        opacity: 1;
-      }
-      100% {
-        width: 200px;
-        height: 200px;
-        top: 0;
-        left: 0;
-        opacity: 0;
-      }
-}
+        0% {
+            width: 10px;
+            height: 10px;
+            top: 50%;
+            left: 50%;
+            opacity: 1;
+        }
+        100% {
+            width: 200px;
+            height: 200px;
+            top: 0;
+            left: 0;
+            opacity: 0;
+        }
+    }
 </style>
