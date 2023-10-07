@@ -1,3 +1,4 @@
+import getName from "@plastic-io/graph-editor-names";
 import {template, set} from "@plastic-io/graph-editor-vue3-help-overlay";
 import {newId, deref, loadScripts} from "@plastic-io/graph-editor-vue3-utils";
 import {diff, applyChange, revertChange, observableDiff} from "deep-diff";
@@ -196,7 +197,7 @@ export default {
             version: this.graphSnapshot.version,
             graphId: this.graphSnapshot.id,
             artifact: e.url || ("artifacts/" + e.id + "." + e.version),
-            url: id,
+            url: getName().replace(/ /g, ''),
             data: null,
             linkedGraph: {
                 id: e.id,
@@ -277,7 +278,7 @@ export default {
         pos.y = Math.floor(pos.y / 10) * 10;
         const id = newId();
         e.item.id = id;
-        e.item.url = id;
+        e.item.url = getName().replace(/ /g, '');
         e.item.version = this.graphSnapshot.version;
         e.item.graphId = this.graphSnapshot.id;
         e.item.properties.x = pos.x;
@@ -316,7 +317,7 @@ export default {
             version: this.graphSnapshot.version,
             graphId: this.graphSnapshot.id,
             artifact: e.url || ("artifacts/" + e.id + "." + e.version),
-            url: id,
+            url: e.url,
             data: e.item.data,
             properties: {
                 inputs: e.item.properties.inputs,
@@ -375,26 +376,32 @@ export default {
         }
         this.graph = deref(this.graphSnapshot);
     },
-    createGraph(url: string, createdBy: string): Graph {
-      const id = newId();
+    createGraph(id: string): Graph {
+      const name = getName().replace(/ /g, '');
       const now = new Date();
       return {
         id,
         version: 0,
-        url,
+        url: name,
         nodes: [],
         properties: {
-          name: "",
+          name,
           description: "",
           exportable: false,
           icon: "mdi-graph",
-          createdBy: createdBy,
+          createdBy: "",
           createdOn: now,
           lastUpdate: now,
           height: 150,
           width: 300,
-        }
+          timeout: 30000,
+          logLevel: 2,
+        } as any
       };
+    },
+    async transact(description: string, callback: any) {
+        await callback(this.graphSnapshot);
+        this.updateGraphFromSnapshot(description);
     },
     updateGraphFromSnapshot(description: string) {
         if (!diff(this.graph, this.graphSnapshot)) {
@@ -440,7 +447,7 @@ export default {
       // Combine and load all scripts
       await loadScripts([...rootScripts, ...nodeScripts]);
     },
-    async open(graphUrl: string) {
+    async open(graphId: string) {
       const graphOrchestrator = useOrchestratorStore();
       if (!graphOrchestrator.dataProviders.graph) {
         throw new Error('No data providers to open a graph with.');
@@ -448,14 +455,14 @@ export default {
       }
       let graph: Graph | null = null;
       try {
-        this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphUrl);
-        graphOrchestrator.dataProviders.graph.subscribe(graphUrl, async () => {
-            this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphUrl);
-        });
+        this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
       } catch (err: any) {
-        const url = graphUrl;
-        this.graphSnapshot = this.createGraph(url, "");
+        // auto create missing graphs
+        this.graphSnapshot = this.createGraph(graphId);
       }
+      graphOrchestrator.dataProviders.graph.subscribe(graphId, async () => {
+        this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
+      });
       // block loading until graph scripts are loaded if any
       const scripts = (this.graphSnapshot.properties.scripts || '').replace('\n', ',').split(',');
       await this.loadAllScripts(this.graphSnapshot);
@@ -628,7 +635,7 @@ export default {
           version: this.graph!.version,
           graphId: this.graph!.id,
           artifact: null,
-          url: id,
+          url: getName().replace(/ /g, ''),
           data: null,
           properties: {
               inputs: [],

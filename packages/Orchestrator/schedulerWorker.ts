@@ -52,7 +52,7 @@ const rpc = {
     e.graph.nodes.forEach((node: any) => {
       nodes[node.id] = {};
       node.properties.inputs.forEach((input: any) => {
-        nodes[node.id][input.field] = {};
+        nodes[node.id][input.name] = {};
       });
     });
     workerObjProxy.nodes = nodes;
@@ -79,7 +79,7 @@ const panic = () => {
 }
 onmessage = function(e: any) {
   if (e.data.method === 'panic') {
-    panic();
+    return panic();
   }
   if (e.data.method === 'init') {
     return rpc.init.apply(null, e.data.args);

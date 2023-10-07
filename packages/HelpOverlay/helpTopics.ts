@@ -706,4 +706,61 @@ export default {
 </style>
 `;
 export const set = `state.nodes[node.id][field] = value;`;
-
+export const editorLibSrc = `
+  /**
+   * The value that was passed to this node either by an edge connector
+   * or by direct exectuion.  This value can be of any type and is determined
+   * by the edge or the invoking function.
+   * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+   */
+  declare var value: any;
+  /**
+   * The scheduler is responsible for executing nodes.
+   * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+   */
+  declare var scheduler: any;
+  /**
+   * The current graph that this node is executing on.
+   * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+   */
+  declare var graph: any;
+  /**
+   * Per node cache for this node.
+   * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+   */
+  declare var cache: any;
+  /**
+   * The node this script belongs to.
+   * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+   */
+  declare var node: any;
+  /**
+   * The edge field that triggered this script if any.
+   * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+   */
+  declare var field: any;
+  /**
+   * The shared state of the graph execution.
+   * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+   */
+  declare var state: any;
+  /**
+   * The collecton of output edge fields defined on this node if any;
+   * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+   */
+  declare var edges: any;
+  /**
+   * The data value of this node.  Data can hold any value.
+   * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+   */
+  declare var data: any;
+  /**
+   * The properties of this node.  Properties are read only.  Use events to update components.
+   * See: https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html
+   */
+  declare var properties: any;
+  /**
+   * Nodejs require function for importing dependencies.
+   */
+  declare var require: any;
+`;

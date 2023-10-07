@@ -19,7 +19,11 @@ export default async function (sfc: string, id: string) {
     }).code
         .replace(/import {.*} from "vue"/,
             `const _createElementVNode = self.dependencies.vue.createElementVNode;
+const _toHandlers = self.dependencies.vue.toHandlers;
+const _mergeProps = self.dependencies.vue.mergeProps;
 const _guardReactiveProps = self.dependencies.vue.guardReactiveProps;
+const _Fragment = self.dependencies.vue.Fragment;
+const _renderList = self.dependencies.vue.renderList;
 const _createVNode = self.dependencies.vue.createVNode;
 const _openBlock = self.dependencies.vue.openBlock;
 const _createTextVNode = self.dependencies.vue.createTextVNode;

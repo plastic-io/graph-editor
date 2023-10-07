@@ -13,5 +13,5 @@ export const createDeepProxy = (obj: any, path: Path = [], handler: (path: Path,
       }
       return target[key];
     },
-  });
+  } as any);
 };

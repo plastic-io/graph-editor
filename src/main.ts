@@ -4,7 +4,8 @@ import { createPinia, defineStore } from "pinia";
 import App from "./App.vue";
 import router from "./router";
 import "./assets/main.css";
-
+import OpenAI from 'openai';
+(window as any).OpenAI = OpenAI;
 // Vuetify
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'

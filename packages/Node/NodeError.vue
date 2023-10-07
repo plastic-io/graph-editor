@@ -81,7 +81,7 @@ export default {
       position: absolute;
       left: 110%;
       top: 110%;
-      width: 700px;
+      width: 1500px;
       overflow: scroll;
   }
 </style>

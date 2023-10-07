@@ -10,7 +10,6 @@ export function deref(e: any) {
 }
 
 export  async function loadScripts(scripts: string[]): Promise<void> {
-  console.info('Loading scripts', scripts);
   const promises = scripts.filter((s: string) => !!s).map((src: string) => {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');

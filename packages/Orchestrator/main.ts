@@ -1,3 +1,5 @@
+// NOTE: This code file is in an experimental state
+
 import { defineStore } from 'pinia';
 import type {Graph, Node} from "@plastic-io/plastic-io";
 import {fromJSON} from 'flatted';
@@ -64,6 +66,7 @@ export const useStore = defineStore('orchestrator', {
     graphComponents: {} as any,
     graphStore: useGraphStore(),
     preferencesStore: usePreferencesStore(),
+    orchestratorStore: useOrchestratorStore(),
     token: null,
     bgColor: '000',
     selectedPanel: '',
@@ -145,10 +148,11 @@ export const useStore = defineStore('orchestrator', {
     showError: false,
     connectorWarn: null,
     errors: {} as any,
+    infos: {} as any,
+    warnings: {} as any,
+    debugs: {} as any,
     scheduler: {
         state: {},
-        errors: [] as any,
-        warnings: [] as any,
         instance: null as Scheduler | null,
     },
     presentation: false,
@@ -159,7 +163,7 @@ export const useStore = defineStore('orchestrator', {
     watchConnectors: [],
     luts: {},
     keys: {},
-    toc: null,
+    toc: {} as any,
     icons: Object.keys(mdi).map(hyphenateProperty),
   }),
   actions: {
@@ -172,9 +176,25 @@ export const useStore = defineStore('orchestrator', {
         method: 'panic',
         args: [],
       });
+      this.dataProviders.graph!.send({
+        action: 'panic',
+        graphId: this.graphStore.graph.id,
+      });
+    },
+    copyToClipboard(text: string) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
     },
     async getToc() {
-      this.toc = await this.dataProviders.toc!.get("toc.json");
+      try {
+        this.toc = await this.dataProviders.toc!.get("toc.json");
+      } catch (err) {
+        this.toc = {};
+      }
     },
     async publishGraph() {
         const graph = this.graphStore.graph;
@@ -262,10 +282,18 @@ export const useStore = defineStore('orchestrator', {
       (this.errors[nodeId] ??= [])
         .push({ id: newId(), error, type, field, graphId });
     },
-    error(e: any) {
-      this.scheduler.errors.push(e);
+    info(args: any) {
+      const {nodeId, message, type, field, graphId} = args;
+      (this.infos[nodeId] ??= []).push({ id: newId(), message, type, field, graphId });
     },
-    warning(e: any) {},
+    warning(args: any) {
+      const {nodeId, message, type, field, graphId} = args;
+      (this.warnings[nodeId] ??= []).push({ id: newId(), message, type, field, graphId });
+    },
+    debug(args: any) {
+      const {nodeId, message, type, field, graphId} = args;
+      (this.debugs[nodeId] ??= []).push({ id: newId(), message, type, field, graphId });
+    },
     async load(e: any): Promise<any> {
       const artifactPrefix = "artifacts/";
       if ("setValue" in e) {
@@ -291,6 +319,31 @@ export const useStore = defineStore('orchestrator', {
 
         // performance hack.  Avoid using the store on messages from
         // scheduler to avoid any sort of long term memory leaks/GCing
+        const beforeSet = (e: any) => {
+          if (!this.preferencesStore.preferences!.showConnectorActivity) {
+            return;
+          }
+        }
+        const set = (e: any) => {
+          if (!this.preferencesStore.preferences!.showConnectorActivity) {
+            return;
+          }
+        }
+        const afterSet = (e: any) => {
+          if (!this.preferencesStore.preferences!.showConnectorActivity) {
+            return;
+          }
+        }
+        const end = (e: any) => {
+          if (!this.preferencesStore.preferences!.showConnectorActivity) {
+            return;
+          }
+        }
+        const log = (e: any) => {
+          if (!this.preferencesStore.preferences!.showConnectorActivity) {
+            return;
+          }
+        }
         const beginconnector = (e: any) => {
           if (!this.preferencesStore.preferences!.showConnectorActivity) {
             return;
@@ -377,9 +430,7 @@ export const useStore = defineStore('orchestrator', {
             },
           ],
         });
-        (this.scheduleWorker.onmessage as any) = (e: any) => {
-          const methodName = e.data.source;
-          const args = fromJSON(e.data.event);
+        const remoteEvent = (methodName: string, args: any) => {
           if (methodName === 'state-update') {
             const { path, value } = args;
             let obj: any = this.webWorkerProxy;
@@ -389,24 +440,54 @@ export const useStore = defineStore('orchestrator', {
             obj[path[path.length - 1]] = value;
             return;
           }
+          if (methodName === 'error') {
+            this.raiseError(args.nodeId, {
+              message: args.message || (args.error ? args.error.message : ''),
+            }, 'set', args.field, args.graphId);
+            return;
+          }
+          if (methodName === 'afterSet') {
+            return afterSet(args);
+          }
+          if (methodName === 'log') {
+            return log(args);
+          }
+          if (methodName === 'end') {
+            return end(args);
+          }
+          if (methodName === 'begin') {
+            return end(args);
+          }
+          if (methodName === 'set') {
+            return end(args);
+          }
           if (methodName === 'beginconnector') {
             return beginconnector(args);
           }
           if (methodName === 'endconnector') {
             return endconnector(args);
           }
-          if (methodName === 'error') {
-            this.raiseError(args.nodeId, {
-              message: args.message,
-            }, 'set', args.field, args.graphId);
-            return;
-          }
           const method = (this as any)[methodName];
-          if (method) {
+          if (typeof method === 'function') {
             method(args);
             return;
+          } else {
+            console.error('unmatched remote message', methodName, args);
           }
         };
+        // messages from server
+        this.orchestratorStore.dataProviders.graph.subscribe('graph-notify-' + this.graphStore.graph.id, async (e: any) => {
+            if (e.eventType === 'log' && e.level === 'error') {
+              e.eventType = 'error';
+            }
+            remoteEvent(e.eventType, e);
+        });
+        // messages from worker
+        (this.scheduleWorker.onmessage as any) = (e: any) => {
+          const methodName = e.data.source;
+          const args = fromJSON(e.data.event);
+          remoteEvent(methodName, args);
+        }
         (this.scheduler.instance as any) = {
           url: sendMessage('url'),
         };
