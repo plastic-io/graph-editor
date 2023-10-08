@@ -21,7 +21,10 @@
       // bind outputs (events)
       props.node.properties.outputs.forEach((output) => {
         events['on' + output.name[0].toUpperCase() + output.name.substring(1)] = (val) => {
-          props.scheduler.instance.url(props.node.url, JSON.parse(JSON.stringify(val)), output.name, props.hostNode);
+          try {
+            val = JSON.parse(JSON.stringify(val));
+          } catch (_) {}
+          props.scheduler.instance.url(props.node.url, val, output.name, props.hostNode);
         };
       });
       const importedProps = {
