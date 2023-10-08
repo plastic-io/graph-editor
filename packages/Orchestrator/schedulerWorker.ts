@@ -50,9 +50,9 @@ const rpc = {
 
     const nodes = {} as any;
     e.graph.nodes.forEach((node: any) => {
-      nodes[node.id] = {};
+      nodes[node.id] = nodes[node.id] || {};
       node.properties.inputs.forEach((input: any) => {
-        nodes[node.id][input.name] = {};
+        nodes[node.id][input.name] = nodes[node.id][input.name] || undefined;
       });
     });
     workerObjProxy.nodes = nodes;

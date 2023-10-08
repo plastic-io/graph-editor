@@ -405,7 +405,6 @@ export default {
     },
     updateGraphFromSnapshot(description: string) {
         if (!diff(this.graph, this.graphSnapshot)) {
-            console.warn('Graph: updateGraphFromSnapshot called with no updates found.');
             return;
         }
         // there was an actual change detected

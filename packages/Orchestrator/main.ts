@@ -169,7 +169,7 @@ export const useStore = defineStore('orchestrator', {
   actions: {
     hyphenateProperty,
     async init(graphUrl: string) {
-      this.graphStore.open(graphUrl);
+      return await this.graphStore.open(graphUrl);
     },
     panic() {
       this.scheduleWorker.postMessage({

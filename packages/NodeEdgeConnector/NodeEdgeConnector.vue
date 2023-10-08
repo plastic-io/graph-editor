@@ -85,8 +85,9 @@ export default {
           'movingConnector',
         ]),
         activityValue() {
-            return (this.activityInfo && this.activityInfo[0])
-                ? this.activityInfo[0].event.value
+            const i = this.activityInfo ? this.activityInfo.length - 1 : 0;
+            return (this.activityInfo && this.activityInfo[i])
+                ? this.activityInfo[i].event.value
                 : ''
         },
         activityInfo() {
@@ -275,7 +276,7 @@ export default {
     },
 };
 </script>
-<style>
+<style scoped>
     .connector-info-value {
         pointer-events: all;
         position: absolute;
