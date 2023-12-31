@@ -77,10 +77,15 @@
   import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
   import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
   import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
+  const CHANNEL_NAME = "plastic-io-document-provider"
   export default {
     async mounted() {
       this.setTheme(this.preferences.appearance.theme);
       await this.getToc();
+      const broadcastChannel = new BroadcastChannel(CHANNEL_NAME);
+      broadcastChannel.onmessage = () => {
+        this.getToc();
+      };
     },
     data() {
       return {
@@ -139,6 +144,7 @@
           }
           return Object.keys(this.toc)
             .filter((t: any) => !!this.toc[t])
+            .filter((t: any) => t !== 'id')
             .filter((t: any) => !/^endpoint\//.test(t))
             .sort((a: any, b: any) => a.localeCompare(b))
             .map((t: any) => {

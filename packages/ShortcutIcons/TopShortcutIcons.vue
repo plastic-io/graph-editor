@@ -2,7 +2,7 @@
     <div
         title="Graph ID"
         style="padding-right: 10px;cursor: pointer;">
-        <v-icon help-topic="openGraph"  @click="() => $router.push('/')" title="Show open graph dialog (^ + O)">
+        <v-icon help-topic="openGraph"  @click="navigateToRoot" title="Show open graph dialog (^ + O)">
             mdi-folder
         </v-icon>
         <span v-if="inRewindMode">
@@ -151,6 +151,9 @@ export default {
             'clearInfo',
             'getPluginsByType',
         ]),
+        navigateToRoot() {
+            window.location = '/graph-editor/'
+        },
         openGraph() {
             window.open(
                 this.pathPrefix,
