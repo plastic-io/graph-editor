@@ -41,7 +41,7 @@
                 <v-spacer/>
               </v-card-text>
               <v-card-actions>
-                  <v-btn @click="() => $router.push(graph.id)">Open</v-btn>
+                  <v-btn @click="openGraph(graph.id)">Open</v-btn>
                   <v-btn @click="deletingGraph = graph; showDeleteDialog = true;">Delete</v-btn>
               </v-card-actions>
             </v-card-item>
@@ -109,6 +109,9 @@
           'getToc',
           'getPluginsByType',
       ]),
+      openGraph(id) {
+        window.location = `/graph-editor/${id}`;
+      },
       async deleteGraph() {
         this.showDeleteDialog = false;
         await this.dataProviders.graph.delete(this.deletingGraph.id);
@@ -117,8 +120,7 @@
         this.deletingGraph = {};
       },
       create() {
-        const id = newId();
-        this.$router.push(`/${id}`);
+        this.openGraph(newId());
       },
     },
     computed: {
