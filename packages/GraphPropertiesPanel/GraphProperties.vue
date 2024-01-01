@@ -5,23 +5,23 @@
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat>
                   <v-card-text class="ma-0 pa-0">
-                        <v-text-field help-topic="graphName" label="Name" v-model="graphSnapshot.properties.name"></v-text-field>
-                        <v-text-field help-topic="graphDescription" label="Description" v-model="graphSnapshot.properties.description"></v-text-field>
-                        <v-text-field help-topic="graphUrl" label="URL" v-model="graphSnapshot.url"></v-text-field>
-                        <v-text-field help-topic="graphId" label="Graph Id" disabled v-model="graphSnapshot.id"></v-text-field>
+                        <v-text-field help-topic="graphName" label="Name" v-model="localGraph.properties.name"></v-text-field>
+                        <v-text-field help-topic="graphDescription" label="Description" v-model="localGraph.properties.description"></v-text-field>
+                        <v-text-field help-topic="graphUrl" label="URL" v-model="localGraph.url"></v-text-field>
+                        <v-text-field help-topic="graphId" label="Graph Id" disabled v-model="localGraph.id"></v-text-field>
                         <v-text-field
                             help-topic="graphIcon"
                             persistent-hint
-                            v-model="graphSnapshot.properties.icon"
+                            v-model="localGraph.properties.icon"
                             hint="https://cdn.materialdesignicons.com/4.9.95/"
                             title="Icon">
                             <template v-slot:prepend>
-                                <v-icon :icon="graphSnapshot.properties.icon || 'mdi-graph'"/>
+                                <v-icon :icon="localGraph.properties.icon || 'mdi-graph'"/>
                             </template>
                         </v-text-field>
-                        <v-text-field help-topic="graphVersion" label="Version" disabled v-model="graphSnapshot.version"></v-text-field>
-                        <v-text-field help-topic="timeout" label="Timeout (ms)" v-model.number="graphSnapshot.properties.timeout"></v-text-field>
-                        <v-text-field help-topic="logLevel" label="Log Level (1-4)" v-model.number="graphSnapshot.properties.logLevel"></v-text-field>
+                        <v-text-field help-topic="graphVersion" label="Version" disabled v-model="localGraph.version"></v-text-field>
+                        <v-text-field help-topic="timeout" label="Timeout (ms)" v-model.number="localGraph.properties.timeout"></v-text-field>
+                        <v-text-field help-topic="logLevel" label="Log Level (1-4)" v-model.number="localGraph.properties.logLevel"></v-text-field>
                     </v-card-text> 
                 </v-card>
             </v-expansion-panel-text>
@@ -29,7 +29,7 @@
         <v-expansion-panel class="ma-0 pa-0">
             <v-expansion-panel-title>Global Scripts</v-expansion-panel-title>
             <v-expansion-panel-text>
-                <v-textarea persistent-hint hint="csv list of script sources that will be loaded before the graph loads" v-model="graphSnapshot.properties.scripts" label="Graph Scripts" help-topic="graph-scripts" />
+                <v-textarea persistent-hint hint="csv list of script sources that will be loaded before the graph loads" v-model="localGraph.properties.scripts" label="Graph Scripts" help-topic="graph-scripts" />
             </v-expansion-panel-text>
             </v-expansion-panel>
         <v-expansion-panel class="ma-0 pa-0">
@@ -37,9 +37,9 @@
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat>
                     <v-card-text class="ma-0 pa-0" help-topic="graphPresentation">
-                        <v-switch label="Start In Presentation Mode" v-model="graphSnapshot.properties.startInPresentationMode"></v-switch>
-                        <v-text-field label="Height" v-model.number="graphSnapshot.properties.height"></v-text-field>
-                        <v-text-field label="Width" v-model.number="graphSnapshot.properties.width"></v-text-field>
+                        <v-switch label="Start In Presentation Mode" v-model="localGraph.properties.startInPresentationMode"></v-switch>
+                        <v-text-field label="Height" v-model.number="localGraph.properties.height"></v-text-field>
+                        <v-text-field label="Width" v-model.number="localGraph.properties.width"></v-text-field>
                     </v-card-text>
                 </v-card>
             </v-expansion-panel-text>
@@ -49,10 +49,10 @@
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat>
                     <v-card-text class="ma-0 pa-0" help-topic="graphMeta">
-                        <v-text-field disabled label="Created By" v-model="graphSnapshot.properties.createdBy"></v-text-field>
-                        <v-text-field disabled label="Last Updated By" v-model="graphSnapshot.properties.lastUpdatedBy"></v-text-field>
-                        <v-text-field disabled label="Created" :value="graphSnapshot.properties.createdOn"></v-text-field>
-                        <v-text-field disabled label="Updated" :value="graphSnapshot.properties.lastUpdate"></v-text-field>
+                        <v-text-field disabled label="Created By" v-model="localGraph.properties.createdBy"></v-text-field>
+                        <v-text-field disabled label="Last Updated By" v-model="localGraph.properties.lastUpdatedBy"></v-text-field>
+                        <v-text-field disabled label="Created" :value="localGraph.properties.createdOn"></v-text-field>
+                        <v-text-field disabled label="Updated" :value="localGraph.properties.lastUpdate"></v-text-field>
                     </v-card-text>
                 </v-card>
             </v-expansion-panel-text>
@@ -80,7 +80,7 @@
                             hide-selected
                             label="Tags"
                             prepend-icon="mdi-tag-multiple-outline"
-                            v-model="graphSnapshot.properties.tags"/>
+                            v-model="localGraph.properties.tags"/>
                     </v-card-text>
                 </v-card>
             </v-expansion-panel-text>
@@ -110,7 +110,8 @@
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
-
+import {diff} from "deep-diff";
+import {deref} from "@plastic-io/graph-editor-vue3-utils";
 import {mapActions, mapState, mapWritableState} from "pinia";
 
 export default {
@@ -125,19 +126,36 @@ export default {
             "updateGraphFromSnapshot",
         ]),
     },
+    mounted() {
+        this.localGraph = deref(this.graphSnapshot);
+    },
     data: () => {
         return {
             updateTimeout: 1000,
             panel: null,
             saveTimeout: null,
+            localGraph: null,
+            updatingLocal: false,
         };
     },
     watch: {
         'graphSnapshot.properties': {
             handler() {
+                if (this.updatingLocal) {
+                    return;
+                }
+                this.localGraph.properties = deref(this.graphSnapshot.properties);
+            },
+            deep: true,
+        },
+        'localGraph.properties': {
+            handler() {
                 clearTimeout(this.saveTimeout);
                 this.saveTimeout = setTimeout(() => {
+                    this.updatingLocal = true;
+                    this.graphSnapshot.properties = deref(this.localGraph.properties);
                     this.updateGraphFromSnapshot('Update Graph Properties');
+                    this.updatingLocal = false;
                 }, this.updateTimeout);
             },
             deep: true,

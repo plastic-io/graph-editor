@@ -227,14 +227,12 @@ export default {
     },
     methods: {
         redraw() {
-            this.$nextTick(() => {
-                if (this.presentation) {
-                    return;
-                }
-                this.calls += 1;
-                this.setContext();
-                bezier(this);
-            });
+            if (this.presentation) {
+                return;
+            }
+            this.calls += 1;
+            this.setContext();
+            bezier(this);
         },
         setContext() {
             if (this.presentation || !this.$refs.canvas) {
