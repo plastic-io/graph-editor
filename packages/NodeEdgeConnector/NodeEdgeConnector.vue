@@ -72,7 +72,6 @@ export default {
         ...mapState(useGraphStore, [
           'hoveredPort',
           'addingConnector',
-          'graph',
           'graphSnapshot',
           'view',
           'translating',
@@ -106,7 +105,7 @@ export default {
             return this.hoveredConnector && this.hoveredConnector.connector.id === this.connector.id;
         },
         output() {
-            const node = (this.localGraph || this.graph).nodes.find((v) => {
+            const node = (this.localGraph || this.graphSnapshot).nodes.find((v) => {
                 return v.id === this.connector.nodeId;
             }) ;
             const field = this.node.properties.outputs.find((output) => {
@@ -120,7 +119,7 @@ export default {
             };
         },
         input() {
-            const node = (this.localGraph || this.graph).nodes.find((v) => {
+            const node = (this.localGraph || this.graphSnapshot).nodes.find((v) => {
                 return v.id === this.connector.nodeId;
             }) ;
             const field = node ? node.properties.inputs.find((input) => {
@@ -173,13 +172,6 @@ export default {
         graphSnapshot: {
             handler: function () {
                 this.localGraph = this.graphSnapshot;
-                this.redraw();
-            },
-            deep: true,
-        },
-        graph: {
-            handler: function () {
-                this.localGraph = this.graph;
                 this.redraw();
             },
             deep: true,
@@ -266,7 +258,7 @@ export default {
         });
     },
     mounted() {
-        this.localGraph = this.graph;
+        this.localGraph = this.graphSnapshot;
         this.connections = JSON.parse(JSON.stringify({
             input: this.input,
             output: this.output,

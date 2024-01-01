@@ -5,6 +5,8 @@ import {diff, applyChange, revertChange, observableDiff} from "deep-diff";
 import type {Graph} from "@plastic-io/plastic-io";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 const events = [];
+let ioChangeTimer = 0 as any
+const CHANGE_TIMEOUT = 1000;
 export default {
     updateNodeUrl(e: {nodeId: string, url: string}) {
         const node = this.graphSnapshot.nodes.find((v: any) => v.id === e.nodeId);
@@ -411,11 +413,12 @@ export default {
         // tick the version number by 1
         this.graphSnapshot.version += 1;
         const changes = diff(this.graph, this.graphSnapshot);
+        console.debug('Save changes:', description, changes, this.graph.version, this.graphSnapshot.version)
         // gather the difference and store it in an event list for undo/redo
         const graphDiff = {
             id: newId(),
             description,
-            changes,
+            changes: deref(changes),
         };
         this.events.push(deref(graphDiff));
         // write to the graph in the graph store
@@ -460,7 +463,7 @@ export default {
         this.graphSnapshot = this.createGraph(graphId);
       }
       graphOrchestrator.dataProviders.graph.subscribe(graphId, async () => {
-        this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
+        // this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
       });
       // block loading until graph scripts are loaded if any
       const scripts = (this.graphSnapshot.properties.scripts || '').replace('\n', ',').split(',');
@@ -494,7 +497,7 @@ export default {
             if (d.path[0] === "properties" && d.path[1] === "outputs"
                     && !isNaN(d.path[2])
                     && (d.path[3] === "name" || d.path[3] === "external" || d.path[3] === "type" || d.path[3] === "visible")) {
-                applyChange(node, e.node, d);
+                applyChange(node, true, d);
                 if (d.path[3] === "name") {
                     // also apply the change to local edge names
                     const edge = node.edges.find((ed: {field: string}) => {
@@ -507,7 +510,7 @@ export default {
             if (d.path[0] === "properties" && d.path[1] === "inputs"
                     && !isNaN(d.path[2])
                     && (d.path[3] === "name" || d.path[3] === "external" || d.path[3] === "type" || d.path[3] === "visible")) {
-                applyChange(node, e.node, d);
+                applyChange(node, true, d);
                 if (d.path[3] === "name") {
                     // also apply the change to the edge connectors that interact with it
                     this.graphSnapshot.nodes.forEach((v: any) => {
@@ -523,7 +526,11 @@ export default {
             }
         });
         if (hasChanges) {
-            this.updateGraphFromSnapshot("Rename IO");
+            clearTimeout(ioChangeTimer);
+            ioChangeTimer = setTimeout(() => {
+                this.updateGraphFromSnapshot("Rename IO");
+            }, CHANGE_TIMEOUT);
+            
         }
     },
     deleteNodeById(id: string) {
@@ -631,8 +638,8 @@ export default {
       const node = {
           id,
           edges: [],
-          version: this.graph!.version,
-          graphId: this.graph!.id,
+          version: this.graphSnapshot!.version,
+          graphId: this.graphSnapshot!.id,
           artifact: null,
           url: getName().replace(/ /g, ''),
           data: null,
@@ -661,7 +668,7 @@ export default {
               vue: this.preferencesStore.preferences!.newNodeHelp ? template : this.preferencesStore.preferences!.defaultNewVueTemplate,
           },
       };
-      this.graphSnapshot!.nodes.push(node as any);
+      this.graphSnapshot!.nodes.push(deref(node) as any);
       this.updateGraphFromSnapshot('Create New Node');
     }
 } as ThisType<any>;

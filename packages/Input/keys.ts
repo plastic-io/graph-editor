@@ -23,6 +23,7 @@ interface UIEvent {
     metaKey: boolean;
     altKey: boolean;
     keyCode: number;
+    srcElement: Element;
     preventDefault: Function;
 }
 export const keys = (store: any, e: UIEvent) => {
@@ -36,6 +37,10 @@ export const keys = (store: any, e: UIEvent) => {
     }
     if (locked) {
         // keyboard shortcuts are disabled in presentation/locked mode
+        return;
+    }
+    if (/input|textarea|button|select|checkbox|radio|file|reset/i.test(e.srcElement.tagName)) {
+        // keyboard shortcuts are disabled when the user is in a form element of any sort
         return;
     }
     // zoom

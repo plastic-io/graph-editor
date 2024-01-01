@@ -8,7 +8,7 @@
             templateType="vue"
             language="html"
             :nodeId="nodeId"
-            :graphId="graph.id"
+            :graphId="graphSnapshot.id"
             :errors="errors.filter(e => e.type === 'vue')"
             :value="vueTemplateValue"
             helpLink="https://vuejs.org/guide/essentials/component-basics.html"
@@ -24,7 +24,7 @@
             templateType="set"
             language="typescript"
             :nodeId="nodeId"
-            :graphId="graph.id"
+            :graphId="graphSnapshot.id"
             :errors="errors.filter(e => e.type === 'set')"
             :value="setTemplateValue"
             helpLink="https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html"
@@ -130,7 +130,7 @@
         "locked": "locked",
       }),
       ...mapState(useGraphStore, [
-        "graph"
+        "graphSnapshot"
       ]),
       setTemplateValue() {
         return this.node.template.set;
@@ -150,10 +150,10 @@
           || this.showError;
       },
       node() {
-        if (!this.graph) {
+        if (!this.graphSnapshot) {
           return {template: {vue: '', set: ''}};
         }
-        return this.graph.nodes.find(n => n.id === this.nodeId);
+        return this.graphSnapshot.nodes.find(n => n.id === this.nodeId);
       },
       errors() {
         return this.nodeErrors[this.nodeId] || [];

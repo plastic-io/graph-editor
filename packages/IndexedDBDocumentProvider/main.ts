@@ -69,8 +69,9 @@ class IndexedDBDataProvider extends DocumentProvider {
             if (id === 'toc-update') {
                 this.broadcastChannel.postMessage({
                     type: 'tocUpdate',
-                    item: args,
+                    item: args.toc,
                 });
+                this.dispatchEvent('subscriber', args.graph);
                 return;
             }
             this.dispatchEvent(id, args);
@@ -129,8 +130,7 @@ class IndexedDBDataProvider extends DocumentProvider {
         return this.createWorkerResponder('getToc', []);
     }
     async subscribe(url: string | null, callback: any): Promise<void> {
-        // local storage types do not send socket graph data
-        // as they are all run in a single VM on the client
+
     }
     async get(url: string): Promise<Graph | any> {
         const response = await this.createWorkerResponder('get', [url]);

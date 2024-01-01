@@ -14,7 +14,7 @@
             <div class="node-inputs" v-if="!hostNode">
                 <node-field
                     v-for="field in inputs"
-                    :key="'input_' + field.name"
+                    :key="field.name"
                     :field="field"
                     :node="localNode"
                     type="input"
@@ -55,7 +55,7 @@
             <div class="node-outputs" v-if="!hostNode">
                 <node-field
                     v-for="field in outputs"
-                    :key="'output_' + field.name"
+                    :key="field.name"
                     :field="field"
                     :node="localNode"
                     type="output"

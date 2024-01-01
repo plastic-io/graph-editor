@@ -146,10 +146,6 @@ export default {
         nodeId: this.node.id,
         name: newName,
       });
-      // HACK: this is just wrong. why?!
-      this.$nextTick(() => {
-        this.$forceUpdate();
-      });
     },
     remove(ioKey, io, override) {
       // if there are connectors attached to edges, warn the user of the eventual removal of the connectors
@@ -194,7 +190,7 @@ export default {
       });
     },
     setLocalNode() {
-      const v = this.graph.nodes.find((n) => {
+      const v = this.graphSnapshot.nodes.find((n) => {
         return n.id === this.nodeId;
       });
       if (!v) {
@@ -233,7 +229,6 @@ export default {
     },
     ...mapWritableState(useGraphStore, [
       'ioTypes',
-      'graph',
       'graphSnapshot',
       'hoveredConnector',
     ]),

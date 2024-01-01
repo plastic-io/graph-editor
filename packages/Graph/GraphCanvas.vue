@@ -3,7 +3,7 @@
         <div
             x-graph-canvas
             :style="graphCanvasStyle"
-            v-if="graph"
+            v-if="graphSnapshot"
             @drop="drop($event)"
             @dragover="dragOver($event)"
         >
@@ -13,7 +13,7 @@
             ></div>
             <node-edge-connector
                 v-for="c in connectors"
-                :key="c.connector.id + graph.version"
+                :key="c.connector.id + graphSnapshot.version"
                 :connector="c.connector"
                 :edge="c.edge"
                 :node="c.node"
@@ -23,7 +23,7 @@
                     v-for="node in graphSnapshot.nodes"
                     :key="node.id"
                     :node="node"
-                    :graph="graph"
+                    :graph="graphSnapshot"
                     :presentation="false"
                 />
             </template>
@@ -83,7 +83,7 @@ export default {
       preferencesStore.$patch({
         preferences: {
           uiSize: {
-            ['view-location-' + this.graph.id]: this.view,
+            ['view-location-' + this.graphSnapshot.id]: this.view,
           },
         },
       });
@@ -94,7 +94,7 @@ export default {
         this.innerWidth = window.innerWidth;
         this.innerHeight = window.innerHeight;
     };
-    const view = JSON.parse(JSON.stringify(this.preferences.uiSize['view-location-' + this.graph.id] || {x: 0, y: 0, k: 1}));
+    const view = JSON.parse(JSON.stringify(this.preferences.uiSize['view-location-' + this.graphSnapshot.id] || {x: 0, y: 0, k: 1}));
     this.view = view;
     document.addEventListener('resize', resize);
     resize();
@@ -105,7 +105,6 @@ export default {
         'addingConnector',
         'updateBoundingRect',
         'systemBarOffset',
-        'graph',
         'graphSnapshot',
         'view',
         'selectionRect',
@@ -115,7 +114,7 @@ export default {
     ]),
     connectors: function () {
         let connectors = [];
-        this.graph.nodes.forEach((node) => {
+        this.graphSnapshot.nodes.forEach((node) => {
             node.edges.forEach((edge) => {
                 edge.connectors.filter(c => !!c).forEach((connector) => {
                     connectors.push({

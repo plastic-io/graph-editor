@@ -102,7 +102,7 @@ class IndexDBDataProvider {
         return toc || {id: 'toc'};
     }
     async updateToc(url: string) {
-        let graph;
+        let graph: any;
         try {
             graph = await this.get(url) as any;
         } catch (_) {}
@@ -126,7 +126,7 @@ class IndexDBDataProvider {
         tx.oncomplete = () => {
           postMessage({
             source: 'toc-update',
-            event: toJSON(toc),
+            event: toJSON({toc, graph}),
           });
         }
         tx.objectStore("documents").put(toc);
@@ -145,7 +145,7 @@ class IndexDBDataProvider {
                 applyChange(state, true, change);
             });
         });
-        console.debug(`Projected ${events.length} in ${performance.now() - start}ms`);
+        console.debug(`Projected graph from ${events.length} events in ${performance.now() - start}ms`);
         return state;
     }
     async get(url: string): Promise<Graph | any> {

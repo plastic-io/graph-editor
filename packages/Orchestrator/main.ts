@@ -471,8 +471,6 @@ export const useStore = defineStore('orchestrator', {
           if (typeof method === 'function') {
             method(args);
             return;
-          } else {
-            console.error('unmatched remote message', methodName, args);
           }
         };
         // messages from server
