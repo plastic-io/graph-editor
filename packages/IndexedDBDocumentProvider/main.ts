@@ -27,7 +27,6 @@ export default class IndexedDBProvider extends EditorModule {
         return;
     }
     orchistratorStore.dataProviders.graph = localDataProvider;
-    let writeDebounceTimer: any;
     const updatStore = (state: any) => {
         if (!state.graph) {
             return;
@@ -46,11 +45,6 @@ export default class IndexedDBProvider extends EditorModule {
     }
     graphStore.$subscribe((mutation: any, state: any) => {
         updatStore(state);
-        return;
-        clearTimeout(writeDebounceTimer);
-        writeDebounceTimer = setTimeout(() => {
-            updatStore(state);
-        }, DEBOUNCE_TIME);
     }, { detached: true });
     orchistratorStore.dataProviders.publish = localDataProvider;
     orchistratorStore.dataProviders.toc = localDataProvider;

@@ -145,7 +145,7 @@ class IndexDBDataProvider {
                 applyChange(state, true, change);
             });
         });
-        console.debug(`projectGraphEvents`, performance.now() - start);
+        console.debug(`Projected ${events.length} in ${performance.now() - start}ms`);
         return state;
     }
     async get(url: string): Promise<Graph | any> {
