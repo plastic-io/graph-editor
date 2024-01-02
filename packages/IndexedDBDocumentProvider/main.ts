@@ -9,7 +9,7 @@ import DocumentProvider from "@plastic-io/graph-editor-vue3-document-provider";
 import {Appearance} from "@plastic-io/graph-editor-vue3-appearance";
 import {applyChange, diff} from "deep-diff";
 import IndexedDBWorker from "./storageWorker?worker";
-import {fromJSON} from 'flatted';
+import {fromJSON, toJSON} from 'flatted';
 const preferencesKey = "preferences";
 const tocKey = "toc.json";
 const eventsPrefix = "events/";
@@ -21,34 +21,37 @@ export default class IndexedDBProvider extends EditorModule {
     const orchistratorStore = useOrchistratorStore();
     const graphSnapshotStore = useGraphSnapshotStore();
     const graphStore = useGraphStore();
-    const localDataProvider = new IndexedDBDataProvider();
+    const localDataProviderGraph = new IndexedDBDataProvider();
+    localDataProviderGraph.type = 'update';
+    const localDataProviderArtifact = new IndexedDBDataProvider();
+    localDataProviderArtifact.type = 'artifact';
     const preferencesStore = usePreferencesStore();
     if (!preferencesStore.preferences!.useLocalStorage) {
         return;
     }
-    orchistratorStore.dataProviders.graph = localDataProvider;
+    orchistratorStore.dataProviders.graph = localDataProviderGraph;
     const updatStore = (state: any) => {
         if (!state.graph) {
             return;
         }
-        const changes = diff(localDataProvider.graph || {}, JSON.parse(JSON.stringify(state.graph)));
+        const changes = diff(localDataProviderGraph.graph || {}, JSON.parse(JSON.stringify(state.graph)));
         if (changes) {
-            localDataProvider.graph = JSON.parse(JSON.stringify(state.graph));
+            localDataProviderGraph.graph = JSON.parse(JSON.stringify(state.graph));
             const ev = {
                 id: newId(),
                 changes,
                 version: state.graph.version,
                 description: '',
             };
-            localDataProvider.set(localDataProvider.graph!.id, ev as any);
+            localDataProviderGraph.set(localDataProviderGraph.graph!.id, ev as any);
         }
     }
     graphStore.$subscribe((mutation: any, state: any) => {
         updatStore(state);
     }, { detached: true });
-    orchistratorStore.dataProviders.publish = localDataProvider;
-    orchistratorStore.dataProviders.toc = localDataProvider;
-    orchistratorStore.dataProviders.artifact = localDataProvider;
+    orchistratorStore.dataProviders.publish = localDataProviderArtifact;
+    orchistratorStore.dataProviders.toc = localDataProviderArtifact;
+    orchistratorStore.dataProviders.artifact = localDataProviderArtifact;
   }
 };
 
@@ -60,7 +63,7 @@ class IndexedDBDataProvider extends DocumentProvider {
     broadcastChannel = new BroadcastChannel(DBNAME);
     worker = new IndexedDBWorker() as any;
     listeners = {} as any;
-
+    type = '';
     constructor() {
         super();
         this.worker.onmessage = (e: any) => {
@@ -112,7 +115,7 @@ class IndexedDBDataProvider extends DocumentProvider {
                 success(e);
             };
             this.addEventListener(id, listener);
-            this.worker.postMessage({ id, method, args });
+            this.worker.postMessage({ id, method, args: toJSON(args) });
         });
     }
 
@@ -121,7 +124,7 @@ class IndexedDBDataProvider extends DocumentProvider {
     }
 
     async set(url: string, value: GraphDiff | NodeArtifact | GraphArtifact): Promise<void> {
-        return this.createWorkerResponder('set', [url, value]);
+        return this.createWorkerResponder('set', [url, value, this.type]);
     }
     async updateToc(): Promise<any> {
         return this.createWorkerResponder('updateToc', []);
@@ -133,7 +136,7 @@ class IndexedDBDataProvider extends DocumentProvider {
 
     }
     async get(url: string): Promise<Graph | any> {
-        const response = await this.createWorkerResponder('get', [url]);
+        const response = await this.createWorkerResponder('get', [url, this.type]);
         if (!this.graph) {
             this.graph = JSON.parse(JSON.stringify(response));
         }

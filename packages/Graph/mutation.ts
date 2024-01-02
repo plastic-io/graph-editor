@@ -30,7 +30,9 @@ export default {
     async addItem(e: any) {
         const artifactPrefix = "artifacts/";
         let item, er;
-        if (e.type === 'component') {
+        if (e.type === 'publishedGraph') {
+            item = await this.orchestratorStore.dataProviders.publish.get(e.id);
+        } else if (e.type === 'component') {
             item = e;
         } else if (e["artifact-url"] && this.preferencesStore.preferences.graphHTTPServer) {
             try {
@@ -235,15 +237,8 @@ export default {
             },
             template: {
                 // url: string, value: any, field: string, currentNode: Node, graph?: Graph
-                set: `const hostNode = value.context.getters.getNodeById(value.hostNode.id);
-    const vect = hostNode.linkedGraph.graph.nodes.find(v => v.id === value.node.id);
-    scheduler.url.call(scheduler,
-        vect.url,
-        value.event,
-        '$url',
-        hostNode,
-        hostNode.linkedGraph.graph);`,
-                vue: "",
+                set: ``,
+                vue: "<template><div></div></template><script>export default {}</script>",
             },
         } as any;
         Object.keys(linkedGraphInputs).forEach((ioKey) => {
@@ -441,11 +436,19 @@ export default {
         .split(',')
         .filter((script: any) => script); // Filter out empty strings
       // Extracting node-level scripts
-      const nodeScripts = graphSnapshot.nodes
-        .map((node: any) => node.properties.scripts || '')
-        .map((scripts: any) => scripts.replace('\n', ',').split(','))
-        .reduce((acc: any, curr: any) => acc.concat(curr), []) // Flatten the array
-        .filter((script: any) => script); // Filter out empty strings
+      const getGraphScripts = (graph: Graph, arr: string[]) => {
+        graph.nodes.forEach((node) => {
+            if (node.properties.scripts) {
+                arr.push(...node.properties.scripts.replace('\n', ',').split(','));
+            }
+            if (node.linkedGraph) {
+                // recursively fetch all scripts in embedded graphs
+                getGraphScripts(node.linkedGraph.graph, arr);
+            }
+        });
+      }
+      const nodeScripts: string[] = [];
+      getGraphScripts(graphSnapshot, nodeScripts);
       // Combine and load all scripts
       await loadScripts([...rootScripts, ...nodeScripts]);
     },
@@ -530,7 +533,7 @@ export default {
             ioChangeTimer = setTimeout(() => {
                 this.updateGraphFromSnapshot("Rename IO");
             }, CHANGE_TIMEOUT);
-            
+
         }
     },
     deleteNodeById(id: string) {

@@ -35,7 +35,7 @@ export default class MouseAction {
         console.warn("No mouse based mutations during rewind mode");
         return;
     }
-    const locked = this.orchestratorStore.presentation || this.orchestratorStore.locked;
+    const locked = (this.graphStore.presentation && !this.inputStore.keys[shiftKeyCode]) || this.orchestratorStore.locked;
     const ctrl = mouse.event.ctrlKey || mouse.event.metaKey;
     const shift = mouse.event.shiftKey;
     const gridSize = this.preferencesStore.preferences.snapToGrid && !shift ? this.preferencesStore.preferences.gridSize : 1;
@@ -397,10 +397,19 @@ export default class MouseAction {
         this.graphStore.movingNodes.forEach((movingNode: any) => {
             const node = this.graphStore.graphSnapshot.nodes.find((v: Node) => movingNode.id === v.id);
             const transNode = this.graphStore.translating.nodes.find((v: any) => movingNode.id === v.id);
-            const x = transNode.properties.x + ((mouse.x - this.graphStore.translating.mouse.x) / this.graphStore.view.k);
-            const y = transNode.properties.y + ((mouse.y - this.graphStore.translating.mouse.y) / this.graphStore.view.k);
-            node.properties.x = Math.floor(x / gridSize) * gridSize;
-            node.properties.y = Math.floor(y / gridSize) * gridSize;
+            const oldX = this.graphStore.presentation ? transNode.properties.presentation.x : transNode.properties.x;
+            const oldY = this.graphStore.presentation ? transNode.properties.presentation.y : transNode.properties.y;
+            const x = oldX + ((mouse.x - this.graphStore.translating.mouse.x) / this.graphStore.view.k);
+            const y = oldY + ((mouse.y - this.graphStore.translating.mouse.y) / this.graphStore.view.k);
+            const newX = Math.floor(x / gridSize) * gridSize;
+            const newY = Math.floor(y / gridSize) * gridSize;
+            if (this.graphStore.presentation) {
+                node.properties.presentation.x = newX;
+                node.properties.presentation.y = newY;
+            } else {
+                node.properties.x = newX;
+                node.properties.y = newY;
+            }
         });
     }
     this.graphStore.updateBoundingRect();

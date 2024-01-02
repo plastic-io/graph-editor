@@ -18,16 +18,13 @@
                 :edge="c.edge"
                 :node="c.node"
             />
-            <template v-if="!presentation">
-                <node
-                    v-for="node in graphSnapshot.nodes"
-                    :key="node.id"
-                    :node="node"
-                    :graph="graphSnapshot"
-                    :presentation="false"
-                />
-            </template>
-            <!-- <graph-presentation v-if="presentation"/> -->
+            <node
+                v-for="node in graphSnapshot.nodes"
+                :key="node.id"
+                :node="node"
+                :graph="graphSnapshot"
+                :presentation="presentation"
+            />
             <div v-if="selectionRect.visible && !presentation" class="selection-rect" :style="selectionRectStyle"></div>
             <div v-if="selectedNodes.length !== 0 && !presentation" class="bounding-rect" :style="boundingRectStyle"></div>
         </div>
@@ -45,7 +42,6 @@ export default {
     return {
       innerHeight: 0,
       innerWidth: 0,
-      presentation: false,
       positionLocationSaveTimeout: 750,
       positionTimeout: 0,
     }
@@ -111,6 +107,7 @@ export default {
         'selectedNodes',
         'el',
         'boundingRect',
+        'presentation',
     ]),
     connectors: function () {
         let connectors = [];

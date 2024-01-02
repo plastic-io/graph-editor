@@ -1,4 +1,4 @@
-import {toJSON} from 'flatted';
+import {toJSON, fromJSON} from 'flatted';
 import type {Node, Graph} from "@plastic-io/plastic-io";
 import type {Toc, TocItem, GraphDiff, NodeArtifact, GraphArtifact} from "@plastic-io/graph-editor-vue3-document-provider";
 const DBNAME = "plastic-io-document-provider";
@@ -39,7 +39,7 @@ class IndexDBDataProvider {
                 }
             }
             tx.oncomplete = () => {
-                this.updateToc(url);
+                this.updateToc(url, 'update');
             }
         });
     }
@@ -61,20 +61,24 @@ class IndexDBDataProvider {
             }
         });
     }
-    async set(url: string, value: GraphDiff | NodeArtifact | GraphArtifact): Promise<void> {
+    async set(url: string, value: any, type: string): Promise<void> {
         const db = await this.open();
-        if ("changes" in value) {
-            // update a graph
+        let artifact = (value as any);
+        if (type === 'update') {
             const tx = db.transaction("events", "readwrite");
             tx.oncomplete = () => {
-                this.updateToc(url);
+                this.updateToc(url, type);
             }
-            (value as any).documentId = url;
-            tx.objectStore("events").add(value);
-        } else if ("node" in value) {
-            // publish a node
-        } else if ("graph" in value) {
-            // publish a graph
+            artifact.documentId = url;
+            tx.objectStore("events").add(artifact);
+        } else if (type === 'artifact') {
+            const tx = db.transaction("documents", "readwrite");
+            tx.oncomplete = () => {
+                this.updateToc(artifact.id, type);
+            }
+            artifact = artifact.graph;
+            artifact.id = `${artifact.id}.${artifact.version}`;
+            tx.objectStore("documents").add(artifact);
         } else {
             throw new Error("Set called without a recognized type");
         }
@@ -101,32 +105,34 @@ class IndexDBDataProvider {
         const toc = await this.fetchItem('documents', 'toc');
         return toc || {id: 'toc'};
     }
-    async updateToc(url: string) {
-        let graph: any;
+    async updateToc(url: string, type: string) {
+        let item: any;
         try {
-            graph = await this.get(url) as any;
+            item = await this.get(url, type) as any;
         } catch (_) {}
         const db = await this.open();
         const toc = await this.getToc();
         const tx = db.transaction("documents", "readwrite");
-        if (graph) {
+        item = item.graph ? item.graph : item;
+        if (item) {
+            type = type === 'update' ? 'graph' : 'publishedGraph';
             toc[url] = {
-                description: graph.properties.description,
-                icon: graph.properties.icon,
-                id: graph.id,
-                url: graph.url,
-                lastUpdate: graph.properties.lastUpdate,
-                name: graph.properties.name,
-                type: 'graph',
-                version: graph.version,
+                description: item.properties.description,
+                icon: item.properties.icon,
+                id: item.id,
+                url: item.url,
+                lastUpdate: item.properties.lastUpdate,
+                name: item.properties.name,
+                type,
+                version: item.version,
             };
         } else {
-            toc[url] = null;
+            delete toc[url];
         }
         tx.oncomplete = () => {
           postMessage({
             source: 'toc-update',
-            event: toJSON({toc, graph}),
+            event: toJSON({toc, graph: item}),
           });
         }
         tx.objectStore("documents").put(toc);
@@ -148,9 +154,12 @@ class IndexDBDataProvider {
         console.debug(`Projected graph from ${events.length} events in ${performance.now() - start}ms`);
         return state;
     }
-    async get(url: string): Promise<Graph | any> {
+    async get(url: string, type: string): Promise<Graph | any> {
         if (url === 'toc.json') {
             return await this.getToc();
+        }
+        if (type === 'artifact') {
+            return await this.fetchItem('documents', url);
         }
         const graph = await this.projectGraphEvents(url);
         return JSON.parse(JSON.stringify(graph));
@@ -164,7 +173,7 @@ const provider = new IndexDBDataProvider() as any;
 
 onmessage = async (e: any) => {
   const id = e.data.id;
-  const args = e.data.args;
+  const args = fromJSON(e.data.args);
   const method = e.data.method;
 
   const response = await provider[method].apply(provider, args);

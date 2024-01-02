@@ -39,10 +39,10 @@ export default {
         ]),
         ...mapWritableState(useGraphStore, [
             'hoveredPort',
+            'presentation',
         ]),
         ...mapState(useOrchestratorStore, [
             'connectorWarn',
-            'presentation',
         ]),
         isHovered() {
             return this.hoveredPort && this.hoveredPort.node.id === this.node.id

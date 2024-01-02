@@ -17,13 +17,13 @@
             >
                 <v-list-item-media>
                     <v-icon
-                        :title="item.type === 'publishedGraph' ? 'Graph' : 'Vector'"
+                        :title="item.type === 'publishedGraph' ? 'Graph' : 'Node'"
                     >
                         {{item.icon || iconType(item.type)}}
                     </v-icon>
                 </v-list-item-media>
                 <v-list-item-title>
-                    {{item.title || "Untitled"}}
+                    {{item.title || item.name || "Untitled"}} v{{item.version}}
                 </v-list-item-title>
                 <v-list-item-subtitle>
                     {{item.description || "No Description"}}
@@ -68,7 +68,7 @@ export default {
             'toc',
         ]),
         list() {
-          return Object.keys(this.toc || {}).map(i => this.toc[i]);
+          return Object.keys(this.toc || {}).filter(i => i !== 'id').map(i => this.toc[i]);
         },
         artifacts() {
             return (id) => {

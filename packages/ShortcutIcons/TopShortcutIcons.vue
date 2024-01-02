@@ -9,8 +9,9 @@
             Rewinding...
         </span>
     </div>
-    <span help-topic="documentName" class="pa-1">
+    <span help-topic="documentName" class="pa-1 version-view">
         {{ graph.properties.name || graph.url || "Untitled" }}
+        <span>v{{ graph.version }}</span>
     </span>
     <v-spacer/>
     <shared-users/>
@@ -113,7 +114,6 @@ export default {
             'nodeMimeType',
             'showError',
             'error',
-            'presentation',
             'locked',
             'historyPosition',
             'primaryGroup',
@@ -164,3 +164,11 @@ export default {
 }
 
 </script>
+<style>
+.version-view span {
+    opacity: 0;
+}
+.version-view:hover span {
+    opacity: 1;
+}
+</style>

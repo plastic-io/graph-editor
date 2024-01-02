@@ -22,7 +22,7 @@
                         <v-text-field help-topic="graphVersion" label="Version" disabled v-model="localGraph.version"></v-text-field>
                         <v-text-field help-topic="timeout" label="Timeout (ms)" v-model.number="localGraph.properties.timeout"></v-text-field>
                         <v-text-field help-topic="logLevel" label="Log Level (1-4)" v-model.number="localGraph.properties.logLevel"></v-text-field>
-                    </v-card-text> 
+                    </v-card-text>
                 </v-card>
             </v-expansion-panel-text>
         </v-expansion-panel>
@@ -93,10 +93,8 @@
                         <v-list style="width: 110%;" value="true">
                             <template v-for="io in ['inputs', 'outputs']" :key="io">
                                 <v-card-title>{{io}}</v-card-title>
-                                <v-list-item :prepend-icon="io === 'inputs' ? 'mdi-power-socket' : 'mdi-power-plug'">
-                                    <template v-for="(ios) in externalIO[io]">
-                                        {{ios.field.name}} : {{ios.node.properties.name || ios.node.id}}
-                                    </template>
+                                <v-list-item :prepend-icon="io === 'inputs' ? 'mdi-power-socket' : 'mdi-power-plug'"  v-for="(ios) in ioList[io]">
+                                    {{ios.field.name}} : {{ios.node.properties.name || ios.node.id}}
                                 </v-list-item>
                             </template>
                         </v-list>
@@ -121,6 +119,7 @@ export default {
             "publishGraph",
         ]),
         ...mapActions(useGraphStore, [
+            "externalIO",
             "save",
             "selectNode",
             "updateGraphFromSnapshot",
@@ -165,13 +164,12 @@ export default {
         ...mapWritableState(useGraphStore, [
             'graphSnapshot',
         ]),
-        ...mapState(useGraphStore, [
-            'externalIO',
-        ]),
         ...mapState(useOrchestratorStore, [
             'domainTags',
         ]),
-
+        ioList() {
+            return this.externalIO();
+        }
     }
 };
 </script>

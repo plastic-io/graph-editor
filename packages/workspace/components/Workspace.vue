@@ -17,7 +17,7 @@
                 </template>
             </v-system-bar>
             <mini-map-info v-if="preferences.showMap && !presentation"/>
-            <div :class="presentation ? '' : 'graph-container'" :style="graphContainerStyle">
+            <div :class="presentation ? 'presentation-graph-container' : 'graph-container'" :style="graphContainerStyle">
                 <graph-canvas
                     :class="noSelect ? 'no-select' : ''"
                     :showGrid="preferences.appearance.showGrid && !presentation"
@@ -66,6 +66,7 @@ export default {
         ]),
         ...mapWritableState(useGraphStore, [
             'workspaceElement',
+            'presentation',
         ]),
         ...mapWritableState(useOrchestratorStore, [
             'showConnectorView',
@@ -74,7 +75,6 @@ export default {
             'bgColor',
             'showHelp',
             'panelVisibility',
-            'presentation',
             'hoveredConnector',
         ]),
         workspaceBackground() {
@@ -181,6 +181,13 @@ export default {
 };
 </script>
 <style>
+.presentation-graph-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+}
 .graph-container, .graph-editor {
     position: fixed;
     top: 0;

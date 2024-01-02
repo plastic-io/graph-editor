@@ -155,7 +155,6 @@ export const useStore = defineStore('orchestrator', {
         state: {},
         instance: null as Scheduler | null,
     },
-    presentation: false,
     locked: false,
     historyPosition: 0,
     nodeZCounter: 0,

@@ -144,6 +144,7 @@
           }
           return Object.keys(this.toc)
             .filter((t: any) => !!this.toc[t])
+            .filter((t: any) => this.toc[t].type === 'graph')
             .filter((t: any) => t !== 'id')
             .filter((t: any) => !/^endpoint\//.test(t))
             .sort((a: any, b: any) => a.localeCompare(b))

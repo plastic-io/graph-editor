@@ -66,10 +66,10 @@ export default {
         ...mapState(useInputStore, ['mouse']),
         ...mapState(useOrchestratorStore, [
           'inRewindMode',
-          'presentation',
           'historyPosition',
         ]),
         ...mapState(useGraphStore, [
+          'presentation',
           'hoveredPort',
           'addingConnector',
           'graphSnapshot',
