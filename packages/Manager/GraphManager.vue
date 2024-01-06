@@ -41,7 +41,7 @@
                 <v-spacer/>
               </v-card-text>
               <v-card-actions>
-                  <v-btn @click="() => $router.push(graph.id)">Open</v-btn>
+                  <v-btn @click="openGraph(graph.id)">Open</v-btn>
                   <v-btn @click="deletingGraph = graph; showDeleteDialog = true;">Delete</v-btn>
               </v-card-actions>
             </v-card-item>
@@ -77,10 +77,15 @@
   import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
   import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
   import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
+  const CHANNEL_NAME = "plastic-io-document-provider"
   export default {
     async mounted() {
       this.setTheme(this.preferences.appearance.theme);
       await this.getToc();
+      const broadcastChannel = new BroadcastChannel(CHANNEL_NAME);
+      broadcastChannel.onmessage = () => {
+        this.getToc();
+      };
     },
     data() {
       return {
@@ -109,6 +114,9 @@
           'getToc',
           'getPluginsByType',
       ]),
+      openGraph(id) {
+        window.location = `/graph-editor/${id}`;
+      },
       async deleteGraph() {
         this.showDeleteDialog = false;
         await this.dataProviders.graph.delete(this.deletingGraph.id);
@@ -117,8 +125,7 @@
         this.deletingGraph = {};
       },
       create() {
-        const id = newId();
-        this.$router.push(`/${id}`);
+        this.openGraph(newId());
       },
     },
     computed: {
@@ -137,6 +144,8 @@
           }
           return Object.keys(this.toc)
             .filter((t: any) => !!this.toc[t])
+            .filter((t: any) => this.toc[t].type === 'graph')
+            .filter((t: any) => t !== 'id')
             .filter((t: any) => !/^endpoint\//.test(t))
             .sort((a: any, b: any) => a.localeCompare(b))
             .map((t: any) => {

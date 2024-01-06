@@ -135,7 +135,7 @@ export default function bezierDraw(connector: any): void {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         // report to store
         const len: number = curve.length();
-        const lut = curve.getLUT(len / 2);
+        const lut = curve.getLUT(len / 30);
         if ((lastViewPos.x !== connector.view.x
                 || lastViewPos.x !== connector.view.x
                 || lastViewPos.k !== connector.view.k)) {

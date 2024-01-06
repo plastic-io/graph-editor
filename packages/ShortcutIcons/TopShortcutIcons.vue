@@ -2,15 +2,16 @@
     <div
         title="Graph ID"
         style="padding-right: 10px;cursor: pointer;">
-        <v-icon help-topic="openGraph"  @click="() => $router.push('/')" title="Show open graph dialog (^ + O)">
+        <v-icon help-topic="openGraph"  @click="navigateToRoot" title="Show open graph dialog (^ + O)">
             mdi-folder
         </v-icon>
         <span v-if="inRewindMode">
             Rewinding...
         </span>
     </div>
-    <span help-topic="documentName" class="pa-1">
+    <span help-topic="documentName" class="pa-1 version-view">
         {{ graph.properties.name || graph.url || "Untitled" }}
+        <span>v{{ graph.version }}</span>
     </span>
     <v-spacer/>
     <shared-users/>
@@ -113,7 +114,6 @@ export default {
             'nodeMimeType',
             'showError',
             'error',
-            'presentation',
             'locked',
             'historyPosition',
             'primaryGroup',
@@ -151,6 +151,9 @@ export default {
             'clearInfo',
             'getPluginsByType',
         ]),
+        navigateToRoot() {
+            window.location = '/graph-editor/'
+        },
         openGraph() {
             window.open(
                 this.pathPrefix,
@@ -161,3 +164,11 @@ export default {
 }
 
 </script>
+<style>
+.version-view span {
+    opacity: 0;
+}
+.version-view:hover span {
+    opacity: 1;
+}
+</style>

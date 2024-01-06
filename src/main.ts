@@ -33,7 +33,7 @@ import HelpOverlay from "@plastic-io/graph-editor-vue3-help-overlay";
 import HistoryPanel from "@plastic-io/graph-editor-vue3-history-panel";
 import ImportPanel from "@plastic-io/graph-editor-vue3-import-panel";
 import Input from "@plastic-io/graph-editor-vue3-input";
-import LocalStorageDocumentProvider from "@plastic-io/graph-editor-vue3-local-storage-document-provider";
+import IndexedDBDocumentProvider from "@plastic-io/graph-editor-vue3-indexedDB-document-provider"
 import LocalUserPreferences from "@plastic-io/graph-editor-vue3-local-user-preferences";
 import MiniMapInfo from "@plastic-io/graph-editor-vue3-mini-map-info";
 import Node from "@plastic-io/graph-editor-vue3-node";
@@ -88,7 +88,7 @@ const plugins = [
   HistoryPanel,
   ImportPanel,
   Input,
-  LocalStorageDocumentProvider,
+  IndexedDBDocumentProvider,
   MiniMapInfo,
   Node,
   NodeEdgeConnector,

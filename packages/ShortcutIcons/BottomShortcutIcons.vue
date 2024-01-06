@@ -127,6 +127,7 @@ export default {
             'hoveredNode',
             'hoveredPort',
             'selectedNodes',
+            'presentation',
         ]),
         ...mapWritableState(usePreferencesStore, [
             'preferences',
@@ -134,7 +135,6 @@ export default {
         ...mapWritableState(useOrchestratorStore, [
             'showConnectorView',
             'translating',
-            'presentation',
             'locked',
         ]),
         ...mapState(useOrchestratorStore, [

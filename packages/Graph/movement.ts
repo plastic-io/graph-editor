@@ -1,3 +1,5 @@
+const NUDGE_TIMEOUT = 2000;
+let nudgeTimer = 0 as any;
 export default {
     nudge(x: number, y: number) {
         this.selectedNodes.forEach((selectedNode: any) => {
@@ -5,7 +7,10 @@ export default {
             node.properties.x += x;
             node.properties.y += y;
         });
-        this.updateGraphFromSnapshot("Nudge");
+        clearTimeout(nudgeTimer);
+        nudgeTimer = setTimeout(() => {
+          this.updateGraphFromSnapshot("Nudge");
+        }, NUDGE_TIMEOUT);
     },
     nudgeUp(offset: number) {
       this.nudge(0, -offset);

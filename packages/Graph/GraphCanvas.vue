@@ -3,7 +3,7 @@
         <div
             x-graph-canvas
             :style="graphCanvasStyle"
-            v-if="graph"
+            v-if="graphSnapshot"
             @drop="drop($event)"
             @dragover="dragOver($event)"
         >
@@ -13,21 +13,18 @@
             ></div>
             <node-edge-connector
                 v-for="c in connectors"
-                :key="c.connector.id + graph.version"
+                :key="c.connector.id + graphSnapshot.version"
                 :connector="c.connector"
                 :edge="c.edge"
                 :node="c.node"
             />
-            <template v-if="!presentation">
-                <node
-                    v-for="node in graphSnapshot.nodes"
-                    :key="node.id"
-                    :node="node"
-                    :graph="graph"
-                    :presentation="false"
-                />
-            </template>
-            <!-- <graph-presentation v-if="presentation"/> -->
+            <node
+                v-for="node in graphSnapshot.nodes"
+                :key="node.id"
+                :node="node"
+                :graph="graphSnapshot"
+                :presentation="presentation"
+            />
             <div v-if="selectionRect.visible && !presentation" class="selection-rect" :style="selectionRectStyle"></div>
             <div v-if="selectedNodes.length !== 0 && !presentation" class="bounding-rect" :style="boundingRectStyle"></div>
         </div>
@@ -45,7 +42,6 @@ export default {
     return {
       innerHeight: 0,
       innerWidth: 0,
-      presentation: false,
       positionLocationSaveTimeout: 750,
       positionTimeout: 0,
     }
@@ -83,7 +79,7 @@ export default {
       preferencesStore.$patch({
         preferences: {
           uiSize: {
-            ['view-location-' + this.graph.id]: this.view,
+            ['view-location-' + this.graphSnapshot.id]: this.view,
           },
         },
       });
@@ -94,7 +90,7 @@ export default {
         this.innerWidth = window.innerWidth;
         this.innerHeight = window.innerHeight;
     };
-    const view = JSON.parse(JSON.stringify(this.preferences.uiSize['view-location-' + this.graph.id] || {x: 0, y: 0, k: 1}));
+    const view = JSON.parse(JSON.stringify(this.preferences.uiSize['view-location-' + this.graphSnapshot.id] || {x: 0, y: 0, k: 1}));
     this.view = view;
     document.addEventListener('resize', resize);
     resize();
@@ -105,17 +101,17 @@ export default {
         'addingConnector',
         'updateBoundingRect',
         'systemBarOffset',
-        'graph',
         'graphSnapshot',
         'view',
         'selectionRect',
         'selectedNodes',
         'el',
         'boundingRect',
+        'presentation',
     ]),
     connectors: function () {
         let connectors = [];
-        this.graph.nodes.forEach((node) => {
+        this.graphSnapshot.nodes.forEach((node) => {
             node.edges.forEach((edge) => {
                 edge.connectors.filter(c => !!c).forEach((connector) => {
                     connectors.push({

@@ -1,20 +1,21 @@
 <template>
-    <div ref="node-root">
+    <div ref="node-root" v-if="localNode && visible">
         <node-editor
+            v-if="!presentation"
             :style="editorStyle"
             :nodeId="node.id"
             :hovered="localHoveredNode"/>
         <div
-            v-if="loaded && visible"
+            v-if="loaded"
             ref="node"
             class="node"
             :key="localNode.id"
             :x-node-id="localNode.id"
             :style="nodeStyle">
-            <div class="node-inputs" v-if="!hostNode">
+            <div class="node-inputs" v-if="!hostNode && !innerNode">
                 <node-field
                     v-for="field in inputs"
-                    :key="'input_' + field.name"
+                    :key="field.name"
                     :field="field"
                     :node="localNode"
                     type="input"
@@ -34,7 +35,7 @@
                 <node-component
                     v-if="!broken"
                     :component="component"
-                    :graph="localNode.linkedGraph ? localNode.linkedGraph.graph : null"
+                    :graph="graph"
                     :node="localNode"
                     :scheduler="scheduler"
                     :state="scheduler.state"
@@ -51,11 +52,20 @@
                     v-html="style"
                     :key="index"
                 />
+
+                <template :key="innerNode.id" v-for="innerNode in localNode.linkedGraph ? localNode.linkedGraph.graph.nodes : []">
+                    <node
+                        :node="innerNode"
+                        :graph="localNode.linkedGraph.graph"
+                        :innerNode="true"
+                        :presentation="true"
+                    />
+                </template>
             </div>
-            <div class="node-outputs" v-if="!hostNode">
+            <div class="node-outputs" v-if="!hostNode && !innerNode">
                 <node-field
                     v-for="field in outputs"
-                    :key="'output_' + field.name"
+                    :key="field.name"
                     :field="field"
                     :node="localNode"
                     type="output"
@@ -90,7 +100,8 @@ export default {
     props: {
         node: Node,
         hostNode: Node,
-        graph: Graph,
+        innerNode: Boolean,
+        graph: Object,
         presentation: Boolean,
     },
     errorCaptured(err) {
@@ -144,7 +155,7 @@ export default {
             if (changes) {
                 this.styles = [];
                 // recompile template after change
-                this.compiledTemplate = 
+                this.compiledTemplate =
                     await compileTemplate(this, this.localNode.id, this.localNode.template.vue, true);
 
             }
@@ -302,6 +313,7 @@ export default {
     computed: {
         ...mapWritableState(useInputStore, [
             'mouse',
+            'keys',
         ]),
         ...mapState(useOrchestratorStore, [
             'dataProviders',
@@ -313,6 +325,7 @@ export default {
             'selectedNodes',
             'translating',
             'view',
+            'movingNodes',
         ]),
         nodeComponentName() {
             const name = this.artifactKey(this.node.artifact) || this.node.id;
@@ -346,6 +359,10 @@ export default {
             const selected = !!this.selectedNodes.find(v => v.id === this.localNode.id);
             const hoveredAndSelected = hovered && selected;
             let borderColor = "transparent";
+            let transition = "all 0.25s";
+            if (this.movingNodes.length > 0) {
+                transition = "";
+            }
             if (this.presentation) {
                 borderColor = "transparent";
             } else if (hoveredAndSelected) {
@@ -359,6 +376,7 @@ export default {
                 if (this.localNode.properties.positionAbsolute) {
                     return {
                         position: "absolute",
+                        transition,
                         outline: "solid 1px " + borderColor,
                         left: this.localNode.properties.presentation.x + "px",
                         top: this.localNode.properties.presentation.y + "px",
@@ -371,11 +389,12 @@ export default {
             }
             return {
                 position: "absolute",
+                transition,
                 outline: "solid 1px " + borderColor,
                 left: this.localNode.properties.x + "px",
                 top: this.localNode.properties.y + "px",
                 zIndex: this.localNode.properties.z,
-            };
+            }; 
         },
     },
 };

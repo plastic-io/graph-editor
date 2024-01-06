@@ -37,13 +37,7 @@ export const useStore = defineStore('input', {
         keys(this, e);
     },
     updateMouse(mouse: any) {
-        this.inputStore.$patch((inputState: any) => {
-            this.graphStore.$patch((graphState: any) => {
-                this.$patch((state: any) => {
-                    this.mouseAction.mouse(state, graphState, inputState, mouse);
-                });
-            });
-        });
+        this.mouseAction.mouse(mouse);
     },
     onwheel(e: WheelEvent) {
         if (!this.graphStore.isGraphTarget(e)) {

@@ -92,7 +92,6 @@ export default {
         target: monaco.languages.typescript.ScriptTarget.ESNext,
         allowNonTsExtensions: true
     });
-    console.log('editorLibSrc');
     monaco.languages.typescript.typescriptDefaults.addExtraLib(editorLibSrc, libUri);
     // monaco.editor.createModel(editorLibSrc, 'typescript', monaco.Uri.parse(libUri));
     await this.initEditor();

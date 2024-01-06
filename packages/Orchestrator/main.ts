@@ -155,7 +155,6 @@ export const useStore = defineStore('orchestrator', {
         state: {},
         instance: null as Scheduler | null,
     },
-    presentation: false,
     locked: false,
     historyPosition: 0,
     nodeZCounter: 0,
@@ -471,8 +470,6 @@ export const useStore = defineStore('orchestrator', {
           if (typeof method === 'function') {
             method(args);
             return;
-          } else {
-            console.error('unmatched remote message', methodName, args);
           }
         };
         // messages from server
