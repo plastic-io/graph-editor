@@ -9,6 +9,9 @@ export default defineConfig((mode) => {
     server: {
       port: 8080,
     },
+    rollupOptions: {
+      external: ['jszip']
+    },
     plugins: [
       vue({
         template: { transformAssetUrls },
