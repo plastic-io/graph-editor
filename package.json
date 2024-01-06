@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "run-p build-only",
+    "simulate": "npm run build && cd dist && npx ngx-http-server --baseHref graph-editor && cd ..",
     "preview": "vite preview",
     "test:unit": "vitest --environment jsdom --root src/",
     "test:e2e": "start-server-and-test preview :4173 'cypress run --e2e'",
