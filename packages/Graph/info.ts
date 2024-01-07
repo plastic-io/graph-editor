@@ -38,6 +38,7 @@ export default {
     isGraphTarget(e): boolean {
         let parentNode = e.target;
         const navEl = document.getElementsByClassName('graph-nav-drawer')[0];
+        const menuEl = document.getElementsByClassName('v-overlay-container')[0];
         if (this.locked) {
             while (parentNode) {
                 if (parentNode.className === "node") {
@@ -47,6 +48,9 @@ export default {
             }
         }
         if (navEl && navEl.contains(e.target)) {
+            return false;
+        }
+        if (menuEl && menuEl.contains(e.target)) {
             return false;
         }
         const r = /no-graph-target/;

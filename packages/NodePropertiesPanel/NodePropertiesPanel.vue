@@ -1,6 +1,6 @@
 <template>
     <v-expansion-panels v-if="node" flat v-model="panel" style="overflow-y: auto; width: 300px;" @click.stop>
-        <v-expansion-panel>
+        <v-expansion-panel class="ma-0 pa-0">
             <v-expansion-panel-title>
                 General
                 <v-spacer/>
@@ -62,7 +62,7 @@
                 </v-card>
             </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel>
+        <v-expansion-panel class="ma-0 pa-0">
             <v-expansion-panel-title>Location</v-expansion-panel-title>
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat>
@@ -74,7 +74,7 @@
                 </v-card>
             </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel>
+        <v-expansion-panel class="ma-0 pa-0">
             <v-expansion-panel-title>Presentation</v-expansion-panel-title>
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat>
@@ -88,7 +88,7 @@
                 </v-card>
             </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel>
+        <v-expansion-panel class="ma-0 pa-0">
             <v-expansion-panel-title>Node Data</v-expansion-panel-title>
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat>
@@ -98,7 +98,7 @@
                 </v-card>
             </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel>
+        <v-expansion-panel class="ma-0 pa-0">
             <v-expansion-panel-title>Node Scripts</v-expansion-panel-title>
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat>

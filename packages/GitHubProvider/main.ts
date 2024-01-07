@@ -20,8 +20,8 @@ export default class GitHubProvider extends EditorModule {
       order: 4,
       divider: true,
     });
-
-    graphOrchestratorStore.addPlugin(RegistryPanel);
+    // disabled github provider because of low API call count
+    // graphOrchestratorStore.addPlugin(RegistryPanel);
   }
 };
 

@@ -24,30 +24,18 @@
                           <v-list dense help-topic="importPublicList">
                               <v-list-group>
                                   <template v-slot:activator>
-                                      <span draggable="true" style="cursor: copy;" @dragstart.stop="dragStart($event, item)">
-                                          <v-icon :title="item.type === 'publishedGraph' ? 'Graph' : 'Node'">
-                                              {{item.icon || iconType(item.type)}}
-                                          </v-icon>
-                                      </span>
-                                      <div>
-                                          {{item.name || "Untitled"}}
-                                          <v-list-item-subtitle>
-                                              <span v-if="item.description">{{item.description}}</span>
-                                              <span v-else><i>No description</i></span>
+                                      <div class="import-item" draggable="true" style="cursor: copy;" @dragstart.stop="dragStart($event, item)">
+                                          <v-list-item-subtitle style="opacity: 1;">
+                                                <p>
+                                                    <v-icon :title="item.type === 'publishedGraph' ? 'Graph' : 'Node'">
+                                                        {{item.icon || iconType(item.type)}}
+                                                    </v-icon>
+                                                    {{item.name || "Untitled"}}
+                                                </p>
+                                                <i v-if="item.description">{{item.description}}</i>
+                                                <i v-else>No description</i>
                                           </v-list-item-subtitle>
                                       </div>
-                                      <span>
-                                          <v-tooltip bottom>
-                                              <template v-slot:activator="{ on: tooltip }">
-                                                  <v-icon v-on="{ ...tooltip }">mdi-information-outline</v-icon>
-                                              </template>
-                                              <div>Latest Version: {{item.version}}</div>
-                                              <div>Last Updated: {{item.lastUpdate}}</div>
-                                              <div>Total Versions: {{artifacts(item.id).length}}</div>
-                                              <div v-if="item.description">{{item.description}}</div>
-                                              <div v-else><i>No description</i></div>
-                                          </v-tooltip>
-                                      </span>
                                   </template>
                                   <v-list-item dense v-for="(artifact, index) in detailItems(subCategory.items, item)" :key="index">
                                       <span draggable="true" style="cursor: copy; margin-left: 25px;" @dragstart.stop="dragStart($event, artifact)">
@@ -163,4 +151,8 @@ export default {
     },
 };
 </script>
-<style></style>
+<style>
+.import-item {
+    background: rgba(var(--v-theme-info));
+}
+</style>

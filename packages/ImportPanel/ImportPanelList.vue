@@ -1,35 +1,35 @@
 <template>
-    <div style="height: calc(80vh - 220px);">
-        <v-text-field placeholder="Search" class="pr-3" v-model="search" help-topic="importLocalSearch">
-            <template v-slot:prepend>
-                <v-icon>mdi-magnify</v-icon>
-            </template>
-        </v-text-field>
-        <v-list v-if="list">
-            <v-divider class="ma-3" help-topic="importLocalList"/>
-            <v-list-item
-                v-for="item in items"
-                :key="item.title"
-                :prepend-icon="item.action"
-                draggable="true"
-                style="cursor: copy;"
-                @dragstart="dragStart($event, item)"
-            >
-                <v-list-item-media>
-                    <v-icon
-                        :title="item.type === 'publishedGraph' ? 'Graph' : 'Node'"
-                    >
-                        {{item.icon || iconType(item.type)}}
-                    </v-icon>
-                </v-list-item-media>
-                <v-list-item-title>
-                    {{item.title || item.name || "Untitled"}} v{{item.version}}
-                </v-list-item-title>
-                <v-list-item-subtitle>
-                    {{item.description || "No Description"}}
-                </v-list-item-subtitle>
-            </v-list-item>
-        </v-list>
+    <div style="height: calc(80vh - 220px); overflow: scroll;">
+        <v-expansion-panels v-if="list" flat accordion>
+            <v-expansion-panel v-for="item in list">
+                <v-expansion-panel-title>
+                    <div draggable="true" @dragstart.stop="dragStart($event, item[0])" style="cursor: copy;" class="import-item">
+                        <p><v-icon :icon="item[0].icon || iconType(item[0].type)"/>{{item[0].name}}</p>
+                        <i>{{item[0].description || "No Description"}}</i>
+                    </div>
+                </v-expansion-panel-title>
+                <v-expansion-panel-text class="pb-0">
+                    <v-list>
+                        <v-list-item
+                            v-for="subItem in item"
+                            :key="subItem.title"
+                            :prepend-icon="subItem.action"
+                            draggable="true"
+                            style="cursor: copy;"
+                            @dragstart="dragStart($event, subItem)"
+                        >
+                            <v-list-item-title>
+                               <v-icon :title="subItem.type === 'publishedGraph' ? 'Graph' : 'Node'">
+                                    {{subItem.icon || iconType(subItem.type)}}
+                                </v-icon>
+                                {{subItem.title || subItem.name || "Untitled"}} - v{{subItem.version}}
+
+                            </v-list-item-title>
+                        </v-list-item>
+                    </v-list>
+                </v-expansion-panel-text>
+            </v-expansion-panel>
+        </v-expansion-panels>
     </div>
 </template>
 <script lang="ts">
@@ -60,15 +60,31 @@ export default {
             return {
                 publishedVector: "mdi-network",
                 publishedGraph: "mdi-switch",
-            }[item] || "";
+            }[item] || "mdi-graph";
+        },
+        groupByPrefix(toc) {
+            const {id, ...arts } = toc;
+            const group = {};
+            Object.values(arts).forEach((item) => {
+                const [prefix, suffix] = item.id.split('.');
+                group[prefix] = group[prefix] || [];
+                group[prefix].push(item);
+            });
+            Object.keys(group).forEach((prefix) => {
+                group[prefix].sort((a, b) => {
+                    return new Date(a) - new Date(b);
+                });
+            });
+            return group;
         },
     },
     computed: {
         ...mapState(useOrchestratorStore, [
             'toc',
         ]),
+
         list() {
-          return Object.keys(this.toc || {}).filter(i => i !== 'id').map(i => this.toc[i]);
+            return this.groupByPrefix(this.toc);
         },
         artifacts() {
             return (id) => {
@@ -102,4 +118,11 @@ export default {
     },
 };
 </script>
-<style></style>
+<style>
+.import-item {
+    background: rgba(var(--v-theme-info));
+    width: 100%;
+    border-radius: 5px;
+    padding: 6px;
+}
+</style>

@@ -37,8 +37,8 @@ export default class GraphManager extends GraphEditorModule {
     const graphOrchestratorStore = useOrchestratorStore();
     const preferencesStore = usePreferencesStore();
     graphOrchestratorStore.addPlugin(new Plugin({
-      name: 'Remotes',
-      title: 'Remotes',
+      name: 'Registries',
+      title: 'Registries',
       component: 'registry-settings-panel',
       type: 'settings-panel',
       order: 10,

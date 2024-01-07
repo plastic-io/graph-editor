@@ -91,6 +91,9 @@ export default {
         this.innerHeight = window.innerHeight;
     };
     const view = JSON.parse(JSON.stringify(this.preferences.uiSize['view-location-' + this.graphSnapshot.id] || {x: 0, y: 0, k: 1}));
+    if (this.graphSnapshot.properties.startInPresentationMode) {
+        this.presentation = true;
+    }
     this.view = view;
     document.addEventListener('resize', resize);
     resize();
