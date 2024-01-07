@@ -113,7 +113,7 @@ class IndexDBDataProvider {
         const db = await this.open();
         const toc = await this.getToc();
         const tx = db.transaction("documents", "readwrite");
-        item = item.graph ? item.graph : item;
+        item = item && item.graph ? item.graph : item;
         if (item) {
             type = type === 'update' ? 'graph' : 'publishedGraph';
             toc[url] = {
