@@ -266,7 +266,7 @@ export default {
         this.graphSnapshot.nodes.push(node);
         this.updateGraphFromSnapshot("Import New Graph");
     },
-    addDroppedItem(e: any) {
+    async addDroppedItem(e: any) {
         const pos = {
             x: (e.x - this.view.x) / this.view.k,
             y: (e.y - this.view.y) / this.view.k,
@@ -285,6 +285,9 @@ export default {
         e.item.edges.forEach((edge: Edge) => {
             edge.connectors = [];
         });
+        if (e.item.properties.scripts) {
+            await loadScripts(e.item.properties.scripts.replace('\n', ',').split(','));
+        }
         this.graphSnapshot.nodes.push(e.item);
         this.updateGraphFromSnapshot("Drop New Item");
     },
