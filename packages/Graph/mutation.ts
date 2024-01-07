@@ -377,12 +377,12 @@ export default {
         this.graph = deref(this.graphSnapshot);
     },
     createGraph(id: string): Graph {
-      const name = getName().replace(/ /g, '');
+      const name = getName();
       const now = new Date();
       return {
         id,
         version: 0,
-        url: name,
+        url: name.replace(/ /g, ''),
         nodes: [],
         properties: {
           name,

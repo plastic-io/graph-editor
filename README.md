@@ -1,8 +1,6 @@
-# Plastic-io Graph Editor
+# Plastic-IO
 
-# Plastic-IO Graph Editor
-
-![plastic-io](https://avatars1.githubusercontent.com/u/60668496?s=200&v=4)
+Interactive Graph Programming
 
 [Demo](https://plastic-io.github.io/graph-editor/)
 
