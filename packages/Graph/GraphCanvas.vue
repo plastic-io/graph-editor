@@ -4,6 +4,7 @@
             x-graph-canvas
             :style="graphCanvasStyle"
             v-if="graphSnapshot"
+            :key="graphUpdateVersion"
             @drop="drop($event)"
             @dragover="dragOver($event)"
         >
@@ -13,14 +14,14 @@
             ></div>
             <node-edge-connector
                 v-for="c in connectors"
-                :key="c.connector.id + graphSnapshot.version"
+                :key="c.connector.id + graphUpdateVersion"
                 :connector="c.connector"
                 :edge="c.edge"
                 :node="c.node"
             />
             <node
                 v-for="node in graphSnapshot.nodes"
-                :key="node.id"
+                :key="node.id + graphUpdateVersion"
                 :node="node"
                 :graph="graphSnapshot"
                 :presentation="presentation"
@@ -44,11 +45,16 @@ export default {
       innerWidth: 0,
       positionLocationSaveTimeout: 750,
       positionTimeout: 0,
+      graphUpdateVersion: 0,
     }
   },
   watch: {
     graphSnapshot: {
         handler() {
+            // force updates in rewind mode
+            if (this.inRewindMode) {
+                this.graphUpdateVersion += 1;
+            }
             this.updateBoundingRect();
         },
         deep: true,
@@ -111,6 +117,7 @@ export default {
         'el',
         'boundingRect',
         'presentation',
+        'inRewindMode',
     ]),
     connectors: function () {
         let connectors = [];
