@@ -65,7 +65,6 @@ export default {
         ...mapState(usePreferencesStore, ['preferences',]),
         ...mapState(useInputStore, ['mouse']),
         ...mapState(useOrchestratorStore, [
-          'inRewindMode',
           'historyPosition',
         ]),
         ...mapState(useGraphStore, [
@@ -75,6 +74,7 @@ export default {
           'graphSnapshot',
           'view',
           'translating',
+          'inRewindMode',
           'ltrPct',
           'selectedConnectors',
           'hoveredConnector',

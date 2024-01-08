@@ -128,6 +128,7 @@ export default {
             'hoveredPort',
             'selectedNodes',
             'presentation',
+            'inRewindMode',
         ]),
         ...mapWritableState(usePreferencesStore, [
             'preferences',
@@ -139,7 +140,6 @@ export default {
         ]),
         ...mapState(useOrchestratorStore, [
             'notFound',
-            'inRewindMode',
             'rewindVisible',
             'showInfo',
             'infoMessage',

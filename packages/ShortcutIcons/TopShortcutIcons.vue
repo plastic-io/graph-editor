@@ -98,10 +98,10 @@ export default {
             'selectionRect',
             'hoveredNode',
             'hoveredPort',
+            'inRewindMode',
         ]),
         ...mapState(useOrchestratorStore, [
             'notFound',
-            'inRewindMode',
             'rewindVisible',
             'showInfo',
             'infoMessage',

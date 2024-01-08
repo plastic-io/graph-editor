@@ -23,7 +23,6 @@
                                     {{subItem.icon || iconType(subItem.type)}}
                                 </v-icon>
                                 {{subItem.title || subItem.name || "Untitled"}} - v{{subItem.version}}
-
                             </v-list-item-title>
                         </v-list-item>
                     </v-list>
@@ -65,11 +64,13 @@ export default {
         groupByPrefix(toc) {
             const {id, ...arts } = toc;
             const group = {};
-            Object.values(arts).forEach((item) => {
-                const [prefix, suffix] = item.id.split('.');
-                group[prefix] = group[prefix] || [];
-                group[prefix].push(item);
-            });
+            Object.values(arts)
+                .filter(item => /published/.test(item.type))
+                .forEach((item) => {
+                    const [prefix, suffix] = item.id.split('.');
+                    group[prefix] = group[prefix] || [];
+                    group[prefix].push(item);
+                });
             Object.keys(group).forEach((prefix) => {
                 group[prefix].sort((a, b) => {
                     return new Date(a) - new Date(b);

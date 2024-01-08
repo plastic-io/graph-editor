@@ -90,7 +90,6 @@ export const useStore = defineStore('orchestrator', {
     },
     fortunes: [],
     inRewindMode: false,
-    rewindVisible: false,
     testOutputVersion: 0,
     testOutput: [],
     ownEvents: [],
@@ -167,6 +166,9 @@ export const useStore = defineStore('orchestrator', {
   }),
   actions: {
     hyphenateProperty,
+    getEvents(url: string) {
+      return this.dataProviders!.artifact!.getEvents(url);
+    },
     async init(graphUrl: string) {
       return await this.graphStore.open(graphUrl);
     },

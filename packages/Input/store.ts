@@ -52,7 +52,7 @@ export const useStore = defineStore('input', {
         e.preventDefault();
     },
     mousemove(e: MouseEvent) {
-        if (this.orchistratorStore.showHelp || this.orchistratorStore.inRewindMode) {
+        if (this.orchistratorStore.showHelp || this.graphStore.inRewindMode) {
             return;
         }
         // do not track control panel inputs
@@ -89,7 +89,7 @@ export const useStore = defineStore('input', {
     },
     mousedown(e: MouseEvent) {
         let isMap = false;
-        if (!this.graphStore.graph || this.orchistratorStore.showHelp || this.orchistratorStore.inRewindMode) {
+        if (!this.graphStore.graph || this.orchistratorStore.showHelp || this.graphStore.inRewindMode) {
             return;
         }
         // do not track control panel inputs
