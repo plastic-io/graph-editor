@@ -255,7 +255,7 @@ export default {
       this.$emit('close');
       const url = `${this.pathPrefix}popout-editor/${this.graphId}/${this.nodeId}/${this.templateType}/${this.language}`;
       const host = /^localhost:?/.test(window.location.host) ? (window.location.protocol
-              + '//' + window.location.host) : '/';
+              + '//' + window.location.host) : '';
       this.win = window.open(host + url, this.storeKey,
         `popup,width=${this.width},height=${this.width},top=${this.top},left=${this.left}`);
       for (let x = 500; x < 3000; x += 500) {
