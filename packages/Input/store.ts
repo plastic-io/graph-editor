@@ -40,6 +40,9 @@ export const useStore = defineStore('input', {
         this.mouseAction.mouse(mouse);
     },
     onwheel(e: WheelEvent) {
+        if (this.graphStore.presentation) {
+            return;
+        }
         if (!this.graphStore.isGraphTarget(e)) {
             return;
         }
@@ -52,6 +55,9 @@ export const useStore = defineStore('input', {
         e.preventDefault();
     },
     mousemove(e: MouseEvent) {
+        if (this.graphStore.presentation) {
+            return;
+        }
         if (this.orchistratorStore.showHelp || this.graphStore.inRewindMode) {
             return;
         }

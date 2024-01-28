@@ -175,7 +175,9 @@ export default {
     graphCanvasStyle: function () {
         if (this.presentation) {
             return {
-                display: "flex"
+                overflow: "auto",
+                height: "100vh",
+                width: "100vw",
             };
         }
         return {

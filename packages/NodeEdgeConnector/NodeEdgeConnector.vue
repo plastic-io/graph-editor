@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div v-if="!presentation">
         <div :class="{'connector-info-value': true, 'connector-info-value-expanded': expand}"
             v-if="preferences.showConnectorActivity && activityValue"
             @mousemove.stop
