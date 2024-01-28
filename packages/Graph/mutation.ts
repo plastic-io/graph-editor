@@ -428,9 +428,11 @@ export default {
         });
         this.historyPosition += 1;
         // make a copy of the change in the snapshot store for data providers
-        this.graphSnapshotStore.$patch({
-            graph: deref(this.graph),
+        this.updatingSnapshotLocally = true;
+        this.graphSnapshotStore.$patch((state: any) => {
+            state.graph = deref(this.graph);
         });
+        this.updatingSnapshotLocally = false;
     },
     async loadAllScripts(graphSnapshot: any) {
       // Extracting the root-level scripts
@@ -476,6 +478,18 @@ export default {
       await this.loadAllScripts(this.graphSnapshot);
       // don't allow an opening graph to count as a history change
       this.graph = deref(this.graphSnapshot);
+      this.graphSnapshotStore.$subscribe((mutation: any, state: any) => {
+        if (this.updatingSnapshotLocally) {
+          return;
+        }
+        const changes = diff(this.graph, state.graph);
+        if (changes) {
+            changes.forEach((change: any) => {
+                applyChange(this.graphSnapshot, true, change);
+            });
+            this.graph = deref(this.graphSnapshot);
+        }
+      });
       console.groupCollapsed('%cPlastic-IO: %cGraph',
         "color: blue",
         "color: lightblue");
@@ -641,19 +655,20 @@ export default {
       pos.x = Math.floor(pos.x / 10) * 10;
       pos.y = Math.floor(pos.y / 10) * 10;
       const id = newId();
+      const name = getName();
       const node = {
           id,
           edges: [],
           version: this.graphSnapshot!.version,
           graphId: this.graphSnapshot!.id,
           artifact: null,
-          url: getName().replace(/ /g, ''),
+          url: name.replace(/ /g, ''),
           data: null,
           properties: {
               inputs: [],
               outputs: [],
               groups: [],
-              name: "",
+              name,
               description: "",
               tags: [],
               icon: "mdi-node-rectangle",

@@ -127,7 +127,7 @@ export default {
       cursorLocation: null,
       updatingValue: false,
       editorHasFocus: false,
-      autosave: true,
+      autosave: false,
       messageIds: [],
       externalErrors: [],
       loaded: false,
@@ -449,7 +449,7 @@ export default {
         clearTimeout(this.saveDebounceTimer);
         this.saveDebounceTimer = setTimeout(() => {
           this.save();
-        }, 500);
+        }, 4000);
       }
     },
     revert() {

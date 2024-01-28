@@ -33,6 +33,7 @@ export default () => {
         preferencesStore: usePreferencesStore(),
         graphSnapshotStore: useGraphSnapshotStore(),
         graphSnapshot: null as any,
+        updatingSnapshotLocally: false,
         rewindVersion: 0,
         keys: {} as Record<string, string>,
         artifacts: {} as Record<string, any>,

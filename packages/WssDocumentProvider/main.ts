@@ -13,7 +13,9 @@ export default class WssDocumentProvider extends EditorModule {
   constructor(config: Record<string, any>, app: App<Element>, hostRouter: Router) {
     super();
     const providerState = {
-      graph: {} as any,
+      graph: null as any,
+      localUpdate: false,
+      sentEventIds: [],
     };
     const orchistratorStore = useOrchistratorStore();
     const graphSnapshotStore = useGraphSnapshotStore();
@@ -30,7 +32,34 @@ export default class WssDocumentProvider extends EditorModule {
       () => {},
     );
     graphStore.$subscribe((mutation: any, state: any) => {
-        if (!state.graph) {
+        if (!state.graph || providerState.localUpdate) {
+            return;
+        }
+        if (!providerState.graph) {
+            // inital load
+            providerState.graph = JSON.parse(JSON.stringify(state.graph));
+            // messages from server
+            orchistratorStore.dataProviders.graph.subscribe('graph-event-' + providerState.graph.id, async (e: any) => {
+                // apply remote event
+                graphSnapshotStore.$patch((state) => {
+                    providerState.localUpdate = true;
+                    e.forEach((event) => {
+                        if (providerState.sentEventIds.includes(event.id)) {
+                            return;
+                        }
+                        // apply changes to the graphStore
+                        event.changes.forEach((change: any) => {
+                            applyChange(state.graph, true, change);
+                        });
+                        // clone graph store to keep provider state up to date
+                        providerState.graph = JSON.parse(JSON.stringify(state.graph));
+                        providerState.localUpdate = false;
+                    });
+                });
+            });
+            return;
+        }
+        if (mutation.type !== 'patch function') {
             return;
         }
         const changes = diff(providerState.graph || {}, JSON.parse(JSON.stringify(state.graph)));
@@ -42,9 +71,11 @@ export default class WssDocumentProvider extends EditorModule {
               description: '',
               graphId: state.graph!.id,
           };
+          providerState.sentEventIds.push(ev.id);
           wssDataProvider.set(state.graph!.url, ev as any);
         }
     }, { detached: true });
+
     (orchistratorStore.dataProviders.graph as any) = wssDataProvider;
     let writeDebounceTimer: any;
     (orchistratorStore.dataProviders as any).publish = wssDataProvider;
@@ -54,7 +85,6 @@ export default class WssDocumentProvider extends EditorModule {
         return await wssDataProvider.getToc();
       },
       updateToc(key: string, value: any) {
-        console.log('updateToc');
         orchistratorStore.toc[key] = value;
       },
     };
