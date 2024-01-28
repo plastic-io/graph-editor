@@ -53,8 +53,8 @@ export default class WssDocumentProvider extends EditorModule {
                         });
                         // clone graph store to keep provider state up to date
                         providerState.graph = JSON.parse(JSON.stringify(state.graph));
-                        providerState.localUpdate = false;
                     });
+                    providerState.localUpdate = false;
                 });
             });
             return;
