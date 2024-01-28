@@ -169,7 +169,7 @@ export default {
         },
     },
     mounted() {
-        this.node = this.graph.nodes.find(n => n.id === this.nodeId);
+        this.node = JSON.parse(JSON.stringify(this.graph.nodes.find(n => n.id === this.nodeId)));
     },
     computed: {
         ...mapState(useGraphStore, [
