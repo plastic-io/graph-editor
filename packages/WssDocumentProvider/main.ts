@@ -15,6 +15,7 @@ export default class WssDocumentProvider extends EditorModule {
     const providerState = {
       graph: null as any,
       localUpdate: false,
+      initComplete: false,
       sentEventIds: [],
     };
     const orchistratorStore = useOrchistratorStore();
@@ -35,7 +36,7 @@ export default class WssDocumentProvider extends EditorModule {
         if (!state.graph || providerState.localUpdate) {
             return;
         }
-        if (!providerState.graph) {
+        if (!providerState.graph && providerState.initComplete) {
             // inital load
             providerState.graph = JSON.parse(JSON.stringify(state.graph));
             // messages from server
@@ -59,9 +60,10 @@ export default class WssDocumentProvider extends EditorModule {
             });
             return;
         }
-        if (mutation.type !== 'patch function') {
+        if (mutation.type !== 'patch function' && providerState.initComplete) {
             return;
         }
+        providerState.initComplete = true;
         const changes = diff(providerState.graph || {}, JSON.parse(JSON.stringify(state.graph)));
         if (changes) {
           providerState.graph = JSON.parse(JSON.stringify(state.graph));
