@@ -378,7 +378,7 @@ export default {
     },
     createGraph(id: string): Graph {
       const name = getName();
-      const now = new Date();
+      const now = Date.now();
       return {
         id,
         version: 0,
@@ -470,6 +470,7 @@ export default {
         // auto create missing graphs
         this.graphSnapshot = this.createGraph(graphId);
       }
+      this.graphSnapshotStore.graph = deref(this.graphSnapshot);
       graphOrchestrator.dataProviders.graph.subscribe(graphId, async () => {
         // this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
       });
@@ -670,6 +671,8 @@ export default {
               groups: [],
               name,
               description: "",
+              createdOn: Date.now(),
+              lastUpdate: Date.now(),
               tags: [],
               icon: "mdi-node-rectangle",
               positionAbsolute: false,
