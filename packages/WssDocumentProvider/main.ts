@@ -15,7 +15,7 @@ export default class WssDocumentProvider extends EditorModule {
     const providerState = {
       graph: null as any,
       localUpdate: false,
-      initComplete: false,
+      subscribed: false,
       sentEventIds: [],
     };
     const orchistratorStore = useOrchistratorStore();
@@ -36,12 +36,12 @@ export default class WssDocumentProvider extends EditorModule {
         if (!state.graph || providerState.localUpdate) {
             return;
         }
-        if (!providerState.graph && providerState.initComplete) {
-            // inital load
-            providerState.graph = JSON.parse(JSON.stringify(state.graph));
-            // messages from server
-            orchistratorStore.dataProviders.graph.subscribe('graph-event-' + providerState.graph.id, async (e: any) => {
+        if (!providerState.subscribed) {
+            console.log('subscribe to remote');
+            providerState.subscribed = true;
+            orchistratorStore.dataProviders.graph.subscribe('graph-event-' + state.graph.id, async (e: any) => {
                 // apply remote event
+                console.log('remote event', e);
                 graphSnapshotStore.$patch((state) => {
                     providerState.localUpdate = true;
                     e.forEach((event) => {
@@ -58,12 +58,13 @@ export default class WssDocumentProvider extends EditorModule {
                     providerState.localUpdate = false;
                 });
             });
+        }
+        if (!providerState.graph && !state.isNewGraph) {
+            providerState.graph = JSON.parse(JSON.stringify(state.graph));
+        }
+        if (mutation.type !== 'patch function') {
             return;
         }
-        if (mutation.type !== 'patch function' && providerState.initComplete) {
-            return;
-        }
-        providerState.initComplete = true;
         const changes = diff(providerState.graph || {}, JSON.parse(JSON.stringify(state.graph)));
         if (changes) {
           providerState.graph = JSON.parse(JSON.stringify(state.graph));

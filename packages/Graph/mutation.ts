@@ -378,7 +378,7 @@ export default {
     },
     createGraph(id: string): Graph {
       const name = getName();
-      const now = new Date();
+      const now = Date.now();
       return {
         id,
         version: 0,
@@ -468,16 +468,23 @@ export default {
         this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
       } catch (err: any) {
         // auto create missing graphs
+        this.isNewGraph = true;
         this.graphSnapshot = this.createGraph(graphId);
       }
+      this.graphSnapshotStore.graph = deref(this.graphSnapshot);
       graphOrchestrator.dataProviders.graph.subscribe(graphId, async () => {
         // this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
       });
       // block loading until graph scripts are loaded if any
       const scripts = (this.graphSnapshot.properties.scripts || '').replace('\n', ',').split(',');
       await this.loadAllScripts(this.graphSnapshot);
-      // don't allow an opening graph to count as a history change
-      this.graph = deref(this.graphSnapshot);
+
+      // This must be patch to trigger stores to update
+      this.$patch((state: any) => {
+          // don't allow an opening graph to count as a history change
+          state.graph = deref(state.graphSnapshot);
+      });
+
       this.graphSnapshotStore.$subscribe((mutation: any, state: any) => {
         if (this.updatingSnapshotLocally) {
           return;
@@ -670,6 +677,8 @@ export default {
               groups: [],
               name,
               description: "",
+              createdOn: Date.now(),
+              lastUpdate: Date.now(),
               tags: [],
               icon: "mdi-node-rectangle",
               positionAbsolute: false,
