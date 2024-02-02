@@ -34,6 +34,7 @@ export default () => {
         graphSnapshotStore: useGraphSnapshotStore(),
         graphSnapshot: null as any,
         updatingSnapshotLocally: false,
+        isNewGraph: false,
         rewindVersion: 0,
         keys: {} as Record<string, string>,
         artifacts: {} as Record<string, any>,

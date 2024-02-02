@@ -468,6 +468,7 @@ export default {
         this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
       } catch (err: any) {
         // auto create missing graphs
+        this.isNewGraph = true;
         this.graphSnapshot = this.createGraph(graphId);
       }
       this.graphSnapshotStore.graph = deref(this.graphSnapshot);
@@ -477,8 +478,13 @@ export default {
       // block loading until graph scripts are loaded if any
       const scripts = (this.graphSnapshot.properties.scripts || '').replace('\n', ',').split(',');
       await this.loadAllScripts(this.graphSnapshot);
-      // don't allow an opening graph to count as a history change
-      this.graph = deref(this.graphSnapshot);
+
+      // This must be patch to trigger stores to update
+      this.$patch((state: any) => {
+          // don't allow an opening graph to count as a history change
+          state.graph = deref(state.graphSnapshot);
+      });
+
       this.graphSnapshotStore.$subscribe((mutation: any, state: any) => {
         if (this.updatingSnapshotLocally) {
           return;
