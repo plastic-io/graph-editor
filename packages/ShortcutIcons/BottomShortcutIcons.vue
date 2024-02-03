@@ -7,10 +7,10 @@
         <v-icon>mdi-crosshairs-gps</v-icon>{{ Math.floor((mouse.x - view.x) / view.k) }} : {{ Math.floor((mouse.y - view.y) / view.k) }}
     </div>
     <div
-    help-topic="selectionCoordinates"
+    
     title="Selection Coordinates"
     style="width: 240px;cursor: crosshair;">
-        <v-icon>mdi-selection</v-icon>
+        <v-icon help-topic="selectionCoordinates">mdi-selection</v-icon>
             x: {{Math.floor(selectionRect.x)}}
             y: {{Math.floor(selectionRect.x)}}
             h: {{Math.floor(selectionRect.height)}}

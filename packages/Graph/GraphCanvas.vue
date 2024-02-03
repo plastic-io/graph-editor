@@ -1,9 +1,21 @@
 <template>
     <div>
+        <component
+            :is="graphPresentationComponent"
+            v-if="graphSnapshot && presentation"
+            :graph="graphSnapshot"
+        />
+        <component
+            v-for="(style, index) in styles"
+            :is="'style'"
+            v-if="graphSnapshot && presentation"
+            v-html="style"
+            :key="index"
+        />
         <div
             x-graph-canvas
             :style="graphCanvasStyle"
-            v-if="graphSnapshot"
+            v-if="graphSnapshot && !presentation"
             :key="graphUpdateVersion"
             @drop="drop($event)"
             @dragover="dragOver($event)"
@@ -20,7 +32,7 @@
                 :node="c.node"
             />
             <node
-                v-for="node in graphSnapshot.nodes"
+                v-for="node in sortedNodes"
                 :key="node.id + graphUpdateVersion"
                 :node="node"
                 :graph="graphSnapshot"
@@ -29,18 +41,44 @@
             <div v-if="selectionRect.visible && !presentation" class="selection-rect" :style="selectionRectStyle"></div>
             <div v-if="selectedNodes.length !== 0 && !presentation" class="bounding-rect" :style="boundingRectStyle"></div>
         </div>
+        <keep-alive>
+            <div style="position: fixed; top: 33px;left: 10px;" v-if="showGraphCodeEditor" v-show="!presentation">
+                <monaco-code-editor
+                    style="opacity: 0.98"
+                    templateType="vue"
+                    language="html"
+                    :graphId="graphSnapshot.id"
+                    :errors="errors.filter(e => e.type === 'graph')"
+                    :value="graphTemplateValue"
+                    helpLink="https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html"
+                    @close="showGraphCodeEditor = false"
+                    @dirty="setIsDirty = $event"
+                    @save="saveGraphTemplate($event)"
+                />
+            </div>
+        </keep-alive>
+        <div class="graph-errors" v-if="errors.length > 0">
+            <v-alert color="error" @click="showGraphCodeEditor = true">
+                <pre v-for="error in errors">{{error}}</pre>
+            </v-alert>
+        </div>
     </div>
 </template>
 <script lang="ts">
+import {markRaw} from "vue";
 import {mapWritableState, mapActions} from "pinia";
-import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as useGraphStore} from "./store";
+import compileTemplate from "@plastic-io/graph-editor-vue3-compile-template";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
+import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import colors from "vuetify/lib/util/colors";
 export default {
   name: 'graph-canvas',
   data: () => {
     return {
+      compiledTemplate: null,
+      errors: [],
+      styles: [],
       innerHeight: 0,
       innerWidth: 0,
       positionLocationSaveTimeout: 750,
@@ -49,6 +87,9 @@ export default {
     }
   },
   watch: {
+    'graphSnapshot.properties.template'() {
+        this.loadTemplate();
+    },
     graphSnapshot: {
         handler() {
             // force updates in rewind mode
@@ -75,7 +116,22 @@ export default {
   methods: {
     ...mapActions(useGraphStore, [
         'drop',
+        'updateGraphFromSnapshot',
     ]),
+    async loadTemplate() {
+        const comp = await compileTemplate(this, this.graphSnapshot.id,
+            this.graphSnapshot.properties.template);
+        this.compiledTemplate = markRaw(comp);
+        this.errors = comp.errors;
+        this.styles = this.compiledTemplate.styles;
+        this.errors.forEach((err) => {
+            useOrchestratorStore().raiseError(this.graphSnapshot.id, err, 'vue');
+        });
+    },
+    async saveGraphTemplate(val) {
+        this.graphSnapshot.properties.template = val;
+        await this.updateGraphFromSnapshot('Update Graph Presentation Template');
+    },
     dragOver(e) {
         e.preventDefault();
         e.dataTransfer.dropEffect = "link";
@@ -91,7 +147,7 @@ export default {
       });
     },
   },
-  mounted() {
+  async mounted() {
     const resize = () => {
         this.innerWidth = window.innerWidth;
         this.innerHeight = window.innerHeight;
@@ -103,6 +159,10 @@ export default {
     this.view = view;
     document.addEventListener('resize', resize);
     resize();
+    if (!this.graphSnapshot.properties.template) {
+        this.graphSnapshot.properties.template = this.preferences!.defaultNewGraphTemplate;
+    }
+    await this.loadTemplate();
   },
   computed: {
     ...mapWritableState(usePreferencesStore, ['preferences']),
@@ -118,7 +178,20 @@ export default {
         'boundingRect',
         'presentation',
         'inRewindMode',
+        'showGraphCodeEditor',
     ]),
+    graphPresentationComponent() {
+        return this.compiledTemplate ? this.compiledTemplate.component : 'div';
+    },
+    sortedNodes() {
+        return this.graphSnapshot.nodes.sort((a, b) => {
+            return (a.properties.presentation.sort || 0)
+                - (b.properties.presentation.sort || 0);
+        });
+    },
+    graphTemplateValue() {
+        return this.graphSnapshot.properties.template;
+    },
     connectors: function () {
         let connectors = [];
         this.graphSnapshot.nodes.forEach((node) => {
@@ -227,5 +300,12 @@ export default {
         100px 100px,
         100px 100px,
         100px 100px;
+}
+.graph-errors {
+    position: fixed;
+    right: 10px;
+    top: 33px;
+    width: 33%;
+    min-width: 500px;
 }
 </style>

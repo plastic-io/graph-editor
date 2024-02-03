@@ -9,9 +9,9 @@
             Rewinding...
         </span>
     </div>
-    <span help-topic="documentName" class="pa-1 version-view">
+    <span class="pa-1 version-view">
         {{ graph.properties.name || graph.url || "Untitled" }}
-        <span>v{{ graph.version }}</span>
+        <span help-topic="documentName">v{{ graph.version }}</span>
     </span>
     <v-spacer/>
     <shared-users/>
@@ -89,6 +89,7 @@ export default {
         ...mapWritableState(usePreferencesStore, ['preferences']),
         ...mapWritableState(useOrchestratorStore, [
             'translating',
+            'showHelp',
         ]),
         ...mapWritableState(useGraphStore, [
             'graph',
@@ -109,7 +110,6 @@ export default {
             'pendingEvents',
             'activityConnectors',
             'pathPrefix',
-            'showHelp',
             'panelVisibility',
             'nodeMimeType',
             'showError',

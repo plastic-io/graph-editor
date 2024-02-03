@@ -69,7 +69,7 @@
           <v-menu style="opacity: 0.98">
             <template v-slot:activator="{props}">
               <v-badge color="transparent">
-                <v-icon icon="mdi-cog" v-bind="props"/>
+                <v-icon icon="mdi-vector-polyline-edit" v-bind="props"/>
               </v-badge>
             </template>
             <node-properties-panel :nodeId="nodeId"/>
@@ -83,7 +83,6 @@
   import {mapWritableState, mapActions, mapState} from "pinia";
   import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
   import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
-  import * as JSZip from "jszip";
   import { saveAs } from "file-saver";
   import NodeError from "./NodeError.vue";
   export default {
