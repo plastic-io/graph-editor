@@ -10,7 +10,7 @@ const defaultNewSetTemplate = `if (edges.hasOwnProperty(field)) {
 const defaultNewVueTemplate = `<template>
     <div>
         <v-btn @click="$emit('output-name', 'value-to-send');">
-            New Node
+            {{node.properties.name}}
         </v-btn>
     </div>
 </template>
@@ -22,27 +22,25 @@ export default {
     }
 }
 </script>
-<style>
-</style>
 `;
 const defaultNewGraphTemplate = `<template>
-    <div>
-        <graph-node
-            v-for="node in graph.nodes"
-            :key="node.id"
-            :node="node"
-            :graph="graph"
-        ></graph-node>
-    </div>
+    <node
+        v-for="node in graph.nodes"
+        :key="node.id + node.version"
+        :node="node"
+        :graph="graph"
+        :presentation="true"
+    />
 </template>
 <script>
-    export default {
-        props: {
-            graph: Object,
-        },
+export default {
+    name: 'presentation-graph',
+    props: {
+        graph: Object,
+        state: Object,
     }
-</script>
-`;
+}
+</script>`;
 export const useStore = defineStore('UserPreferences', {
   state: () => ({
     remotePreferences: null as any,

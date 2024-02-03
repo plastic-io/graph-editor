@@ -46,7 +46,6 @@ const _resolveDynamicComponent = self.dependencies.vue.resolveDynamicComponent;
     let styles = blocks.descriptor.styles.map((style: any) => {
         const s = compiler.compileStyle({id, source: style.content} as any);
         errors.push(...s.errors);
-        console.log('s', s);
         return s.code;
     });
 

@@ -84,6 +84,7 @@
                         <v-text-field label="x" v-model.number="node.properties.presentation.x"></v-text-field>
                         <v-text-field label="y" v-model.number="node.properties.presentation.y"></v-text-field>
                         <v-text-field label="z" v-model.number="node.properties.presentation.z"></v-text-field>
+                        <v-text-field label="Order" v-model.number="node.properties.presentation.order"></v-text-field>
                     </v-card-text>
                 </v-card>
             </v-expansion-panel-text>

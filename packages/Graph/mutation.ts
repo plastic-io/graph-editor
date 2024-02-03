@@ -396,6 +396,7 @@ export default {
           width: 300,
           timeout: 30000,
           logLevel: 2,
+          template: this.preferencesStore.preferences!.defaultNewGraphTemplate,
         } as any
       };
     },
@@ -691,6 +692,7 @@ export default {
                   x: pos.x,
                   y: pos.y,
                   z: 0 + this.preferencesStore.preferences!.newNodeOffset.z,
+                  order: this.graphSnapshot.nodes.length,
               },
           },
           template: {

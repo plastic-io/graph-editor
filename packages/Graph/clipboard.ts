@@ -1,5 +1,4 @@
 import type {Graph, Node} from "@plastic-io/plastic-io";
-import JSZip from 'jszip';
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
 export default {
     async unzip(file: any, fileName: string): Promise<any> {

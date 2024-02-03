@@ -1,6 +1,6 @@
 <template>
-    <v-app class="graph-editor" :style="workspaceBackground">
-        <error-interstitial/>
+    <v-app :class="{'graph-editor': !presentation}" :style="workspaceBackground">
+        <error-interstitial v-if="!presentation"/>
         <template v-if="graph && !graph.err && preferences">
             <v-system-bar
                 class="top-system-bar no-graph-target"
@@ -19,7 +19,7 @@
             <mini-map-info v-if="preferences.showMap && !presentation"/>
             <div :class="presentation ? 'presentation-graph-container' : 'graph-container'" :style="graphContainerStyle">
                 <graph-canvas
-                    :class="noSelect ? 'no-select' : ''"
+                    :class="noSelect && !presentation ? 'no-select' : ''"
                     :showGrid="preferences.appearance.showGrid && !presentation"
                 ></graph-canvas>
             </div>
@@ -35,7 +35,7 @@
                     <component :is="plugin.component" v-bind="plugin.props"/>
                 </template>
             </v-system-bar>
-            <connector-info v-if="showConnectorView" @close="showConnectorView = false;"/>
+            <connector-info v-if="!presentation && showConnectorView" @close="showConnectorView = false;"/>
         </template>
     </v-app>
 </template>
@@ -78,11 +78,17 @@ export default {
             'hoveredConnector',
         ]),
         workspaceBackground() {
+            if (this.presentation) {
+                return;
+            }
             return {
                 background: this.bgColor,
             };
         },
         graphContainerStyle: function() {
+            if (this.presentation) {
+                return;
+            }
             let cursor = "";
             if ((this.mouse.lmb && this.translate) || this.mouse.mmb) {
                 cursor = "grabbing";
@@ -182,11 +188,7 @@ export default {
 </script>
 <style>
 .presentation-graph-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    width: 100vw;
+
 }
 .graph-container, .graph-editor {
     position: fixed;
