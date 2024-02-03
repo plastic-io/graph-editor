@@ -157,6 +157,7 @@ export default {
                 // recompile template after change
                 this.compiledTemplate =
                     await compileTemplate(this, this.localNode.id, this.localNode.template.vue, true);
+                this.styles = this.compiledTemplate.styles;
 
             }
         },
@@ -291,9 +292,11 @@ export default {
                 value: vect,
             };
             this.compiledTemplate = await compileTemplate(this, vect.id, vect.template.vue);
+            this.styles = this.compiledTemplate.styles;
         },
         async importGraph(g) {
             this.compiledTemplate = await compileTemplate(this, this.nodeComponentName, g.properties.presentationTemplate);
+            this.styles = this.compiledTemplate.styles;
             this.loaded = true;
         },
         async importNode(v, artifactKey) {
@@ -308,6 +311,7 @@ export default {
             v.properties.presentation.y = this.node.properties.presentation.y;
             v.properties.presentation.z = this.node.properties.presentation.z;
             this.compiledTemplate = await compileTemplate(this, artifactKey, v.template.vue);
+            this.styles = this.compiledTemplate.styles;
         },
     },
     computed: {
