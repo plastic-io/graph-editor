@@ -1,6 +1,7 @@
 <template>
     <v-app :class="{'graph-editor': !presentation}" :style="workspaceBackground">
         <error-interstitial v-if="!presentation"/>
+        
         <template v-if="graph && !graph.err && preferences">
             <v-system-bar
                 class="top-system-bar no-graph-target"
@@ -37,6 +38,7 @@
             </v-system-bar>
             <connector-info v-if="!presentation && showConnectorView" @close="showConnectorView = false;"/>
         </template>
+        <help-overlay/>
     </v-app>
 </template>
 <script lang="ts">

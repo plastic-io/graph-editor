@@ -1,7 +1,7 @@
 <template>
   <v-menu>
     <template v-slot:activator="{props}">
-      <v-icon icon="mdi-history" v-bind="props" class="ma-2"/>
+      <v-icon help-topic="historyPanel" icon="mdi-history" v-bind="props" class="ma-2"/>
     </template>
     <v-card>
         <v-card-title>

@@ -1,7 +1,7 @@
 <template>
   <v-menu>
     <template v-slot:activator="{props}">
-      <v-icon icon="mdi-vector-polyline-edit" v-bind="props" class="ma-2"/>
+      <v-icon help-topic="graphProperties" icon="mdi-vector-polyline-edit" v-bind="props" class="ma-2"/>
     </template>
     <graph-properties @click.stop @mousemove.stop/>
   </v-menu>

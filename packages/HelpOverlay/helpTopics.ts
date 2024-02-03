@@ -1,4 +1,24 @@
 export default {
+    logout: {
+        title: "Logout",
+        html: "Logout of your current session."
+    },
+    panic: {
+        title: "PANIC!",
+        html: "Stop the scheduler from executing the next node.  Use this to stop out of control cyclic graphs."
+    },
+    toggleMap: {
+        title: "Show Mini-map",
+        html: "Shows or hides the mini-map."
+    },
+    showConnectorActivity: {
+        title: "Show Connector Activity",
+        html: "Attach to the graph events and see them as they execute.  View the information passing between nodes.  This incurs a small performance hit while active."
+    },
+    toggleShowGraphCode: {
+        title: "Show Graph Presentation Code",
+        html: "Show the code that drives the graph presentation.  By default this code will show nodes that are marked 'appears in presentation' in their properties.  But you can modify this code to contain anything you like while still having the graph run in the background."
+    },
     settingsNewNodeHelp: {
         title: "New Node Help",
         html: "When this is switched on, creating a new node will use the help template which contains helpful information about nodes for new users.  When off, new nodes are bare bones."
@@ -575,13 +595,17 @@ this.callback(null, {
         title: "Clear Log",
         html: "Clear the log"
     },
+    rewind: {
+        title: "Rewind",
+        html: "This is a record of every change to the graph since the graph started.  You can revert back to any time or just view the state at a previous time."
+    },
     historyPanel: {
         title: "History Panel",
-        html: "Session history"
+        html: "History of what you've done during this session.  You can move forwards or backwards in history here.  This only contains your changes, not the changes of others.  To move further back in time use the rewind panel."
     },
     importPanel: {
         title: "Node Library",
-        html: "Collection of local and public nodes"
+        html: "Collection of local and public nodes and graphs that you can import and use on your graph."
     },
     importLocal: {
         title: "Local Nodes",

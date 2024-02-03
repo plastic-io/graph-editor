@@ -48,6 +48,8 @@ export default class Auth0 extends EditorModule {
       title: 'Logout',
       component: 'v-icon',
       props: {
+        style: "cursor: pointer",
+        "help-topic": "logout",
         alt: 'Logout of your current session',
         title: 'Logout of your current session',
         icon: 'mdi-logout',

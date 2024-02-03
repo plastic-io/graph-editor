@@ -5,6 +5,13 @@
             v-if="graphSnapshot && presentation"
             :graph="graphSnapshot"
         />
+        <component
+            v-for="(style, index) in styles"
+            :is="'style'"
+            v-if="graphSnapshot && presentation"
+            v-html="style"
+            :key="index"
+        />
         <div
             x-graph-canvas
             :style="graphCanvasStyle"
@@ -71,6 +78,7 @@ export default {
     return {
       compiledTemplate: null,
       errors: [],
+      styles: [],
       innerHeight: 0,
       innerWidth: 0,
       positionLocationSaveTimeout: 750,
