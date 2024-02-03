@@ -43,24 +43,28 @@ const _resolveDynamicComponent = self.dependencies.vue.resolveDynamicComponent;
         id,
     });
 
-    let style = compiler.compileStyle({id, ...blocks.descriptor});
+    let styles = blocks.descriptor.styles.map((style: any) => {
+        const s = compiler.compileStyle({id, source: style.content} as any);
+        errors.push(...s.errors);
+        console.log('s', s);
+        return s.code;
+    });
 
     (self as any).dependencies = {
         'vue': vue,
     } as {[key: string]: any};
-
     const options = {
         ...(await import(/* @vite-ignore */stringToBase64Url(script.content, 'application/Javascript'))).default,
         template: (await import(/* @vite-ignore */stringToBase64Url(template, 'application/Javascript'))),
         render: (await import(/* @vite-ignore */stringToBase64Url(template, 'application/Javascript'))).render,
-        style: await import(/* @vite-ignore */stringToBase64Url(style.code, 'application/Javascript')),
     };
 
     const compDef = vue.defineComponent(options);
-
+    errors.push(...blocks.errors);
     return {
+        styles,
         component: compDef,
-        errors: blocks.errors,
+        errors,
     };
 
 }
