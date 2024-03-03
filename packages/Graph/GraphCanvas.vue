@@ -26,7 +26,7 @@
             ></div>
             <node-edge-connector
                 v-for="c in connectors"
-                :key="c.connector.id + graphUpdateVersion"
+                :key="c.connector.id"
                 :connector="c.connector"
                 :edge="c.edge"
                 :node="c.node"

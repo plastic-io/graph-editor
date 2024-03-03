@@ -11,6 +11,7 @@
       component: Object,
       graph: Object,
       node: Object,
+      presentation: Boolean,
       scheduler: Object,
       state: Object,
       nodeProps: Object,
@@ -42,6 +43,7 @@
         graph: graphStore.graphSnapshot,
         node: props.node,
         scheduler: props.scheduler,
+        presentation: props.presentation,
         state: props.state,
         ...props.nodeProps,
         ...events,
@@ -52,6 +54,7 @@
           props.scheduler.instance.url(props.node.url, value, 'impulse', props.hostNode);
         },
         onImpulseServer(value) {
+          console.log('impluse server');
           useOrchestratorStore().dataProviders.graph.send({
               action: 'executeGraph',
               graphUrl: graphStore.graphSnapshot.url,

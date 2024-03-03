@@ -1,7 +1,7 @@
 <template>
-    <div v-if="!presentation">
+    <div v-if="!presentation" @mousemove.stop>
         <div :class="{'connector-info-value': true, 'connector-info-value-expanded': expand}"
-            v-if="preferences.showConnectorActivity && activityValue"
+            v-if="preferences.showConnectorActivity && activityValue !== undefined"
             @mousemove.stop
             @mousedown.stop
             @mouseover="expand = true;"
@@ -9,7 +9,22 @@
             :style="connectorValueStyle"
         >
             <div :class="{drop: activeConnector}"></div>
-            {{activityValue}}
+            <div>
+                <div>
+                    {{activityCounts.started}} - 
+                    {{activityTime}}ms
+                    <span v-show="expand">
+                        <v-icon size="small" icon="mdi-code-braces"/> {{typeof activityValue}}
+                    </span>
+                </div>
+                <div>
+                    <v-icon @click="setIndex(index - 1)" icon="mdi-arrow-left"/>
+                    {{index + 1}}/{{activityCounts.started}}
+                    <v-icon @click="setIndex(index + 1)" icon="mdi-arrow-right"/>
+                </div>
+                {{formattedValue}}
+            </div>
+
         </div>
         <div
             v-if="!presentation"
@@ -27,10 +42,15 @@ import {Connector, Node, Edge} from "@plastic-io/plastic-io";
 import {mapState} from "pinia";
 import bezier from "./bezier";
 import {diff} from "deep-diff";
+import {toJSON} from 'flatted';
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
+import colors from "vuetify/lib/util/colors";
+function getColor(key: string) {
+    return (colors as {[key: string]: any})[key].base;
+}
 export default {
     name: "edge-connector",
     props: {
@@ -40,9 +60,11 @@ export default {
     },
     data() {
         return {
+            drawTimeout: null,
             connectorTimeout: null,
             graphStore: useGraphStore(),
             durations: [],
+            index: 0,
             duration: 0,
             expand: false,
             activeConnector: null,
@@ -66,6 +88,7 @@ export default {
         ...mapState(useInputStore, ['mouse']),
         ...mapState(useOrchestratorStore, [
           'historyPosition',
+          'startTime',
         ]),
         ...mapState(useGraphStore, [
           'presentation',
@@ -83,11 +106,50 @@ export default {
           'activityConnectors',
           'movingConnector',
         ]),
+        startEvents() {
+            return this.activityInfo.filter((i) => i.activityType === "start");
+        },
+        endEvents() {
+            return this.activityInfo.filter((i) => i.activityType === "end");
+        },
+        activityCounts() {
+            if (!this.activityInfo) {
+                return {
+                    total: 0,
+                    started: 0,
+                    ended: 0,
+                    pending: 0,
+                    pct: 0,
+                };
+            }
+            const total = this.activityInfo.length;
+            const started = this.startEvents.length;
+            const ended = this.endEvents.length;
+            return {
+                total,
+                started,
+                ended,
+                pct: (ended / started) * 100,
+            }
+        },
+        formattedValue() {
+            let v;
+            try {
+                v = JSON.stringify(this.activityValue, null, '\t');
+            } catch {
+                v = this.activityValue;
+            };
+            return v;
+        },
+        activity() {
+            return (this.activityInfo && this.startEvents[this.index] !== undefined)
+                ? this.startEvents[this.index] : {event: { value: undefined, time: 0}};
+        },
+        activityTime() {
+            return this.activity.event.time - this.startTime;
+        },
         activityValue() {
-            const i = this.activityInfo ? this.activityInfo.length - 1 : 0;
-            return (this.activityInfo && this.activityInfo[i])
-                ? this.activityInfo[i].event.value
-                : ''
+            return this.activity.event.value;
         },
         activityInfo() {
             return this.activityConnectors[this.connector.id];
@@ -102,7 +164,7 @@ export default {
             return this.errorConnectors.map((i) => i.id).indexOf(this.connector.id) !== -1;
         },
         hovered() {
-            return this.hoveredConnector && this.hoveredConnector.connector.id === this.connector.id;
+            return this.hoveredConnector && this.hoveredConnector.connector.id === this.connector.id || this.expand;
         },
         output() {
             const node = (this.localGraph || this.graphSnapshot).nodes.find((v) => {
@@ -132,13 +194,31 @@ export default {
                 field,
             };
         },
-        connectorValueStyle() {
+        connectorCountStyle() {
             const w = this.width * this.ratio;
             const h = this.height * this.ratio;
             return {
                 position: "absolute",
-                left: this.x + ((w / 2) - 75) + "px",
-                top: this.y + (h / 1.8) + "px",
+                textAlign: 'center',
+                borderRadius: '20px',
+                width: '35px',
+                overflow: 'visible',
+                fontWeight: 'bold',
+                fontSize: '10px',
+                transform: 'translate(-50%)',
+                background: getColor(this.preferences.appearance.connectors.controlFillStyle),
+                left: this.x + (w / 2) + 7 + "px",
+                top: this.y + (h / 2) + 15 + "px",
+            };
+        },
+        connectorValueStyle() {
+            const w = this.width * this.ratio;
+            const h = this.height * this.ratio;
+            return {
+                transform: 'translate(-50%)',
+                position: "absolute",
+                left: this.x + ((w / 2)) + "px",
+                top: this.y + (h / 2) + 23 + "px",
             };
         },
         connectorStyle() {
@@ -159,12 +239,11 @@ export default {
                 if (activity && activity.length > 0) {
                     if (activity[activity.length - 1].activityType === "start") {
                         this.activeConnector = true;
-                        this.redraw();
-                        clearTimeout(this.connectorTimeout);
-                        this.connectorTimeout = setTimeout(() => {
-                            this.activeConnector = false;
-                        }, 1000);
                     }
+                    if (activity[activity.length - 1].activityType === "end") {
+                        this.activeConnector = false;
+                    }
+                    this.redraw();
                 }
             },
             deep: true,
@@ -179,6 +258,15 @@ export default {
         translating: {
             handler: function () {
                 this.redraw();
+            },
+            deep: true,
+        },
+        view: {
+            handler: function () {
+                clearTimeout(this.drawTimeout);
+                this.drawTimeout = setTimeout(() => {
+                    this.redraw();
+                }, 100);
             },
             deep: true,
         },
@@ -226,13 +314,21 @@ export default {
         },
     },
     methods: {
+        setIndex(val) {
+            this.index = Math.max(0, Math.min(this.startEvents.length - 1, val));
+        },
+        getColor(key) {
+            return getColor(key);
+        },
         redraw() {
             if (this.presentation) {
                 return;
             }
             this.calls += 1;
             this.setContext();
-            bezier(this);
+            if (this.isInViewport()) {
+                bezier(this);
+            }
         },
         setContext() {
             if (this.presentation || !this.$refs.canvas) {
@@ -241,6 +337,17 @@ export default {
             this.ctx = this.$refs.canvas.getContext("2d");
             this.ctx.scale(this.ratio, this.ratio);
         },
+        isInViewport() {
+            return true;
+            if (!this.$refs.canvas) {
+                return true;
+            }
+            const rect = this.$refs.canvas.getBoundingClientRect();
+            return (
+                rect.top < window.innerHeight && rect.bottom > 0 &&
+                rect.left < window.innerWidth && rect.right > 0
+            );
+        }
     },
     updated() {
         if (!this.inRewindMode) {
@@ -271,7 +378,7 @@ export default {
         pointer-events: all;
         position: absolute;
         height: 40px;
-        width: 150px;
+        width: 160px;
         min-height: 25px;
         min-width: 150px;
         border-radius: 5px;
@@ -282,15 +389,17 @@ export default {
         overflow: scroll;
         z-index: 2;
         transition: height, width, opacity 0.3s ease-out;
-        opacity: 0.8;
         padding: 7px;
         padding-left: 10px;
+        max-width: 70vw;
+        max-height: 70vh;
     }
     .connector-info-value-expanded {
-        height: inherit;
-        width: inherit;
+        height: 500px;
+        width: 500px;
+        overflow: auto;
         transition: height, width, opacity 0.3s ease-out;
-        opacity: 1;
+        z-index: 3;
     }
     .edge-connector {
         pointer-events: none;
@@ -305,7 +414,7 @@ export default {
         top: 50%;
         left: 50%;
         border-radius: 50%;
-        animation: dropAnimation 0.9s infinite;
+        animation: dropAnimation 2s;
         animation-timing-function: cubic-bezier(0.1, 0.7, 0.1);
         transform: translate(-20px, -60px) scale(2);
     }

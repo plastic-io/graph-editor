@@ -90,6 +90,7 @@ export const useStore = defineStore('orchestrator', {
     },
     fortunes: [],
     inRewindMode: false,
+    startTime:  0,
     testOutputVersion: 0,
     testOutput: [],
     ownEvents: [],
@@ -340,6 +341,10 @@ export const useStore = defineStore('orchestrator', {
             return;
           }
         }
+        const begin = (e: any) => {
+          this.graphStore.activityConnectors = {};
+          this.startTime = e.time;
+        }
         const log = (e: any) => {
           if (!this.preferencesStore.preferences!.showConnectorActivity) {
             return;
@@ -457,7 +462,7 @@ export const useStore = defineStore('orchestrator', {
             return end(args);
           }
           if (methodName === 'begin') {
-            return end(args);
+            return begin(args);
           }
           if (methodName === 'set') {
             return end(args);

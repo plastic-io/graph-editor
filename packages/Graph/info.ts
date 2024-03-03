@@ -39,6 +39,7 @@ export default {
         let parentNode = e.target;
         const navEl = document.getElementsByClassName('graph-nav-drawer')[0];
         const menuEl = document.getElementsByClassName('v-overlay-container')[0];
+        const infoEl = document.getElementsByClassName('connector-info-value')[0];
         if (this.locked) {
             while (parentNode) {
                 if (parentNode.className === "node") {
@@ -51,6 +52,9 @@ export default {
             return false;
         }
         if (menuEl && menuEl.contains(e.target)) {
+            return false;
+        }
+        if (infoEl && infoEl.contains(e.target)) {
             return false;
         }
         const r = /no-graph-target/;

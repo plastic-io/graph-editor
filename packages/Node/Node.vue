@@ -36,6 +36,7 @@
                     v-if="!broken"
                     :component="component"
                     :graph="graph"
+                    :presentation="presentation"
                     :node="localNode"
                     :scheduler="scheduler"
                     :state="scheduler.state"

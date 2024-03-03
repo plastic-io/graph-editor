@@ -89,6 +89,7 @@ export default {
     width: 15px;
     margin-bottom: 5px;
     opacity: 0.8;
+    mix-blend-mode: multiply;
 }
 .field-input {
     border-top-left-radius: 15px;
@@ -101,15 +102,27 @@ export default {
 .node-field-output, .node-field-input {
     position: absolute;
     white-space: nowrap;
-    transform: translate(2px, -25px);
+    transform: translate(2px, -20px);
     text-shadow: 0 0 1px rgba(255,255,255,.1), 0 0 1px rgba(0,0,0,.5);
+    
+
+    padding: 0 5px 0 5px;
+    min-width: 60px;
+    height: 15px;
+    line-height: 13px;
+    border-radius: 5px;
+    font-size: 12px;
 }
 .node-field-output {
-    color: var(--v-primary-base);
-    left: 200%;
+    color: rgba(var(--v-primary-base));
+    left: calc(200%);
+    background: linear-gradient(to right, rgba(var(--v-theme-surface), 1) 0%, rgba(var(--v-theme-surface), 1) 50%, rgba(var(--v-theme-surface), 0) 100%);
+
 }
 .node-field-input {
-    color: var(--v-accent-darken1);
-    right: 200%;
+    color: rgba(var(--v-primary-base));
+    right: calc(200% - 5px);
+    text-align: right;
+    background: linear-gradient(to left, rgba(var(--v-theme-surface), 1) 0%, rgba(var(--v-theme-surface), 1) 50%, rgba(var(--v-theme-surface), 0) 100%);
 }
 </style>
