@@ -243,9 +243,6 @@ export default class MouseAction {
                         throw new Error('Invalid connector source ' + connector);
                     }
                     edge.connectors.push(connector);
-                    if (node.linkedGraph) {
-                        linkInnerNodeEdges(node, this.graphStore.scheduler.instance);
-                    }
                 } else if (this.graphStore.hoveredPort.type === "output" && this.graphStore.addingConnector.type === 'input') {
                     // add connector to the hovered port's node
                     const node = this.graphStore.graphSnapshot.nodes.find((v: Node) => v.id === this.graphStore.hoveredPort.node.id);

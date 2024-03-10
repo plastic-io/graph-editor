@@ -8,9 +8,12 @@
   export default defineComponent({
     name: 'node-component',
     props: {
+      hostGraph: Object,
+      hostNode: Object,
       component: Object,
       graph: Object,
       node: Object,
+      isHosted: Boolean,
       presentation: Boolean,
       scheduler: Object,
       state: Object,
@@ -40,7 +43,10 @@
           await callback(node);
           await graphStore.updateGraphFromSnapshot(descripton);
         },
-        graph: graphStore.graphSnapshot,
+        isHosted: props.isHosted,
+        hostNode: props.hostNode,
+        hostGraph: props.hostGraph,
+        graph: props.graph,
         node: props.node,
         scheduler: props.scheduler,
         presentation: props.presentation,
@@ -57,7 +63,7 @@
           console.log('impluse server');
           useOrchestratorStore().dataProviders.graph.send({
               action: 'executeGraph',
-              graphUrl: graphStore.graphSnapshot.url,
+              graphUrl: props.graph.url,
               nodeUrl: props.node.url,
               value: value,
               field: 'impulse',

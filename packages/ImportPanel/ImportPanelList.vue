@@ -73,7 +73,7 @@ export default {
                 });
             Object.keys(group).forEach((prefix) => {
                 group[prefix].sort((a, b) => {
-                    return new Date(a) - new Date(b);
+                    return b.version - a.version;
                 });
             });
             return group;

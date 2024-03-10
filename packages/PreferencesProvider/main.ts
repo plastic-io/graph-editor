@@ -24,18 +24,22 @@ export default {
 </script>
 `;
 const defaultNewGraphTemplate = `<template>
-    <node
-        v-for="node in graph.nodes"
-        :key="node.id + node.version"
-        :node="node"
-        :graph="graph"
-        :presentation="true"
-    />
+    <div>
+        <node
+            v-for="node in graph.nodes"
+            :key="node.id + node.version"
+            :node="node"
+            :hostNode="hostNode"
+            :graph="graph"
+            :presentation="true"
+        />
+    </div>
 </template>
 <script>
 export default {
     name: 'presentation-graph',
     props: {
+        hostNode: Object,
         graph: Object,
         state: Object,
     }

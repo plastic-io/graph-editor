@@ -94,6 +94,7 @@ export default {
     });
     monaco.languages.typescript.typescriptDefaults.addExtraLib(editorLibSrc, libUri);
     // monaco.editor.createModel(editorLibSrc, 'typescript', monaco.Uri.parse(libUri));
+
     await this.initEditor();
     if (this.isPopout) {
       window.addEventListener('resize', this.debounceLayout);
@@ -216,8 +217,15 @@ export default {
           this.cursorLocation = this.$refs.editor.pinstance.getPosition();
         }
       });
+      editor.onKeyDown((e) => {
+        if (e.keyCode === 49 && (e.ctrlKey || e.metaKey)) {
+          this.save();
+          e.preventDefault();
+        } 
+      });
       // HACK: if editor is attached to "this" it will freeze the system
       this.$refs.editor.pinstance = editor;
+
       const getSize = (l, defaultSize) => {
         return localStorage.getItem(this.storeKey + '-size-' + l) || defaultSize;
       };

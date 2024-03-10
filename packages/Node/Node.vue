@@ -12,7 +12,7 @@
             :key="localNode.id"
             :x-node-id="localNode.id"
             :style="nodeStyle">
-            <div class="node-inputs" v-if="!hostNode && !innerNode">
+            <div class="node-inputs" v-if="!hostNode">
                 <node-field
                     v-for="field in inputs"
                     :key="field.name"
@@ -35,13 +35,14 @@
                 <node-component
                     v-if="!broken"
                     :component="component"
-                    :graph="graph"
+                    :hostGraph="graph"
+                    :graph="currentGraph"
                     :presentation="presentation"
                     :node="localNode"
                     :scheduler="scheduler"
                     :state="scheduler.state"
                     v-bind="nodeProps"
-                    :hostNode="hostNode"
+                    :hostNode="isLinked ? localNode : hostNode"
                     @mountError="mountError"
                     @data="dataChange"
                     @set="set"
@@ -53,17 +54,8 @@
                     v-html="style"
                     :key="index"
                 />
-
-                <template :key="innerNode.id" v-for="innerNode in localNode.linkedGraph ? localNode.linkedGraph.graph.nodes : []">
-                    <node
-                        :node="innerNode"
-                        :graph="localNode.linkedGraph.graph"
-                        :innerNode="true"
-                        :presentation="true"
-                    />
-                </template>
             </div>
-            <div class="node-outputs" v-if="!hostNode && !innerNode">
+            <div class="node-outputs" v-if="!hostNode">
                 <node-field
                     v-for="field in outputs"
                     :key="field.name"
@@ -96,12 +88,12 @@ import {diff} from "deep-diff";
 
 import {markRaw, shallowRef, h, watch} from "vue";
 export default {
-    name: "graph-node",
+    name: "node",
     components: {NodeField, NodeComponent, NodeEditor},
     props: {
         node: Node,
+        hostGraph: Node,
         hostNode: Node,
-        innerNode: Boolean,
         graph: Object,
         presentation: Boolean,
     },
@@ -214,7 +206,14 @@ export default {
             this.longLoading = true;
         }, 500);
         this.clearErrors(this.localNode.id);
-        await this.importRoot(this.localNode);
+        // should we load the local node?  An imported node?  Or an imported graph?
+        if (this.localNode.linkedGraph) {
+            await this.importGraph(this.localNode);
+        } else if (this.localNode.linkedNode) {
+            await this.importNode(this.localNode);
+        } else {
+            await this.importRoot(this.localNode);
+        }
         this.loaded = true;
         watch(() => this.webWorkerProxy, () => {
             this.nodeProps = this.webWorkerProxy.nodes[this.localNode.id];
@@ -296,7 +295,10 @@ export default {
             this.styles = this.compiledTemplate.styles;
         },
         async importGraph(g) {
-            this.compiledTemplate = await compileTemplate(this, this.nodeComponentName, g.properties.presentationTemplate);
+            if (!g.linkedGraph.graph.properties.template) {
+                throw new Error('Linked Graph template is blank');
+            }
+            this.compiledTemplate = await compileTemplate(this, this.nodeComponentName, g.linkedGraph.graph.properties.template);
             this.styles = this.compiledTemplate.styles;
             this.loaded = true;
         },
@@ -332,6 +334,12 @@ export default {
             'view',
             'movingNodes',
         ]),
+        isLinked() {
+            return !!(this.localNode.linkedGraph || this.localNode.linkedNode);
+        },
+        currentGraph() {
+            return this.localNode.linkedGraph ? this.localNode.linkedGraph.graph : this.graph;
+        },
         nodeComponentName() {
             const name = this.artifactKey(this.node.artifact) || this.node.id;
             return name;
