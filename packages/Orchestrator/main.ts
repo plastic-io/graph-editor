@@ -199,11 +199,17 @@ export const useStore = defineStore('orchestrator', {
       }
     },
     async publishGraph() {
+        this.infoMessage = 'Publishing';
+        this.showInfo = true;
         const graph = this.graphStore.graph;
         await this.dataProviders.publish!.set(graph.id, {
             graph,
             id: newId(),
         });
+        this.infoMessage = 'Published ' + graph.properties.name;
+        setTimeout(() => {
+          this.showInfo = false;
+        }, 3400);
         this.getToc();
     },
     async getPublicRegistry(e: any) {
