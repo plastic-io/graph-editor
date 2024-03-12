@@ -242,7 +242,14 @@ export default class MouseAction {
                     if (!connector.field || !connector.nodeId || !connector.graphId || !connector.version) {
                         throw new Error('Invalid connector source ' + connector);
                     }
-                    edge.connectors.push(connector);
+                    if (!edge.connectors.find((conn: any) => {
+                        return conn.field == connector.field
+                            && conn.nodeId == connector.nodeId
+                            && conn.graphId == connector.graphId
+                    })) {
+                        edge.connectors.push(connector);
+                    }
+                    // silently ignore duplicate connectors
                 } else if (this.graphStore.hoveredPort.type === "output" && this.graphStore.addingConnector.type === 'input') {
                     // add connector to the hovered port's node
                     const node = this.graphStore.graphSnapshot.nodes.find((v: Node) => v.id === this.graphStore.hoveredPort.node.id);
@@ -254,7 +261,14 @@ export default class MouseAction {
                     if (!connector.field || !connector.nodeId || !connector.graphId || !connector.version) {
                         throw new Error('Invalid connector source ' + connector);
                     }
-                    edge.connectors.push(connector);
+                    if (!edge.connectors.find((conn: any) => {
+                        return conn.field == connector.field
+                            && conn.nodeId == connector.nodeId
+                            && conn.graphId == connector.graphId
+                    })) {
+                        edge.connectors.push(connector);
+                    }
+                    // silently ignore duplicate connectors
                 }
                 this.graphStore.addingConnector = null;
                 this.applyGraphChanges("Add Connector");
