@@ -91,6 +91,7 @@ export const useStore = defineStore('orchestrator', {
     fortunes: [],
     inRewindMode: false,
     startTime:  0,
+    redrawConnectorVersion: 0,
     testOutputVersion: 0,
     testOutput: [],
     ownEvents: [],
@@ -305,8 +306,7 @@ export const useStore = defineStore('orchestrator', {
     async loadAndIntegrateLinkedGraphsWithFields(graph: Graph, globalNodes: Node[], rootGraph: Graph): Promise<void> {
       for (const node of graph.nodes) {
         if (node.linkedGraph) {
-          let graphData = await fetch((node as any).artifact);
-          let loadedGraph = await graphData.json();
+          let loadedGraph = node.linkedGraph.graph;
           // this node has potential connected inputs
           // needing to be proxied into the loaded graph
           // check every node to see if any connectors

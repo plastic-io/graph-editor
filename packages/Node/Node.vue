@@ -293,6 +293,7 @@ export default {
             };
             this.compiledTemplate = await compileTemplate(this, vect.id, vect.template.vue);
             this.styles = this.compiledTemplate.styles;
+            this.redrawConnectorVersion += 1;
         },
         async importGraph(g) {
             if (!g.linkedGraph.graph.properties.template) {
@@ -301,6 +302,7 @@ export default {
             this.compiledTemplate = await compileTemplate(this, this.nodeComponentName, g.linkedGraph.graph.properties.template);
             this.styles = this.compiledTemplate.styles;
             this.loaded = true;
+            this.redrawConnectorVersion += 1;
         },
         async importNode(v, artifactKey) {
             v.artifact = this.node.artifact;
@@ -315,12 +317,16 @@ export default {
             v.properties.presentation.z = this.node.properties.presentation.z;
             this.compiledTemplate = await compileTemplate(this, artifactKey, v.template.vue);
             this.styles = this.compiledTemplate.styles;
+            this.redrawConnectorVersion += 1;
         },
     },
     computed: {
         ...mapWritableState(useInputStore, [
             'mouse',
             'keys',
+        ]),
+        ...mapWritableState(useOrchestratorStore, [
+            'redrawConnectorVersion',
         ]),
         ...mapState(useOrchestratorStore, [
             'dataProviders',

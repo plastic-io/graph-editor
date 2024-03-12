@@ -10,19 +10,21 @@
         >
             <div :class="{drop: activeConnector}"></div>
             <div>
-                <div>
+                <span v-show="expand">
+                    <v-icon @click="setIndex(index - 1)" icon="mdi-arrow-left-bold-box-outline"/>
+                    {{index + 1}}/{{activityCounts.started}}
+                    <v-icon @click="setIndex(index + 1)" icon="mdi-arrow-right-bold-box-outline"/>
+                </span>
+                <span v-show="expand" class="rounded-pill connector-meta-info">
                     {{activityCounts.started}} - 
                     {{activityTime}}ms
-                    <span v-show="expand">
-                        <v-icon size="small" icon="mdi-code-braces"/> {{typeof activityValue}}
-                    </span>
+                </span>
+                <span v-show="expand" class="rounded-pill connector-meta-info">
+                    typeof {{typeof activityValue}}
+                </span>
+                <div class="connector-value-info">
+                    {{formattedValue}}
                 </div>
-                <div>
-                    <v-icon @click="setIndex(index - 1)" icon="mdi-arrow-left"/>
-                    {{index + 1}}/{{activityCounts.started}}
-                    <v-icon @click="setIndex(index + 1)" icon="mdi-arrow-right"/>
-                </div>
-                {{formattedValue}}
             </div>
 
         </div>
@@ -89,6 +91,7 @@ export default {
         ...mapState(useOrchestratorStore, [
           'historyPosition',
           'startTime',
+          'redrawConnectorVersion',
         ]),
         ...mapState(useGraphStore, [
           'presentation',
@@ -232,6 +235,9 @@ export default {
         },
     },
     watch: {
+        redrawConnectorVersion() {
+            this.redraw();
+        },
         activityConnectors: {
             handler: function () {
                 const key = this.connector.id;
@@ -374,30 +380,42 @@ export default {
 };
 </script>
 <style scoped>
+    .connector-value-info {
+        background: rgba(var(--v-theme-background));
+        padding: 2px 10px;
+        margin: 2px 6px 3px 6px;
+        border-radius: 3px;
+    }
+    .connector-meta-info {
+        background: rgba(var(--v-theme-info));
+        padding: 2px 10px;
+        margin: 2px 6px;
+    }
     .connector-info-value {
         pointer-events: all;
         position: absolute;
-        height: 40px;
+        height: 50px;
         width: 160px;
         min-height: 25px;
         min-width: 150px;
         border-radius: 5px;
-        background: rgba(var(--v-theme-info));
+        background: rgba(var(--v-theme-surface));
         border-color: rgba(var(--v-border-color));
         border-style: solid;
         border-width: 1px;
         overflow: scroll;
         z-index: 2;
-        transition: height, width, opacity 0.3s ease-out;
+        transition: all 0.3s ease-out;
         padding: 7px;
         padding-left: 10px;
         max-width: 70vw;
         max-height: 70vh;
     }
     .connector-info-value-expanded {
-        height: 500px;
-        width: 500px;
+        height: inherit;
+        width: inherit;
         overflow: auto;
+        white-space: nowrap;
         transition: height, width, opacity 0.3s ease-out;
         z-index: 3;
     }
