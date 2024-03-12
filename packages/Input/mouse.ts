@@ -139,7 +139,7 @@ export default class MouseAction {
     this.graphStore.connectorWarn = null;
     // check hits on the connector LUT to find connector selection and connection hovers
     this.graphStore.hoveredConnector = null;
-    if (!this.graphStore.addingConnector) {
+    if (!this.graphStore.addingConnector && !this.graphStore.hoveredPort) {
         for (let j = 0; j < luts.length; j += 1) {
             const t = luts[j].table;
             const connector = luts[j].connector;
