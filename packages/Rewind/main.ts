@@ -20,6 +20,6 @@ export default class GraphRewind extends EditorModule {
       divider: true,
     });
     // this really isn't working well
-    graphOrchestratorStore.addPlugin(rewindPluginIcon);
+    // graphOrchestratorStore.addPlugin(rewindPluginIcon);
   }
 };

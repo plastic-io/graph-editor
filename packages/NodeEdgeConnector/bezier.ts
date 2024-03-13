@@ -88,6 +88,9 @@ export default function bezierDraw(connector: any): void {
         if (inSrc.field && ((connector.output.field && !connector.output.field.visible) || !inSrc.field.visible)) {
             return;
         }
+        if (!inSrc.field) {
+            return;
+        }
         const elOutPort = connector.output.field ? document.getElementById(`node-output-${connector.output.node.id}-${connector.output.field.name}`) : null;
         const elInPort = inSrc.node ? document.getElementById(`node-input-${inSrc.node.id}-${inSrc.field.name}`) : null;
         // if a graph element is still loading, it might not have io yet
