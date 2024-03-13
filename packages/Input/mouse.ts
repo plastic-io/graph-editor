@@ -72,16 +72,6 @@ export default class MouseAction {
     let y = (mouse.y - this.graphStore.view.y) / this.graphStore.view.k;
     // LUT collision margin
     let m = 10;
-    // map LUTs for collions
-    const luts = Object.keys(this.graphStore.luts).map((connectorId: string) => {
-        return {
-            output: this.graphStore.luts[connectorId].output,
-            input: this.graphStore.luts[connectorId].input,
-            node: this.graphStore.luts[connectorId].node,
-            connector: this.graphStore.luts[connectorId].connector,
-            table: this.graphStore.luts[connectorId].lut,
-        };
-    });
     // adding a connector
     if (this.graphStore.hoveredPort && !this.inputStore.mouse.lmb && mouse.lmb && !this.graphStore.movingConnector && !locked) {
         this.graphStore.ltrPct = this.graphStore.hoveredPort.type === "output" ? 0 : 1;
@@ -140,36 +130,39 @@ export default class MouseAction {
     // check hits on the connector LUT to find connector selection and connection hovers
     this.graphStore.hoveredConnector = null;
     if (!this.graphStore.addingConnector && !this.graphStore.hoveredPort) {
-        for (let j = 0; j < luts.length; j += 1) {
-            const t = luts[j].table;
-            const connector = luts[j].connector;
-            const node = luts[j].node;
-            const input = luts[j].input;
-            const output = luts[j].output;
-            for (let i = 0; i < t.length; i += 1) {
-                if ((t[i].x - m < x && t[i].x + m > x && t[i].y - m < y && t[i].y + m > y)
-                    || (t[i].x >= this.graphStore.selectionRect.x && t[i].x <= this.graphStore.selectionRect.x + this.graphStore.selectionRect.width
-                    && t[i].y >= this.graphStore.selectionRect.y && t[i].y <= this.graphStore.selectionRect.y + this.graphStore.selectionRect.height)) {
-                    // left to right % of the hit
-                    if (!this.graphStore.movingConnector && !this.graphStore.addingConnector) {
-                        this.graphStore.ltrPct = i / t.length;
-                    }
-                    // check if state connector should be selected as well as hovered
-                    if ((mouse.lmb && !this.inputStore.mouse.lmb) || this.graphStore.selectionRect.visible) {
-                        // maybe remove the previous selection before adding state one
-                        if (!(this.inputStore.keys[shiftKeyCode] || this.inputStore.keys[metaKeyCode] || this.inputStore.keys[ctrlKeyCode])
-                            && !this.graphStore.selectionRect.visible) {
-                            this.graphStore.selectedConnectors = [];
+        for (const connectorId in this.graphStore.luts) {
+            if (this.graphStore.luts.hasOwnProperty(connectorId)) {
+                const lut = this.graphStore.luts[connectorId];
+                const t = lut.lut;
+                const connector = lut.connector;
+                const node = lut.node;
+                const input = lut.input;
+                const output = lut.output;
+                for (let i = 0; i < t.length; i += 1) {
+                    if ((t[i].x - m < x && t[i].x + m > x && t[i].y - m < y && t[i].y + m > y)
+                        || (t[i].x >= this.graphStore.selectionRect.x && t[i].x <= this.graphStore.selectionRect.x + this.graphStore.selectionRect.width
+                        && t[i].y >= this.graphStore.selectionRect.y && t[i].y <= this.graphStore.selectionRect.y + this.graphStore.selectionRect.height)) {
+                        // left to right % of the hit
+                        if (!this.graphStore.movingConnector && !this.graphStore.addingConnector) {
+                            this.graphStore.ltrPct = i / t.length;
                         }
-                        if (this.graphStore.selectedConnectors.indexOf(connector) === -1) {
-                            this.graphStore.selectedConnectors.push(connector);
+                        // check if state connector should be selected as well as hovered
+                        if ((mouse.lmb && !this.inputStore.mouse.lmb) || this.graphStore.selectionRect.visible) {
+                            // maybe remove the previous selection before adding state one
+                            if (!(this.inputStore.keys[shiftKeyCode] || this.inputStore.keys[metaKeyCode] || this.inputStore.keys[ctrlKeyCode])
+                                && !this.graphStore.selectionRect.visible) {
+                                this.graphStore.selectedConnectors = [];
+                            }
+                            if (this.graphStore.selectedConnectors.indexOf(connector) === -1) {
+                                this.graphStore.selectedConnectors.push(connector);
+                            }
                         }
+                        // don't hover other connectors while moving a connector
+                        if (!this.graphStore.movingConnector && !this.graphStore.selectionRect.visible) {
+                            this.graphStore.hoveredConnector = {node, connector, input, output};
+                        }
+                        break;
                     }
-                    // don't hover other connectors while moving a connector
-                    if (!this.graphStore.movingConnector && !this.graphStore.selectionRect.visible) {
-                        this.graphStore.hoveredConnector = {node, connector, input, output};
-                    }
-                    break;
                 }
             }
         }

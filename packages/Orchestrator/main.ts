@@ -414,7 +414,6 @@ export const useStore = defineStore('orchestrator', {
           }
         }
         const begin = (e: any) => {
-          this.graphStore.activityConnectors = {};
           this.startTime = e.time;
         }
         const log = (e: any) => {

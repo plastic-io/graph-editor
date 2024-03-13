@@ -1,32 +1,40 @@
 <template>
     <div v-if="!presentation" @mousemove.stop>
-        <div :class="{'connector-info-value': true, 'connector-info-value-expanded': expand}"
-            v-if="preferences.showConnectorActivity && activityValue !== undefined"
-            @mousemove.stop
+        <div @mousemove.stop
             @mousedown.stop
             @mouseover="expand = true;"
-            @mouseout="expand = false;"
-            :style="connectorValueStyle"
-        >
-            <div :class="{drop: activeConnector}"></div>
-            <div>
-                <span v-show="expand">
-                    <v-icon @click="setIndex(index - 1)" icon="mdi-arrow-left-bold-box-outline"/>
-                    {{index + 1}}/{{activityCounts.started}}
-                    <v-icon @click="setIndex(index + 1)" icon="mdi-arrow-right-bold-box-outline"/>
-                </span>
-                <span v-show="expand" class="rounded-pill connector-meta-info">
-                    {{activityCounts.started}} - 
-                    {{activityTime}}ms
-                </span>
-                <span v-show="expand" class="rounded-pill connector-meta-info">
-                    typeof {{typeof activityValue}}
-                </span>
-                <div class="connector-value-info">
-                    {{formattedValue}}
+            @mouseout="expand = false;">
+            <div :style="connectorValueStyle" v-show="expand">
+                <div class="connector-controls">
+                    
+                    <div>
+                        <div class="d-inline-block" @wheel="scrollIndex($event)">
+                            <v-icon @click="setIndex(index - 1)" icon="mdi-arrow-left-bold-box-outline" title="Previous Event"/>
+                            {{index + 1}}/{{activityCounts.started}}
+                            <v-icon @click="setIndex(index + 1)" icon="mdi-arrow-right-bold-box-outline" title="Next Event"/>
+                        </div>
+                        <v-icon @click="clearActivity" icon="mdi-text-box-remove-outline" title="Clear events for this node"/>
+                        <div class="d-inline-block" style="width: 150px;">
+                            <span class="rounded-pill connector-meta-info">
+                                {{activityTime}}ms
+                            </span>
+                            <span class="rounded-pill connector-meta-info">
+                                typeof {{typeof activityValue}}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
+            <div :class="{'connector-info-value': true, 'connector-info-value-expanded': expand, drop: activeConnector}"
+                v-if="preferences.showConnectorActivity && activityValue !== undefined"
+                :style="connectorValueStyle">
+                <div>
+                    <div class="connector-value-info">
+                        {{formattedValue}}
+                    </div>
+                </div>
 
+            </div>
         </div>
         <div
             v-if="!presentation"
@@ -62,6 +70,7 @@ export default {
     },
     data() {
         return {
+            dropTimer: null,
             drawTimeout: null,
             connectorTimeout: null,
             graphStore: useGraphStore(),
@@ -247,7 +256,13 @@ export default {
                         this.activeConnector = true;
                     }
                     if (activity[activity.length - 1].activityType === "end") {
-                        this.activeConnector = false;
+                        this.dropTimer = setTimeout(() => {
+                            this.activeConnector = false;
+                        }, 150);
+                    }
+                    // if the index is set to the last event, keep it at the last event
+                    if (this.index === this.startEvents.length - 2) {
+                        this.setIndex(this.startEvents.length - 1);
                     }
                     this.redraw();
                 }
@@ -320,6 +335,17 @@ export default {
         },
     },
     methods: {
+        scrollIndex(e) {
+            const delta =
+                ((e as any).wheelDelta ? (e as any).wheelDelta / 120 : -e.deltaY / 3) * 0.01;
+            this.setIndex(this.index + (delta > 0 ? 1 : -1));
+            e.preventDefault();
+            e.stopPropagation();
+        },
+        clearActivity() {
+            this.activityConnectors[this.connector.id] = [];
+            this.expand = false;
+        },
         setIndex(val) {
             this.index = Math.max(0, Math.min(this.startEvents.length - 1, val));
         },
@@ -380,6 +406,15 @@ export default {
 };
 </script>
 <style scoped>
+    .connector-controls {
+        text-align: left;
+        white-space: nowrap;
+        top: -30px;
+        left: 50%;
+        height: 100px;
+        transform: translate(-50%);
+        position: absolute;
+    }
     .connector-value-info {
         background: rgba(var(--v-theme-background));
         padding: 2px 10px;
@@ -392,14 +427,13 @@ export default {
         margin: 2px 6px;
     }
     .connector-info-value {
+        white-space: nowrap;
         pointer-events: all;
         position: absolute;
-        height: 50px;
-        width: 160px;
-        min-height: 25px;
-        min-width: 150px;
+        height: inherit;
+        width: inherit;
         border-radius: 5px;
-        background: rgba(var(--v-theme-surface));
+        background: rgba(var(--v-theme-info));
         border-color: rgba(var(--v-border-color));
         border-style: solid;
         border-width: 1px;
@@ -409,13 +443,12 @@ export default {
         padding: 7px;
         padding-left: 10px;
         max-width: 70vw;
-        max-height: 70vh;
+        max-height: 40vh;
     }
     .connector-info-value-expanded {
         height: inherit;
         width: inherit;
         overflow: auto;
-        white-space: nowrap;
         transition: height, width, opacity 0.3s ease-out;
         z-index: 3;
     }
@@ -425,32 +458,6 @@ export default {
         z-index: -1597463006;
     }
     .drop {
-        width: 10px;
-        height: 10px;
-        background-color: white;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        border-radius: 50%;
-        animation: dropAnimation 2s;
-        animation-timing-function: cubic-bezier(0.1, 0.7, 0.1);
-        transform: translate(-20px, -60px) scale(2);
-    }
-
-    @keyframes dropAnimation {
-        0% {
-            width: 10px;
-            height: 10px;
-            top: 50%;
-            left: 50%;
-            opacity: 1;
-        }
-        100% {
-            width: 200px;
-            height: 200px;
-            top: 0;
-            left: 0;
-            opacity: 0;
-        }
+        background: rgba(var(--v-theme-warning));
     }
 </style>

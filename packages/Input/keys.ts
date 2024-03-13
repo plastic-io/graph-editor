@@ -13,6 +13,7 @@ const equalKeyCode = 187;
 const backslashKeyCode = 220;
 const graveKeyCode = 192;
 const tabKeyCode = 9;
+const escKeyCode = 27;
 // const shiftKeyCode = 16;
 // const metaKeyCode = 91;
 // const spaceKeyCode = 32;
@@ -32,6 +33,29 @@ export const keys = (store: any, e: UIEvent) => {
     const shift = e.shiftKey;
     const alt = e.altKey;
     const locked = store.graphStore.presentation || store.locked;
+    if (keys[escKeyCode]) {
+        store.graphStore.startedAddingConnector = null;
+        store.graphStore.startedMovingConnector = null;
+        store.graphStore.movingConnector = null;
+        store.graphStore.addingConnector = null;
+        store.inputStore.mouse.lmb = false;
+        store.graphStore.movingNodes.forEach((n: any) => {
+            const ogNode = store.graphSnapshotStore.graph.nodes.find((no: any) => no.id = n.id);
+            const node = store.graphStore.graphSnapshot.nodes.find((no: any) => no.id = n.id);
+            if (ogNode && node) {
+                node.properties.presentation.x = ogNode.properties.presentation.x;
+                node.properties.presentation.y = ogNode.properties.presentation.y;
+                node.properties.x = ogNode.properties.x;
+                node.properties.y = ogNode.properties.y;
+            }
+        });
+        for (let t = 0; t < 1500; t += 100) {
+            setTimeout(() => {
+                store.orchistratorStore.redrawConnectorVersion += 1;
+            }, t);
+        }
+        store.graphStore.movingNodes = [];
+    }
     if (keys[graveKeyCode] && alt) {
         store.graphStore.presentation = !store.graphStore.presentation;
     }
