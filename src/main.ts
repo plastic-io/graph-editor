@@ -12,6 +12,7 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 
+
 // plugins
 import type GraphEditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 import Orchestrator from "@plastic-io/graph-editor-vue3-orchestrator";

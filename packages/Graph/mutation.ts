@@ -30,11 +30,7 @@ export default {
     async addItem(e: any) {
         const artifactPrefix = "artifacts/";
         let item, er;
-        if (e.type === 'publishedGraph') {
-            item = await this.orchestratorStore.dataProviders.publish.get(e.id);
-        } else if (e.type === 'component') {
-            item = e;
-        } else if (e["artifact-url"] && this.preferencesStore.preferences.graphHTTPServer) {
+        if (e["artifact-url"] && this.preferencesStore.preferences.graphHTTPServer) {
             try {
                 const artifactUrl = this.preferencesStore.preferences.graphHTTPServer + e["artifact-url"];
                 item = await fetch(artifactUrl);
@@ -44,7 +40,11 @@ export default {
             } catch (err) {
                 er = err;
             }
-        } else if (e.url && /api\.github\.com/.test(e.url)) {
+        } else if (e.type === 'publishedGraph') {
+            item = await this.orchestratorStore.dataProviders.publish.get(e.id);
+        } else if (e.type === 'component') {
+            item = e;
+        } else  if (e.url && /api\.github\.com/.test(e.url)) {
             const data = await fetch(e.url);
             const dataJson = await data.json();
             item = JSON.parse(atob(dataJson.content));

@@ -1,38 +1,34 @@
 <template>
   <div>
     <div class="position-absolute no-graph-targe">
-      <keep-alive>
-        <monaco-code-editor
-            style="opacity: 0.98"
-            v-if="showVueEditor"
-            templateType="vue"
-            language="html"
-            :nodeId="nodeId"
-            :graphId="graphSnapshot.id"
-            :errors="errors.filter(e => e.type === 'vue')"
-            :value="vueTemplateValue"
-            helpLink="https://vuejs.org/guide/essentials/component-basics.html"
-            @close="showVueEditor = false"
-            @dirty="vueIsDirty = $event"
-            @save="saveTemplate('vue', $event)"
-        />
-      </keep-alive>
-      <keep-alive>
-        <monaco-code-editor
-            style="opacity: 0.98"
-            v-if="showSetEditor"
-            templateType="set"
-            language="typescript"
-            :nodeId="nodeId"
-            :graphId="graphSnapshot.id"
-            :errors="errors.filter(e => e.type === 'set')"
-            :value="setTemplateValue"
-            helpLink="https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html"
-            @close="showSetEditor = false"
-            @dirty="setIsDirty = $event"
-            @save="saveTemplate('set', $event)"
-        />
-      </keep-alive>
+      <monaco-code-editor
+          style="opacity: 0.98"
+          v-if="showVueEditor"
+          templateType="vue"
+          language="html"
+          :nodeId="nodeId"
+          :graphId="graphSnapshot.id"
+          :errors="errors.filter(e => e.type === 'vue')"
+          :value="vueTemplateValue"
+          helpLink="https://vuejs.org/guide/essentials/component-basics.html"
+          @close="showVueEditor = false"
+          @dirty="vueIsDirty = $event"
+          @save="saveTemplate('vue', $event)"
+      />
+      <monaco-code-editor
+          style="opacity: 0.98"
+          v-if="showSetEditor"
+          templateType="set"
+          language="typescript"
+          :nodeId="nodeId"
+          :graphId="graphSnapshot.id"
+          :errors="errors.filter(e => e.type === 'set')"
+          :value="setTemplateValue"
+          helpLink="https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html"
+          @close="showSetEditor = false"
+          @dirty="setIsDirty = $event"
+          @save="saveTemplate('set', $event)"
+      />
     </div>
     <div class="position-absolute no-graph-targe"
         style="top: -25px; width: 200px;">

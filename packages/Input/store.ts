@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
-import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
+import {useStore as useGraphStore, useGraphSnapshotStore} from "@plastic-io/graph-editor-vue3-graph";
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import {keys} from "./keys";
 import MouseAction from "./mouse";
@@ -13,6 +13,7 @@ export const useStore = defineStore('input', {
     orchistratorStore: useOrchestratorStore(),
     graphStore: useGraphStore(),
     inputStore: useInputStore(),
+    graphSnapshotStore: useGraphSnapshotStore(),
     mouse: {
       lmb: false,
       rmb: false,

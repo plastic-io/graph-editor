@@ -60,6 +60,15 @@
         icon="mdi-creation"
         />
     <v-icon
+        help-topic="showConnectorActivity"
+        title="Clear Connector Activity Logs"
+        @click="clearActivityConnectors"
+        style="cursor: pointer;"
+        class="mx-2"
+        :color="hasActivityLog ? 'info' : ''"
+        icon="mdi-text-box-remove-outline"
+        />
+    <v-icon
         help-topic="toggleLabels"
         title="Toggle Input/Output Labels"
         @click="preferences.showLabels = !preferences.showLabels"
@@ -112,6 +121,20 @@ export default {
     props: {
         route: Object,
     },
+    data() {
+        return {
+            hasActivityLog: false,
+        };
+    },
+    watch: {
+        activityConnectors: {
+            deep: true,
+            handler() {
+                this.hasActivityLog = Object.values(this.activityConnectors)
+                .reduce((total, currentArray) => total + currentArray.length, 0) > 0;
+            },
+        }
+    },
     computed: {
         ...mapState(useInputStore, [
             'mouse',
@@ -128,6 +151,7 @@ export default {
             'hoveredPort',
             'selectedNodes',
             'presentation',
+            'activityConnectors',
             'inRewindMode',
         ]),
         ...mapWritableState(usePreferencesStore, [
@@ -183,6 +207,9 @@ export default {
             'sendToBack',
             'deleteSelected',
         ]),
+        clearActivityConnectors() {
+            this.activityConnectors = {};
+        }
     }
 }
 

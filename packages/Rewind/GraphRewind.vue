@@ -22,8 +22,8 @@
             <v-btn :color="playing ? 'accent' : ''" @click="play">
               <v-icon>mdi-play</v-icon>
             </v-btn>
-            <v-btn>
-              <v-icon color="red" @click="commitRewind">mdi-record</v-icon>
+            <v-btn @click="commitRewind">
+              <v-icon color="red">mdi-record</v-icon>
             </v-btn>
             <v-btn
               :color="fastForwarding ? 'accent' : ''"
@@ -153,7 +153,6 @@ export default {
     async discardRewind() {
       await this.setVersion(this.maxVersion);
       this.inRewindMode = false;
-      
     },
     async setVersion(version) {
       if (!(version <= this.maxVersion && version > 0)) {
@@ -165,7 +164,6 @@ export default {
       if (changes) {
         this.graphStore.$patch((state) => {
           state.graphSnapshot = graph;
-          console.log('state.graphSnapshot', state.graphSnapshot);
         });
         this.localGraph = deref(this.graphSnapshot);
       }
@@ -183,11 +181,17 @@ export default {
             applyChange(state, true, change);
           });
         });
-        console.debug(`Projected graph from ${version} events in ${performance.now() - start}ms`);
         return state;
     },
-    commitRewind() {
-
+    async commitRewind() {
+      this.inRewindMode = false;
+      this.$nextTick(async () => {
+        const revertedGraph = await this.projectGraphEvents(this.currentSelectedVersion);
+        this.graphStore.$patch((state) => {
+          state.graphSnapshot = revertedGraph;
+        });
+        this.graphStore.updateGraphFromSnapshot("Revert");
+      });
     },
     startPlayback() {
       clearTimeout(this.playbackTimeout);

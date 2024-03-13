@@ -7,6 +7,27 @@ export default function bezierDraw(connector: any): void {
     function getColor(key: string) {
         return (colors as {[key: string]: any})[key].base;
     }
+    function drawShadow(curve: any): void {
+        ctx.save(); // Save the current state to restore after drawing the shadow
+        ctx.strokeStyle = 'rgba(127, 127, 127, 1)'; // Shadow color: black with 50% opacity
+        ctx.lineWidth = connector.preferences.appearance.connectors.lineWidth + 2; // Slightly larger to ensure it appears under the main line
+        // ctx.translate(2, 2); // Offset the shadow by 2 pixels right and 2 pixels down
+        ctx.globalCompositeOperation = "exclusion";
+        // Draw the shadow curve
+        drawCurve(curve);
+
+        ctx.restore(); // Restore the state to draw the main line
+    }
+
+    function visualizeLUT(lut: any) {
+        lut.forEach((point: any) => {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 10, 0, 2 * Math.PI); // Draw small circle for each point
+            ctx.fillStyle = '#FF000011';
+            ctx.fill();
+        });
+    }
+
     let strokeStyle = getColor(connector.preferences.appearance.connectors.strokeStyle) || "blue";
     if (connector.watchConnectors.map((i: {id: string}) => i.id).indexOf(connector.connector.id) !== -1) {
         strokeStyle = getColor(connector.preferences.appearance.connectors.watchStrokeStyle) || "blue";
@@ -14,13 +35,13 @@ export default function bezierDraw(connector: any): void {
     if (connector.active) {
         strokeStyle = getColor(connector.preferences.appearance.connectors.activityStrokeStyle) || "blue";
     }
-    if (connector.errorConnectors.map((i: {id: string}) => i.id).indexOf(connector.connector.id) !== -1) {
+    if (connector.errored) {
         strokeStyle = getColor(connector.preferences.appearance.connectors.errorStrokeStyle) || "blue";
     }
-    if (connector.selectedConnectors.map((i: {id: string}) => i.id).indexOf(connector.connector.id) !== -1) {
+    if (connector.selected) {
         strokeStyle = getColor(connector.preferences.appearance.connectors.selectedStrokeStyle) || "blue";
     }
-    if (connector.hoveredConnector && connector.hoveredConnector.connector.id === connector.connector.id) {
+    if (connector.hovered) {
         strokeStyle = getColor(connector.preferences.appearance.connectors.hoverStrokeStyle) || "blue";
     }
     function drawCurve(curve: any): void { // eslint-disable-line
@@ -44,8 +65,8 @@ export default function bezierDraw(connector: any): void {
     }
     function draw(): any {
         const padding = {  // eslint-disable-line
-            x: 300,
-            y: 300,
+            x: 600,
+            y: 600,
         };
         const el = document.getElementById("node-" + connector.node.id);
         if (!el) {
@@ -59,10 +80,15 @@ export default function bezierDraw(connector: any): void {
         const isAdding = connector.addingConnector && connector.addingConnector.connector.id === connector.connector.id && pastDeadZone;
         const isMoving = connector.movingConnector && connector.movingConnector.connector.id === connector.connector.id && pastDeadZone;
         const isMovingOrAdding = isAdding || isMoving;
-        const isAddingFromInput = connector.addingConnector && connector.addingConnector.type === 'input';
+        const isAddingFromInput = connector.addingConnector
+            && connector.addingConnector.type === 'input'
+            && connector.addingConnector.connector.id === connector.connector.id;
         const ltr = isMoving ? connector.ltrPct > 0.5 : !isAddingFromInput;
         const inSrc = isAddingFromInput ? connector.addingConnector : connector.input;
         if (inSrc.field && ((connector.output.field && !connector.output.field.visible) || !inSrc.field.visible)) {
+            return;
+        }
+        if (!inSrc.field) {
             return;
         }
         const elOutPort = connector.output.field ? document.getElementById(`node-output-${connector.output.node.id}-${connector.output.field.name}`) : null;
@@ -99,9 +125,9 @@ export default function bezierDraw(connector: any): void {
             width = Math.max(width, width + Math.abs(mouseX));
             height = Math.max(height, height + Math.abs(mouseY));
         }
-        connector.x = x;
+        connector.x = x - 200;
         connector.y = y;
-        connector.width = width;
+        connector.width = width + 400;
         connector.height = height;
         const start = {
             x: !ltr && isMovingOrAdding ? mouseX : outRect.x,
@@ -116,26 +142,48 @@ export default function bezierDraw(connector: any): void {
         ctx.strokeStyle = strokeStyle;
         ctx.lineWidth = connector.preferences.appearance.connectors.lineWidth;
         const co = {// connector offset to center inputs and outputs
-            x: 0,
-            y: 5, 
+            x: 12,
+            y: 7,
         };
+        const eco = {
+            x: -3,
+            y: 7,
+        }
+
+
+        const distance = Math.hypot(end.x - start.x, end.y - start.y);
+        const controlPointFactor = 0.5; // Adjust this factor to increase or decrease the curvature
+        const controlPointOffset = distance * controlPointFactor;
+
+        const asymmetryFactor = 1; // Adjust this to make one side of the curve more pronounced
+
+
         const curve = new Bezier(  // eslint-disable-line
             {x: start.x + co.x, y: start.y + co.y},
-            {x: start.x + 200 + co.x, y: start.y + co.y},
-            {x: end.x - 200 - co.x, y: end.y + co.y},
-            {x: end.x - co.x, y: end.y + co.y},
+            {x: start.x + controlPointOffset + co.x, y: start.y + co.y},
+            {x: end.x - controlPointOffset - eco.x, y: end.y + eco.y},
+            {x: end.x - eco.x, y: end.y + eco.y},
         );
+        drawShadow(curve);
         drawCurve(curve);
         const cStart = curve.get(0);
         const cEnd = curve.get(1);
+        const midPointSize = connector.preferences.showConnectorActivity ? 4 : 4;
         const middlePoint = curve.get(0.5);
+        const middlePointColor = getColor(connector.preferences.appearance.connectors.controlFillStyle);
         arc(cStart.x, cStart.y, 5, 0, 2 * Math.PI, getColor(connector.preferences.appearance.connectors.controlFillStyle) || "blue");
         arc(cEnd.x, cEnd.y, 5, 0, 2 * Math.PI, getColor(connector.preferences.appearance.connectors.controlFillStyle) || "blue");
-        arc(middlePoint.x, middlePoint.y, 5, 0, 2 * Math.PI, getColor(connector.preferences.appearance.connectors.controlFillStyle) || "blue");
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        arc(middlePoint.x, middlePoint.y, midPointSize, 0, 2 * Math.PI, middlePointColor || "blue");
+
         // report to store
         const len: number = curve.length();
-        const lut = curve.getLUT(len / 30);
+        const lut = curve.getLUT(len / (14 / connector.view.k));
+
+        // used to help debug LUT collisions
+        // visualizeLUT(lut);
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+
         if ((lastViewPos.x !== connector.view.x
                 || lastViewPos.x !== connector.view.x
                 || lastViewPos.k !== connector.view.k)) {

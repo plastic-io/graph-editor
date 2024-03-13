@@ -26,7 +26,7 @@
             ></div>
             <node-edge-connector
                 v-for="c in connectors"
-                :key="c.connector.id + graphUpdateVersion"
+                :key="c.connector.id"
                 :connector="c.connector"
                 :edge="c.edge"
                 :node="c.node"
@@ -41,22 +41,20 @@
             <div v-if="selectionRect.visible && !presentation" class="selection-rect" :style="selectionRectStyle"></div>
             <div v-if="selectedNodes.length !== 0 && !presentation" class="bounding-rect" :style="boundingRectStyle"></div>
         </div>
-        <keep-alive>
-            <div style="position: fixed; top: 33px;left: 10px;" v-if="showGraphCodeEditor" v-show="!presentation">
-                <monaco-code-editor
-                    style="opacity: 0.98"
-                    templateType="vue"
-                    language="html"
-                    :graphId="graphSnapshot.id"
-                    :errors="errors.filter(e => e.type === 'graph')"
-                    :value="graphTemplateValue"
-                    helpLink="https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html"
-                    @close="showGraphCodeEditor = false"
-                    @dirty="setIsDirty = $event"
-                    @save="saveGraphTemplate($event)"
-                />
-            </div>
-        </keep-alive>
+        <div style="position: fixed; top: 33px;left: 10px;" v-if="showGraphCodeEditor" v-show="!presentation">
+            <monaco-code-editor
+                style="opacity: 0.98"
+                templateType="vue"
+                language="html"
+                :graphId="graphSnapshot.id"
+                :errors="errors.filter(e => e.type === 'graph')"
+                :value="graphTemplateValue"
+                helpLink="https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html"
+                @close="showGraphCodeEditor = false"
+                @dirty="setIsDirty = $event"
+                @save="saveGraphTemplate($event)"
+            />
+        </div>
         <div class="graph-errors" v-if="errors.length > 0">
             <v-alert color="error" @click="showGraphCodeEditor = true">
                 <pre v-for="error in errors">{{error}}</pre>

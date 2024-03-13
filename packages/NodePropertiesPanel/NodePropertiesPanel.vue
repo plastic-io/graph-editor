@@ -3,33 +3,18 @@
         <v-expansion-panel class="ma-0 pa-0">
             <v-expansion-panel-title>
                 General
-                <v-spacer/>
-                <v-tooltip flat bottom color="secondary" open-on-hover>
-                    <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props">
-                            {{node.artifact ? 'mdi-link' : 'mdi-information-outline'}}
-                        </v-icon>
-                    </template>
-                    <v-card v-if="!node.artifact">
-                        <v-card-text>
-                            <i>Node Id: {{node.id}}</i>
-                        </v-card-text>
-                    </v-card>
-                    <v-alert
-                        v-if="node.artifact"
-                        type="warning"
-                        prominent
-                        class="ma-0"
-                        style="width: 35vw;"
-                    >
-                        This node did not originate on this graph.
-                        <i>Node artifact: {{node.artifact}}</i>
-                    </v-alert>
-                </v-tooltip>
             </v-expansion-panel-title>
             <v-expansion-panel-text>
                 <v-card class="ma-0 pa-0" flat>
                     <v-card-text class="ma-0 pa-0">
+                    <v-alert
+                        v-if="node.artifact"
+                        type="info"
+                        prominent
+                        class="ma-0"
+                    >
+                        This node is linked from another graph.
+                    </v-alert>
                         <v-text-field
                             help-topic="nodeName"
                             label="Name"

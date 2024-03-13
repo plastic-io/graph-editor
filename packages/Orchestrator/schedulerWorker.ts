@@ -11,18 +11,7 @@ const messenger = (source: any) => {
 };
 let scheduler: Scheduler;
 const loader = async (e: any): Promise<any> => {
-  const artifactPrefix = "artifacts/";
-  if ("setValue" in e) {
-      const pathParts = e.url.split("/");
-      const itemId = pathParts[2].split(".")[0];
-      const itemVersion = pathParts[2].split(".")[1];
-      const itemType = pathParts[1];
-      if (itemType === "graph" && itemId === scheduler.graph.id) {
-          return e.setValue(scheduler.graph);
-      }
-      const item = localStorage.getItem(artifactPrefix + itemId + "." + itemVersion);
-      e.setValue(item);
-  }
+  return e.setValue(scheduler.graph);
 };
 
 const sendUpdateToMain = (path: Path, value: any): void => {

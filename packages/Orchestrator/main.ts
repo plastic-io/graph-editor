@@ -90,6 +90,8 @@ export const useStore = defineStore('orchestrator', {
     },
     fortunes: [],
     inRewindMode: false,
+    startTime:  0,
+    redrawConnectorVersion: 0,
     testOutputVersion: 0,
     testOutput: [],
     ownEvents: [],
@@ -198,11 +200,17 @@ export const useStore = defineStore('orchestrator', {
       }
     },
     async publishGraph() {
+        this.infoMessage = 'Publishing';
+        this.showInfo = true;
         const graph = this.graphStore.graph;
         await this.dataProviders.publish!.set(graph.id, {
             graph,
             id: newId(),
         });
+        this.infoMessage = 'Published ' + graph.properties.name;
+        setTimeout(() => {
+          this.showInfo = false;
+        }, 3400);
         this.getToc();
     },
     async getPublicRegistry(e: any) {
@@ -295,6 +303,71 @@ export const useStore = defineStore('orchestrator', {
       const {nodeId, message, type, field, graphId} = args;
       (this.debugs[nodeId] ??= []).push({ id: newId(), message, type, field, graphId });
     },
+    async loadAndIntegrateLinkedGraphsWithFields(graph: Graph, globalNodes: Node[], rootGraph: Graph): Promise<void> {
+      for (const node of graph.nodes) {
+        if (node.linkedGraph) {
+          let loadedGraph = node.linkedGraph.graph;
+          // this node has potential connected inputs
+          // needing to be proxied into the loaded graph
+          // check every node to see if any connectors
+          // connect to this node, if they do, then rewrite them to
+          // connect to the nodeId specified as inputField.id
+          globalNodes.forEach((globalNode) => {
+            globalNode.edges.forEach((edge) => {
+              edge.connectors.forEach((connector) => {
+                if (connector.nodeId === node.id) {
+                  // this should be connected to another node
+                  Object.keys(node.linkedGraph!.fields.inputs).forEach((inputFieldKey: string) => {
+                    const inputField = node.linkedGraph!.fields.inputs[inputFieldKey];
+                    console.log("linked_graph: input", {
+                      "Source graphId": node.graphId,
+                      "Source nodeId": node.id,
+                      "Target graphId": loadedGraph.id,
+                      "Target nodeId": inputField.id,
+                      "Field": inputFieldKey,
+                    });
+                    connector.graphId = rootGraph.id;
+                    connector.nodeId = inputField.id;
+                  })
+                }
+              })
+            });
+          });
+          // add linked graph nodes into global nodes
+          loadedGraph.nodes.forEach((node: any) => {
+            node.graphId = rootGraph.id;
+          })
+          globalNodes.push(...loadedGraph.nodes);
+          // Process outputs
+          Object.entries(node.linkedGraph.fields.outputs).forEach(([outputHostField, output]) => {
+            node.edges.forEach(edge => {
+              if (outputHostField !== edge.field) return;
+              edge.connectors.forEach(connector => {
+                // Find the corresponding node and add this connector
+                const innerNode = loadedGraph.nodes.find(n => n.id === output.id);
+                if (innerNode) {
+                  const innerEdge = innerNode.edges.find(e => e.field === output.field);
+                  if (innerEdge) {
+                    console.log("linked_graph: output", {
+                      "Source graphId": loadedGraph.id,
+                      "Source nodeId": innerNode.id,
+                      "Target graphId": node.graphId,
+                      "Target nodeId": node.id,
+                      "Field": output.field,
+                    });
+                    connector.graphId = rootGraph.id;
+                    innerEdge.connectors.push({...connector});
+                  }
+                }
+              });
+            });
+          });
+          await this.loadAndIntegrateLinkedGraphsWithFields(loadedGraph, globalNodes, rootGraph);
+          (node as any).loadedGraph = node.linkedGraph;
+          delete node.linkedGraph;
+        }
+      }
+    },
     async load(e: any): Promise<any> {
       const artifactPrefix = "artifacts/";
       if ("setValue" in e) {
@@ -309,7 +382,7 @@ export const useStore = defineStore('orchestrator', {
           e.setValue(item);
       }
     },
-    createScheduler() {
+    async createScheduler() {
 
         this.scheduleWorker = new SchedulerWorker();
 
@@ -339,6 +412,9 @@ export const useStore = defineStore('orchestrator', {
           if (!this.preferencesStore.preferences!.showConnectorActivity) {
             return;
           }
+        }
+        const begin = (e: any) => {
+          this.startTime = e.time;
         }
         const log = (e: any) => {
           if (!this.preferencesStore.preferences!.showConnectorActivity) {
@@ -423,11 +499,20 @@ export const useStore = defineStore('orchestrator', {
             });
           };
         }
+        const graph = deref(this.graphStore.graph);
+        let globalNodes = [...graph.nodes] as any[];
+        console.groupCollapsed('%cPlastic-IO: %cIntegrated Graph',
+    "color: blue",
+    "color: lightblue");
+        await this.loadAndIntegrateLinkedGraphsWithFields(graph, globalNodes, graph);
+        console.log(graph);
+        console.groupEnd();
+        graph.nodes = globalNodes;
         this.scheduleWorker.postMessage({
           method: 'init',
           args: [
             {
-              graph: deref(this.graphStore.graph),
+              graph,
             },
           ],
         });
@@ -457,7 +542,7 @@ export const useStore = defineStore('orchestrator', {
             return end(args);
           }
           if (methodName === 'begin') {
-            return end(args);
+            return begin(args);
           }
           if (methodName === 'set') {
             return end(args);
@@ -490,13 +575,22 @@ export const useStore = defineStore('orchestrator', {
         (this.scheduler.instance as any) = {
           url: sendMessage('url'),
         };
-        useGraphSnapshotStore().$subscribe((mutation: any, state: any) => {
+        useGraphSnapshotStore().$subscribe(async (mutation: any, state: any) => {
           if (!state.graph) {
             return;
           }
+          const graph = deref(state.graph);
+          let globalNodes = [...graph.nodes] as any[];
+          console.groupCollapsed('%cPlastic-IO: %cIntegrated Graph',
+              "color: blue",
+              "color: lightblue");
+          await this.loadAndIntegrateLinkedGraphsWithFields(graph, globalNodes, graph);
+          console.log(graph);
+          console.groupEnd();
+          graph.nodes = globalNodes;
           this.scheduleWorker.postMessage({
             method: 'change',
-            args: [deref(state.graph)],
+            args: [deref(graph)],
           });
         });
     },
