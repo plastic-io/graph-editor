@@ -18,6 +18,10 @@
             v-if="preferences!.appearance.showGrid"
             ref="grid"/>
         <div
+            :style="preferences!.appearance.theme === 'dark' ? '' : 'filter: invert(1);'"
+            :class="graphCanvasClasses"
+        ></div>
+        <div
             x-graph-canvas
             :style="graphCanvasStyle"
             v-if="graphSnapshot && !presentation"
@@ -164,12 +168,12 @@ export default {
         context.stroke();
         context.strokeStyle = this.color(this.preferences!.appearance.gridMajor) + fcp;
         context.beginPath();
-        for (let x = startOffset + (largeGridSize / 2) +  ((offsetX / scale) % largeGridSize); x < width / scale; x += largeGridSize) {
+        for (let x = startOffset - (largeGridSize / 2) +  ((offsetX / scale) % largeGridSize); x < width / scale; x += largeGridSize) {
             context.lineWidth = minorLineWidth;
             context.moveTo(x, 0);
             context.lineTo(x, height / scale);
         }
-        for (let y = startOffset + (largeGridSize / 2) + ((offsetY / scale) % largeGridSize); y < height / scale; y += largeGridSize) {
+        for (let y = startOffset - (largeGridSize / 2) + ((offsetY / scale) % largeGridSize); y < height / scale; y += largeGridSize) {
             context.lineWidth = minorLineWidth;
             context.moveTo(0, y);
             context.lineTo(width / scale, y);
@@ -302,6 +306,13 @@ export default {
         }
         return b;
     },
+    graphCanvasClasses: function () {
+        const classes = [];
+        if (!this.presentation) {
+            classes.push("graph-canvas-container");
+        }
+        return classes.join(" ");
+    },
     graphCanvasStyle: function () {
         if (this.presentation) {
             return {
@@ -325,12 +336,12 @@ export default {
     z-index: 2;
 }
 .grid {
-    pointer-events: none;
     height: 100vh;
     width: 100vw;
     position: absolute;
     top: 0;
     left: 0;
+    pointer-events: none;
 }
 .selection-rect {
     position: absolute;
