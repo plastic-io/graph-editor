@@ -12,8 +12,11 @@
             v-html="style"
             :key="index"
         />
-        <canvas v-if="preferences!.appearance.showGrid" ref="grid"
-            style="pointer-events: none; height: 100vh; width: 100vw; position: absolute; top: 0; left: 0;"/>
+        <canvas
+            class="grid"
+            :style="{backgroundColor: this.color(this.preferences!.appearance.backgroundColor)}"
+            v-if="preferences!.appearance.showGrid"
+            ref="grid"/>
         <div
             x-graph-canvas
             :style="graphCanvasStyle"
@@ -22,10 +25,6 @@
             @drop="drop($event)"
             @dragover="dragOver($event)"
         >
-            <div
-                :style="preferences!.appearance.theme === 'dark' ? '' : 'filter: invert(1);'"
-                :class="graphCanvasClasses"
-            ></div>
             <node-edge-connector
                 v-for="c in connectors"
                 :key="c.connector.id"
@@ -125,6 +124,13 @@ export default {
         'drop',
         'updateGraphFromSnapshot',
     ]),
+    color(color) {
+        if (!colors[color]) {
+            console.warn('Color selected that does not exist.  Returning default color shades.', color);
+            return colors['shades'];
+        }
+        return colors[color] ? colors[color].base : colors['shades'];
+    },
     drawGrid(canvas, context, translateX, translateY, scale) {
         const largeGridSize = scale > 1 ? 100 : 1000;
         const txPct = scale > 1 ? scale : scale + 1;
@@ -143,7 +149,7 @@ export default {
         // make the grid more transparent as you zoom out so not to overwhelm the user
         const tcp = Math.max(16, Math.floor(150 - (150 / txPct))).toString(16);
         const fcp = Math.max(90, Math.floor(255 - (255 / txPct))).toString(16);
-        context.strokeStyle = colors[this.preferences!.appearance.selectionRectColor].base + tcp;
+        context.strokeStyle = this.color(this.preferences!.appearance.gridMinor) + tcp;
         context.beginPath();
         for (let x = (offsetX / scale) % smallGridSize; x < width / scale; x += smallGridSize) {
             context.lineWidth = minorLineWidth;
@@ -156,7 +162,7 @@ export default {
             context.lineTo(width / scale, y);
         }
         context.stroke();
-        context.strokeStyle = colors[this.preferences!.appearance.boundingRectColor].base + fcp;
+        context.strokeStyle = this.color(this.preferences!.appearance.gridMajor) + fcp;
         context.beginPath();
         for (let x = startOffset + (largeGridSize / 2) +  ((offsetX / scale) % largeGridSize); x < width / scale; x += largeGridSize) {
             context.lineWidth = minorLineWidth;
@@ -282,7 +288,7 @@ export default {
             top: this.selectionRect.y + "px",
             width: this.selectionRect.width + "px",
             height: this.selectionRect.height + "px",
-            borderColor: colors[this.preferences!.appearance.selectionRectColor].base,
+            borderColor: this.color(this.preferences!.appearance.selectionRectColor),
         };
     },
     boundingRectStyle: function() {
@@ -292,16 +298,9 @@ export default {
             top: this.boundingRect.y + "px",
             width: this.boundingRect.width + "px",
             height: this.boundingRect.height + "px",
-            borderColor: colors[this.preferences!.appearance.boundingRectColor].base,
+            borderColor: this.color(this.preferences!.appearance.boundingRectColor),
         }
         return b;
-    },
-    graphCanvasClasses: function () {
-        const classes = [];
-        if (!this.presentation) {
-            classes.push("graph-canvas-container");
-        }
-        return classes.join(" ");
     },
     graphCanvasStyle: function () {
         if (this.presentation) {
@@ -324,6 +323,14 @@ export default {
     position: absolute;
     border-style: solid;
     z-index: 2;
+}
+.grid {
+    pointer-events: none;
+    height: 100vh;
+    width: 100vw;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 .selection-rect {
     position: absolute;
