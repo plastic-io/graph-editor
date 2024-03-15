@@ -12,6 +12,8 @@
             v-html="style"
             :key="index"
         />
+        <canvas v-if="preferences!.appearance.showGrid" ref="grid"
+            style="pointer-events: none; height: 100vh; width: 100vw; position: absolute; top: 0; left: 0;"/>
         <div
             x-graph-canvas
             :style="graphCanvasStyle"
@@ -60,6 +62,7 @@
                 <pre v-for="error in errors">{{error}}</pre>
             </v-alert>
         </div>
+
     </div>
 </template>
 <script lang="ts">
@@ -85,6 +88,11 @@ export default {
     }
   },
   watch: {
+    'preferences.appearance.showGrid'() {
+        this.$nextTick(() => {
+            this.updateGrid();
+        });
+    },
     'graphSnapshot.properties.template'() {
         this.loadTemplate();
     },
@@ -106,7 +114,8 @@ export default {
             clearTimeout(this.positionTimeout);
             this.positionTimeout = setTimeout(() => {
                 this.updatePrefStore();
-            }, this.positionLocationSaveTimeout)
+            }, this.positionLocationSaveTimeout);
+            this.updateGrid();
         },
         deep: true,
     },
@@ -116,6 +125,60 @@ export default {
         'drop',
         'updateGraphFromSnapshot',
     ]),
+    drawGrid(canvas, context, translateX, translateY, scale) {
+        const largeGridSize = scale > 1 ? 100 : 1000;
+        const txPct = scale > 1 ? scale : scale + 1;
+        const smallGridSize = largeGridSize / 10;
+        const startOffset = scale > 1 ? 50 : 0;
+        const majorLineInterval = 10; // Every 10th line is a major (thicker) line
+        const majorLineWidth = 2 / scale; // Scaling the line width as well
+        const minorLineWidth = 1 / scale; // Scaling the line width as well
+        const width = canvas.width;
+        const height = canvas.height;
+        context.clearRect(0, 0, width, height);
+        context.save();
+        context.scale(scale, scale);
+        const offsetX = translateX;
+        const offsetY = translateY;
+        // make the grid more transparent as you zoom out so not to overwhelm the user
+        const tcp = Math.max(16, Math.floor(150 - (150 / txPct))).toString(16);
+        const fcp = Math.max(90, Math.floor(255 - (255 / txPct))).toString(16);
+        context.strokeStyle = colors[this.preferences!.appearance.selectionRectColor].base + tcp;
+        context.beginPath();
+        for (let x = (offsetX / scale) % smallGridSize; x < width / scale; x += smallGridSize) {
+            context.lineWidth = minorLineWidth;
+            context.moveTo(x, 0);
+            context.lineTo(x, height / scale);
+        }
+        for (let y = (offsetY / scale) % smallGridSize; y < height / scale; y += smallGridSize) {
+            context.lineWidth = minorLineWidth;
+            context.moveTo(0, y);
+            context.lineTo(width / scale, y);
+        }
+        context.stroke();
+        context.strokeStyle = colors[this.preferences!.appearance.boundingRectColor].base + fcp;
+        context.beginPath();
+        for (let x = startOffset + (largeGridSize / 2) +  ((offsetX / scale) % largeGridSize); x < width / scale; x += largeGridSize) {
+            context.lineWidth = minorLineWidth;
+            context.moveTo(x, 0);
+            context.lineTo(x, height / scale);
+        }
+        for (let y = startOffset + (largeGridSize / 2) + ((offsetY / scale) % largeGridSize); y < height / scale; y += largeGridSize) {
+            context.lineWidth = minorLineWidth;
+            context.moveTo(0, y);
+            context.lineTo(width / scale, y);
+        }
+        context.stroke();
+        context.restore();
+    },
+    updateGrid() {
+        const canvas = this.$refs.grid;
+        if (!canvas) { return; }
+        canvas.height = window.innerHeight;
+        canvas.width = window.innerWidth;
+        const context = canvas.getContext('2d');
+        this.drawGrid(canvas, context, this.view.x, this.view.y, this.view.k);
+    },
     async loadTemplate() {
         const comp = await compileTemplate(this, this.graphSnapshot.id,
             this.graphSnapshot.properties.template);
@@ -237,9 +300,6 @@ export default {
         const classes = [];
         if (!this.presentation) {
             classes.push("graph-canvas-container");
-            if (this.preferences!.appearance.showGrid) {
-                classes.push("grid");
-            }
         }
         return classes.join(" ");
     },
@@ -252,7 +312,7 @@ export default {
             };
         }
         return {
-            transform: `translate(${this.view.x}px, ${this.view.y}px) scale(${this.view.k})`,
+            transform: `translate(${this.view.x}px, ${this.view.y}px) scale(${this.view.k})`
         };
     },
   },
@@ -276,28 +336,6 @@ export default {
     top: -5000vh;
     left: -5000vw;
     z-index: -1597463007;
-}
-.grid {
-    /* creates grid pattern at 10px */
-    background:
-        linear-gradient(-90deg, rgba(128, 128, 128, .1) 1px, transparent 1px),
-        linear-gradient(rgba(128, 128, 128, .1) 1px, transparent 1px),
-        linear-gradient(-90deg, rgba(128, 128, 128, .1) 1px, transparent 1px),
-        linear-gradient(rgba(128, 128, 128, .1) 1px, transparent 1px),
-        linear-gradient(transparent 3px, #111 3px, #111 98px, transparent 98px),
-        linear-gradient(-90deg, #222 1px, transparent 1px),
-        linear-gradient(-90deg, transparent 3px, #111 3px, #111 98px, transparent 98px),
-        linear-gradient(#222 1px, transparent 1px),
-        #111;
-    background-size:
-        10px 10px,
-        10px 10px,
-        100px 100px,
-        100px 100px,
-        100px 100px,
-        100px 100px,
-        100px 100px,
-        100px 100px;
 }
 .graph-errors {
     position: fixed;
