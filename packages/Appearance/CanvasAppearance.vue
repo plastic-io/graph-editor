@@ -3,6 +3,9 @@
       <v-card-text class="ma-0 pa-0">
           <v-select :items="colorBaseKeys" label="Selection Rectange Color" v-model="modelValue.appearance.selectionRectColor"/>
           <v-select :items="colorBaseKeys" label="Bounding Rectangle Color" v-model="modelValue.appearance.boundingRectColor"/>
+          <v-select :items="colorBaseKeys" label="Grid minor lines" v-model="modelValue.appearance.gridMinor"/>
+          <v-select :items="colorBaseKeys" label="Grid major lines" v-model="modelValue.appearance.gridMajor"/>
+          <v-select :items="colorBaseKeys" label="Background Color" v-model="modelValue.appearance.backgroundColor"/>
       </v-card-text>
   </v-card>
 </template>

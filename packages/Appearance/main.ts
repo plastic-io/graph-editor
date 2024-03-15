@@ -82,6 +82,9 @@ export class Appearance {
   showGrid: boolean;
   selectionRectColor: string;
   boundingRectColor: string;
+  gridMajor: string;
+  gridMinor: string;
+  background: string;
   connectors: ConnectorAppearance;
   constructor() {
     this.theme = "dark";
@@ -89,6 +92,9 @@ export class Appearance {
     this.showGrid = true;
     this.selectionRectColor = "lightBlue";
     this.boundingRectColor = "shades";
+    this.gridMajor = "blueGrey";
+    this.gridMinor = "grey";
+    this.background = "shades";
     this.connectors = new ConnectorAppearance();
   }
 }
