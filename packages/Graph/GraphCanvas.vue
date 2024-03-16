@@ -15,7 +15,7 @@
         <canvas
             class="grid"
             :style="{backgroundColor: this.color(this.preferences!.appearance.backgroundColor)}"
-            v-if="preferences!.appearance.showGrid"
+            v-if="preferences!.appearance.showGrid && !presentation"
             ref="grid"/>
         <div
             :style="preferences!.appearance.theme === 'dark' ? '' : 'filter: invert(1);'"
@@ -91,6 +91,11 @@ export default {
     }
   },
   watch: {
+    presentation() {
+        this.$nextTick(() => {
+            this.updateGrid();
+        });
+    }, 
     'preferences.appearance.showGrid'() {
         this.$nextTick(() => {
             this.updateGrid();
@@ -151,8 +156,8 @@ export default {
         const offsetX = translateX;
         const offsetY = translateY;
         // make the grid more transparent as you zoom out so not to overwhelm the user
-        const tcp = Math.max(16, Math.floor(150 - (150 / txPct))).toString(16);
-        const fcp = Math.max(90, Math.floor(255 - (255 / txPct))).toString(16);
+        const tcp = Math.max(0, Math.floor(150 - (150 / txPct))).toString(16).padStart(2, "0");
+        const fcp = Math.max(64, Math.floor(255 - (255 / txPct))).toString(16).padStart(2, "0");
         context.strokeStyle = this.color(this.preferences!.appearance.gridMinor) + tcp;
         context.beginPath();
         for (let x = (offsetX / scale) % smallGridSize; x < width / scale; x += smallGridSize) {
