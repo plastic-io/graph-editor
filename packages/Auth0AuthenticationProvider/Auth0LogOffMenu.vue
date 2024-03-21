@@ -1,26 +1,19 @@
 <template>
-  <v-menu v-if="identity">
-    <template v-slot:activator="{props}">
-      <div style="height: 40px; width: 40px; border-radius: 40px; overflow: hidden;" class="mr-5">
-      <v-img
-        v-bind="props"
-        :title="identity.user.email"
-        :src="identity.user.picture"/>
-      </div>
-    </template>
-    <v-list>
-      <v-list-item @click="logoff">
-        Logoff
-      </v-list-item>
-    </v-list>
-  </v-menu>
+  <div :class="className">
+    <v-icon v-if="identity && identity.isAuthenticated" :size="size || 'x-large'" icon="mdi-logout" @click="logoff"/>
+    <v-icon v-else :size="size || 'x-large'" icon="mdi-login" @click="login"/>
+  </div>
 </template>
 <script>
   import {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
   import {mapState, mapActions} from "pinia";
   export default {
+    props: {
+      size: String,
+      className: String,
+    },
     methods: {
-      ...mapActions(useAuthenticationStore, ['logoff']),
+      ...mapActions(useAuthenticationStore, ['logoff', 'login']),
     },
     computed: {
       ...mapState(useAuthenticationStore, ['identity']),
