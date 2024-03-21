@@ -20,14 +20,14 @@
         <div
             :style="preferences!.appearance.theme === 'dark' ? '' : 'filter: invert(1);'"
             :class="graphCanvasClasses"
+            @drop="drop($event)"
+            @dragover="dragOver($event)"
         ></div>
         <div
             x-graph-canvas
             :style="graphCanvasStyle"
             v-if="graphSnapshot && !presentation"
             :key="graphUpdateVersion"
-            @drop="drop($event)"
-            @dragover="dragOver($event)"
         >
             <node-edge-connector
                 v-for="c in connectors"
@@ -95,7 +95,7 @@ export default {
         this.$nextTick(() => {
             this.updateGrid();
         });
-    }, 
+    },
     'preferences.appearance.showGrid'() {
         this.$nextTick(() => {
             this.updateGrid();
@@ -359,6 +359,7 @@ export default {
     top: -5000vh;
     left: -5000vw;
     z-index: -1597463007;
+    will-change: transform;
 }
 .graph-errors {
     position: fixed;

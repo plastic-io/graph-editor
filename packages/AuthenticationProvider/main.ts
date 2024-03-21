@@ -25,6 +25,9 @@ export const useStore = defineStore('authentication', {
     actions: {
         logoff() {
             this.orchistratorStore.authProvider!.logoff();
+        },
+        login() {
+            this.orchistratorStore.authProvider!.login();
         }
     },
 });

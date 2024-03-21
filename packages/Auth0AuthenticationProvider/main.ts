@@ -15,9 +15,9 @@ export default class Auth0 extends EditorModule {
     app.component('auth0-log-off-menu', Auth0LogOffMenu);
     app.component('auth0-settings-panel', Auth0SettingsPanel);
     const graphOrchestratorStore = useOrchestratorStore();
-    
+
     const authProvider = new Auth0AuthenticationProvider(router);
-    
+
     const settingsPanel = new Plugin({
       name: 'Auth0',
       title: 'Authentication',
@@ -36,6 +36,7 @@ export default class Auth0 extends EditorModule {
         alt: 'Logout of your current session',
         title: 'Logout of your current session',
         icon: 'mdi-logout',
+        className: 'mr-4 pr-2',
       },
       divider: true,
       helpTopic: 'logoff',
@@ -46,16 +47,13 @@ export default class Auth0 extends EditorModule {
     const logoffIcon = new Plugin({
       name: 'Auth0',
       title: 'Logout',
-      component: 'v-icon',
+      component: 'auth0-log-off-menu',
       props: {
-        style: "cursor: pointer",
         "help-topic": "logout",
         alt: 'Logout of your current session',
         title: 'Logout of your current session',
-        icon: 'mdi-logout',
-        onclick() {
-          authProvider.logoff();
-        },
+        className: 'mb-1 pr-2',
+        size: 'medium',
       },
       divider: true,
       helpTopic: 'logoff',
@@ -66,7 +64,7 @@ export default class Auth0 extends EditorModule {
     graphOrchestratorStore.addPlugin(logoffIcon);
     graphOrchestratorStore.addPlugin(settingsPanel);
     graphOrchestratorStore.addPlugin(logoffIconManager);
-    
+
     authProvider.router = router;
     graphOrchestratorStore.authProvider = authProvider;
   }
@@ -133,12 +131,8 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
       const isAuthenticated = await this.client.isAuthenticated();
 
       if (!isAuthenticated && !isCallbackUrl) {
-        // save the current location in localStore so we can send
-        // user back there when they respawn
-        localStorage.setItem(STORE_KEY, self.location.pathname
-          .replace(this.router.options.history.base, ''));
         // user must authenticate
-        this.login();
+        return;
       }
 
       const token = await this.client.getTokenSilently();
@@ -172,6 +166,10 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
         }
     }
     async login() {
+        // save the current location in localStore so we can send
+        // user back there when they respawn
+        localStorage.setItem(STORE_KEY, self.location.pathname
+          .replace(this.router.options.history.base, ''));
         try {
             return await this.client.loginWithRedirect({
               authorizationParams: {
