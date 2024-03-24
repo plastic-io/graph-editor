@@ -68,11 +68,15 @@ export default {
             }
             if (e.className === "node") {
                 const nodeId = e.getAttribute("x-node-id");
-                return {
-                    node: this.graph!.nodes.find((v) => {
-                        return v.id === nodeId;
-                    }),
-                };
+                const node = this.graph!.nodes.find((v) => {
+                    return v.id === nodeId;
+                });
+                // there's a chance this node is on a nested graph, keep crawling up if that's the case.
+                if (node) {
+                    return {
+                        node,
+                    };
+                }
             }
             e = e.parentNode;
         }

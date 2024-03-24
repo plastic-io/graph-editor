@@ -413,7 +413,7 @@ export default {
                 left: this.localNode.properties.x + "px",
                 top: this.localNode.properties.y + "px",
                 zIndex: this.localNode.properties.z,
-            }; 
+            };
         },
     },
 };

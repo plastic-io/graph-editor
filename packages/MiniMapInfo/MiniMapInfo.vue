@@ -1,5 +1,5 @@
 <template>
-    <div class="map-view no-select no-graph-target" :style="mapStyle" @wheel.stop @click.stop v-if="graphSnapshot">
+    <div class="map-view no-select no-graph-target" :style="mapStyle" @wheel.passive.stop @click.stop v-if="graphSnapshot">
         <v-card elevation="7">
             <div class="map-system-bar no-graph-target" :style="{backgroundColor: $vuetify.theme.current.colors['on-surface-variant']}"  @mousedown.stop="startTranslate">
                 <v-icon title="Reset Minimap Settings" size="small" @click="resetLocation">
@@ -24,7 +24,7 @@
                 <span help-topic="viewportLocation" title="Viewport localtion" class="viewport-location" @click="resetView">
                     x:{{ view.x.toFixed(0) }} y:{{ view.y.toFixed(0) }}
                 </span>
-                
+
                 <v-icon size="small" title="Close Map" class="float-right ma-1" @click="preferences.showMap = false">
                     mdi-close
                 </v-icon>

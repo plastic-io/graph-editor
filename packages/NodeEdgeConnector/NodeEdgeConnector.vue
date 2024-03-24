@@ -6,9 +6,8 @@
             @mouseout="expand = false;">
             <div :style="connectorValueStyle" v-show="expand">
                 <div class="connector-controls">
-                    
                     <div>
-                        <div class="d-inline-block" @wheel="scrollIndex($event)">
+                        <div class="d-inline-block" @wheel.passive.stop="scrollIndex($event)">
                             <v-icon @click="setIndex(index - 1)" icon="mdi-arrow-left-bold-box-outline" title="Previous Event"/>
                             {{index + 1}}/{{activityCounts.started}}
                             <v-icon @click="setIndex(index + 1)" icon="mdi-arrow-right-bold-box-outline" title="Next Event"/>
@@ -29,8 +28,8 @@
                 v-if="preferences.showConnectorActivity && activityValue !== undefined"
                 :style="connectorValueStyle">
                 <div>
-                    <div class="connector-value-info">
-                        {{formattedValue}}
+                    <div class="connector-value-info" :class="{'connector-value-info-expanded': expand}">
+                        <pre>{{formattedValue}}</pre>
                     </div>
                 </div>
 
@@ -420,6 +419,10 @@ export default {
         padding: 2px 10px;
         margin: 2px 6px 3px 6px;
         border-radius: 3px;
+        max-width: 200px;
+        max-height: 50px;
+        overflow: auto;
+        font-size: 10px;
     }
     .connector-meta-info {
         background: rgba(var(--v-theme-info));
@@ -442,6 +445,11 @@ export default {
         transition: all 0.3s ease-out;
         padding: 7px;
         padding-left: 10px;
+        max-width: 70vw;
+        max-height: 40vh;
+    }
+    .connector-value-info-expanded {
+        transition: all 0.3s ease-out;
         max-width: 70vw;
         max-height: 40vh;
     }

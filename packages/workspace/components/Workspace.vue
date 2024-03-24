@@ -131,6 +131,10 @@ export default {
         ]),
         ...mapActions(useInputStore, [
             'onwheel',
+            'ontouchstart',
+            'ontouchend',
+            'ontouchcancel',
+            'ontouchmove',
             'keydown',
             'keyup',
             'mousedown',
@@ -154,9 +158,11 @@ export default {
         window.removeEventListener('mousemove', this.mousemove);
         window.removeEventListener('keyup', this.keyup);
         window.removeEventListener('keydown', this.keydown);
-        document.removeEventListener('wheel', this.onwheel, {
-            passive: false,
-        });
+        document.removeEventListener('wheel', this.onwheel, { passive: false });
+        document.removeEventListener("touchstart", this.ontouchstart, { passive: false });
+        document.removeEventListener("touchend", this.ontouchend, { passive: false });
+        document.removeEventListener("touchcancel", this.ontouchcancel, { passive: false });
+        document.removeEventListener("touchmove", this.ontouchmove, { passive: false });
     },
     mounted() {
         this.workspaceElement = this.$el;
@@ -169,9 +175,12 @@ export default {
         window.addEventListener('mousemove', this.mousemove);
         window.addEventListener('keyup', this.keyup);
         window.addEventListener('keydown', this.keydown);
-        document.addEventListener('wheel', this.onwheel, {
-            passive: false,
-        });
+        document.addEventListener('wheel', this.onwheel, { passive: false });
+        document.addEventListener("touchstart", this.ontouchstart, { passive: false });
+        document.addEventListener("touchend", this.ontouchend, { passive: false });
+        document.addEventListener("touchcancel", this.ontouchcancel, { passive: false });
+        document.addEventListener("touchmove", this.ontouchmove, { passive: false });
+
         this.setTheme(this.preferences.appearance.theme);
     },
     data: () => {

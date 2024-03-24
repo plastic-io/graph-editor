@@ -14,6 +14,7 @@ export const useStore = defineStore('input', {
     graphStore: useGraphStore(),
     inputStore: useInputStore(),
     graphSnapshotStore: useGraphSnapshotStore(),
+    touches: [] as any[],
     mouse: {
       lmb: false,
       rmb: false,
@@ -39,6 +40,20 @@ export const useStore = defineStore('input', {
     },
     updateMouse(mouse: any) {
         this.mouseAction.mouse(mouse);
+    },
+    ontouchstart(e: TouchEvent) {
+        console.log('ontouchstart', e);
+
+    },
+    ontouchend(e: TouchEvent) {
+        console.log('ontouchend', e);
+    },
+    ontouchcancel(e: TouchEvent) {
+        console.log('ontouchcancel', e);
+    },
+    ontouchmove(e: TouchEvent) {
+        this.graphStore.view.x = this.touches[0].clientX - e.touches[0].clientX;
+        this.graphStore.view.y = this.touches[0].clientY - e.touches[0].clientY;
     },
     onwheel(e: WheelEvent) {
         if (this.graphStore.presentation) {
@@ -68,7 +83,7 @@ export const useStore = defineStore('input', {
         }
         const mouse = this.getMousePosFromEvent(e);
         const item = this.graphStore.getItemAt(e.target);
-        
+
         if (item.node) {
             this.graphStore.hoveredNode = item.node;
         } else {
