@@ -84,9 +84,13 @@ import NodeField from "./NodeField.vue";
 import NodeComponent from "./NodeComponent.vue";
 import NodeEditor from "./NodeEditor.vue";
 
-import {diff} from "deep-diff";
+import {deepEqual} from "@plastic-io/graph-crdt";
 
 import {markRaw, shallowRef, h, watch} from "vue";
+
+/** How long to wait after the last keystroke before rebuilding a node. */
+const RECOMPILE_DEBOUNCE = 600;
+
 export default {
     name: "node",
     components: {NodeField, NodeComponent, NodeEditor},
@@ -99,6 +103,10 @@ export default {
     },
     errorCaptured(err) {
         this.mountError(err);
+    },
+    unmounted() {
+        clearTimeout(this.recompileTimer);
+        clearTimeout(this.longLoadingTimer);
     },
     watch: {
         compiledTemplate: {
@@ -141,18 +149,25 @@ export default {
             },
             deep: true,
         },
-        async 'node.template.vue'() {
-            const changes = diff(this.localNodeSnapshot.template.vue, this.node.template.vue);
+        'node.template.vue'() {
+            const changes = !deepEqual(this.localNodeSnapshot.template.vue, this.node.template.vue);
             this.localNode = this.node;
             this.localNodeSnapshot = JSON.parse(JSON.stringify(this.node));
-            if (changes) {
+            if (!changes) {
+                return;
+            }
+            // Template edits now arrive a keystroke at a time, from this user
+            // and from anyone else on the graph.  Recompiling the component on
+            // each one would rebuild the node on every character and fill the
+            // error panel with half typed markup, so the rebuild waits for a
+            // pause in the typing.
+            clearTimeout(this.recompileTimer);
+            this.recompileTimer = setTimeout(async () => {
                 this.styles = [];
-                // recompile template after change
                 this.compiledTemplate =
                     await compileTemplate(this, this.localNode.id, this.localNode.template.vue, true);
                 this.styles = this.compiledTemplate.styles;
-
-            }
+            }, RECOMPILE_DEBOUNCE);
         },
     },
     data() {
@@ -181,6 +196,7 @@ export default {
             nodeEvents: {},
             nodeProps: {},
             dragged: null,
+            recompileTimer: null,
             localNode: null as any,
             localNodeSnapshot: null,
             localNodeDataSnapshot: null,
@@ -230,7 +246,7 @@ export default {
             "clearArtifact",
         ]),
         setNodeData() {
-            const changes = diff(this.localNodeDataSnapshot, this.node.data);
+            const changes = !deepEqual(this.localNodeDataSnapshot, this.node.data);
             this.localNodeDataSnapshot = JSON.parse(JSON.stringify(this.node.data));
             if (changes) {
                 this.updateNodeData({

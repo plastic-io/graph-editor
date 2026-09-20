@@ -45,6 +45,8 @@ import {editorLibSrc} from "@plastic-io/graph-editor-vue3-help-overlay";
 import {useRoute} from 'vue-router';
 import Scheduler from "@plastic-io/plastic-io"
 
+import {MonacoBinding} from "y-monaco";
+
 import * as monaco from "monaco-editor";
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
@@ -104,7 +106,11 @@ export default {
     document.addEventListener('mouseup', this.mouseup);
     document.addEventListener('mousemove', this.mousemove);
   },
-  beforeDestroy() {
+  // This was `beforeDestroy`, a Vue 2 name that Vue 3 never calls, so the
+  // listeners below were leaking on every close.  The shared-document binding
+  // has to be torn down here too.
+  beforeUnmount() {
+    this.destroyBinding();
     if (this.isPopout) {
       window.removeEventListener('resize', this.debounceLayout);
       return;
@@ -121,10 +127,19 @@ export default {
     graphId: String,
     helpLink: String,
     errors: Array,
+    /**
+     * The Y.Text this editor edits.  When present the document itself is the
+     * source of truth: typing is shared as it happens, so the local dirty
+     * tracking, the localStorage cache and the cross-window broadcast all step
+     * aside.
+     */
+    ytext: Object,
+    awareness: Object,
   },
   data() {
     return {
       id: newId(),
+      binding: null,
       cursorLocation: null,
       updatingValue: false,
       editorHasFocus: false,
@@ -226,6 +241,8 @@ export default {
       // HACK: if editor is attached to "this" it will freeze the system
       this.$refs.editor.pinstance = editor;
 
+      this.bindToDocument(editor);
+
       const getSize = (l, defaultSize) => {
         return localStorage.getItem(this.storeKey + '-size-' + l) || defaultSize;
       };
@@ -239,6 +256,38 @@ export default {
       this.loadFromCache();
       this.syncErrors();
 
+    },
+    /**
+     * Attach the editor to the shared document.  Failing here is not fatal:
+     * the editor falls back to the save-on-demand path it has always had.
+     */
+    bindToDocument(editor) {
+      if (!this.ytext) {
+        return;
+      }
+      try {
+        this.binding = new MonacoBinding(
+          this.ytext,
+          editor.getModel(),
+          new Set([editor]),
+          this.awareness || null,
+        );
+      } catch (err) {
+        console.error('Cannot bind the code editor to the shared document; '
+          + 'falling back to saving on demand.', err);
+        this.binding = null;
+      }
+    },
+    destroyBinding() {
+      if (!this.binding) {
+        return;
+      }
+      try {
+        this.binding.destroy();
+      } catch (err) {
+        console.warn('Cannot detach the code editor from the shared document.', err);
+      }
+      this.binding = null;
     },
     openHelp() {
       if (!this.helpLink) {return;}
@@ -410,6 +459,13 @@ export default {
       if (!(this.$refs.editor && this.$refs.editor.pinstance)) {
         return;
       }
+      if (this.binding) {
+        // A cached draft would overwrite what the document already holds, and
+        // everyone else's work along with it.
+        this.localValue = this.value;
+        this.dirty = false;
+        return;
+      }
       this.localValue = this.value;
       const cache = localStorage.getItem(this.storeKey);
       const val = cache !== null ? cache : this.localValue;
@@ -428,6 +484,10 @@ export default {
       }
     },
     setValue(val) {
+      if (this.binding) {
+        // The document drives the buffer now.
+        return;
+      }
       if (this.editorHasFocus || !this.$refs.editor || !this.$refs.editor.pinstance) {
         return;
       }
@@ -439,6 +499,12 @@ export default {
       return this.$refs.editor.pinstance.getValue();
     },
     update() {
+      if (this.binding) {
+        // Every keystroke is already in the shared document, so there is
+        // nothing to mark dirty, cache or broadcast.
+        this.dirty = false;
+        return;
+      }
       const newValue = this.getValue();
       this.dirty = newValue !== this.localValue;
       localStorage.setItem(this.storeKey, this.getValue());

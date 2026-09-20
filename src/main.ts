@@ -35,6 +35,7 @@ import HistoryPanel from "@plastic-io/graph-editor-vue3-history-panel";
 import ImportPanel from "@plastic-io/graph-editor-vue3-import-panel";
 import Input from "@plastic-io/graph-editor-vue3-input";
 import IndexedDBDocumentProvider from "@plastic-io/graph-editor-vue3-indexedDB-document-provider"
+import IndexedDBCrdtProvider from "@plastic-io/graph-editor-vue3-indexeddb-crdt-provider";
 import LocalUserPreferences from "@plastic-io/graph-editor-vue3-local-user-preferences";
 import MiniMapInfo from "@plastic-io/graph-editor-vue3-mini-map-info";
 import Node from "@plastic-io/graph-editor-vue3-node";
@@ -49,6 +50,7 @@ import SettingsPanel from "@plastic-io/graph-editor-vue3-settings-panel";
 import Workspace from "@plastic-io/graph-editor-vue3-workspace";
 import WorkspaceControlPanel from "@plastic-io/graph-editor-vue3-workspace-control-panel";
 import WssDocumentProvider from "@plastic-io/graph-editor-vue3-wss-document-provider-info";
+import WssCrdtProvider from "@plastic-io/graph-editor-vue3-wss-crdt-provider";
 import GitHubProvider from "@plastic-io/graph-editor-vue3-github-provider";
 
 // must come before plugin install
@@ -90,6 +92,7 @@ const plugins = [
   ImportPanel,
   Input,
   IndexedDBDocumentProvider,
+  IndexedDBCrdtProvider,
   MiniMapInfo,
   Node,
   NodeEdgeConnector,
@@ -102,6 +105,7 @@ const plugins = [
   SettingsPanel,
   WorkspaceControlPanel,
   WssDocumentProvider,
+  WssCrdtProvider,
   Workspace,
   Auth0AuthenticationProvider,
   GitHubProvider,

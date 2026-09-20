@@ -1,0 +1,22 @@
+{
+  "name": "@plastic-io/graph-crdt",
+  "license": "BSD-3-Clause",
+  "author": "TonyGermaneri@gmail.com",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Shared Yjs CRDT schema, codec and reconciler for Plastic-IO graphs.  Used by both the graph editor and the graph server, so it must never import Vue, Pinia, or any browser/node specific API.",
+  "main": "./main.ts",
+  "peerDependencies": {
+    "yjs": "^13.6.0",
+    "lib0": "^0.2.99"
+  },
+  "files": [
+    "main.ts",
+    "schema.ts",
+    "codec.ts",
+    "reconcile.ts",
+    "text.ts",
+    "protocol.ts",
+    "updates.ts"
+  ]
+}

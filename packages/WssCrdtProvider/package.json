@@ -1,0 +1,10 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-wss-crdt-provider",
+  "license": "BSD-3-Clause",
+  "author": "TonyGermaneri@gmail.com",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Carries the graph CRDT document and presence over the graph server WebSocket.",
+  "main": "./main.ts",
+  "files": []
+}

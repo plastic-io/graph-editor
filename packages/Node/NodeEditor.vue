@@ -10,6 +10,8 @@
           :graphId="graphSnapshot.id"
           :errors="errors.filter(e => e.type === 'vue')"
           :value="vueTemplateValue"
+          :ytext="nodeTemplateText(nodeId, 'vue')"
+          :awareness="collaborationAwareness()"
           helpLink="https://vuejs.org/guide/essentials/component-basics.html"
           @close="showVueEditor = false"
           @dirty="vueIsDirty = $event"
@@ -24,6 +26,8 @@
           :graphId="graphSnapshot.id"
           :errors="errors.filter(e => e.type === 'set')"
           :value="setTemplateValue"
+          :ytext="nodeTemplateText(nodeId, 'set')"
+          :awareness="collaborationAwareness()"
           helpLink="https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html"
           @close="showSetEditor = false"
           @dirty="setIsDirty = $event"
@@ -100,7 +104,11 @@
       };
     },
     methods: {
-      ...mapActions(useGraphStore, ['updateNodeTemplate']),
+      ...mapActions(useGraphStore, [
+        'updateNodeTemplate',
+        'nodeTemplateText',
+        'collaborationAwareness',
+      ]),
       ...mapActions(useOrchestratorStore, ['clearErrors']),
       async downloadNode() {
         const fileName = `${this.node.properties.name || 'unnamed'}_${this.node.id}_v${this.node.version}`;

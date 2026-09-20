@@ -33,6 +33,11 @@ export default () => {
         preferencesStore: usePreferencesStore(),
         graphSnapshotStore: useGraphSnapshotStore(),
         graphSnapshot: null as any,
+        /** Live Yjs session for the open graph, or null in legacy mode.
+         * Held raw: it owns its own change notification and must never be
+         * wrapped in a Vue reactive proxy. */
+        crdtSession: null as any,
+        graphLoaded: false,
         updatingSnapshotLocally: false,
         showGraphCodeEditor: false,
         isNewGraph: false,

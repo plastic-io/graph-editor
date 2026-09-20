@@ -51,7 +51,7 @@
 import {Connector, Node, Edge} from "@plastic-io/plastic-io";
 import {mapState} from "pinia";
 import bezier from "./bezier";
-import {diff} from "deep-diff";
+import {deepEqual} from "@plastic-io/graph-crdt";
 import {toJSON} from 'flatted';
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
@@ -326,7 +326,7 @@ export default {
                     input: this.input,
                     output: this.output,
                 };
-                if (diff(this.connections, o)) {
+                if (!deepEqual(this.connections, o)) {
                     this.connections = JSON.parse(JSON.stringify(o));
                     this.redraw();
                 }

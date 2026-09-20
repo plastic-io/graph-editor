@@ -1,12 +1,32 @@
+import {markRaw} from "vue";
 import getName from "@plastic-io/graph-editor-names";
 import {template, set} from "@plastic-io/graph-editor-vue3-help-overlay";
 import {newId, deref, loadScripts} from "@plastic-io/graph-editor-vue3-utils";
-import {diff, applyChange, revertChange, observableDiff} from "deep-diff";
+// `updateNodeFields` still needs a structural diff to work out which IO field
+// was renamed, so that it can rewrite the connectors that referred to it.
+// Everything else compares with the shared deep equality helper.
+import {applyChange, observableDiff} from "deep-diff";
 import type {Graph} from "@plastic-io/plastic-io";
+import {deepEqual} from "@plastic-io/graph-crdt";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
-const events = [];
+import {GraphCrdtSession} from "./crdt";
+import patchInto from "./project";
 let ioChangeTimer = 0 as any
 const CHANGE_TIMEOUT = 1000;
+
+/**
+ * `version` and `lastUpdate` are stamped by the act of saving, so comparing
+ * them would make every save look like a change and every save would then
+ * cause another one.
+ */
+function withoutVolatileFields(graph: any) {
+    if (!graph) {
+        return graph;
+    }
+    const properties = {...(graph.properties || {})};
+    delete properties.lastUpdate;
+    return {...graph, version: 0, properties};
+}
 export default {
     updateNodeUrl(e: {nodeId: string, url: string}) {
         const node = this.graphSnapshot.nodes.find((v: any) => v.id === e.nodeId);
@@ -21,7 +41,7 @@ export default {
         if (!node) {
             return this.raiseError(new Error("Cannot find node to update."));
         }
-        if (!diff(node.properties, e.properties)) {
+        if (deepEqual(node.properties, e.properties)) {
             return;
         }
         node.properties = e.properties;
@@ -349,32 +369,21 @@ export default {
         this.updateGraphFromSnapshot("Import New Node");
     },
     undo() {
-        this.moveHistoryPosition(-1);
+        if (!this.crdtSession) { return; }
+        this.crdtSession.undo();
     },
-    redo(state: any) {
-        this.moveHistoryPosition(1);
+    redo() {
+        if (!this.crdtSession) { return; }
+        this.crdtSession.redo();
     },
+    /**
+     * Step through the history.  The undo manager only ever rolls back this
+     * user's own work, so moving through history cannot disturb anyone else
+     * who is editing the same graph.
+     */
     moveHistoryPosition(move: number) {
-        const target = this.historyPosition + move;
-        if (target > this.events.length || target < 0) {
-            return;
-        }
-        while (this.historyPosition !== target) {
-            if (this.historyPosition > target) {
-                this.historyPosition -= 1;
-                const changes = this.events[this.historyPosition].changes;
-                changes.forEach((change: any) => {
-                    revertChange(this.graphSnapshot, true, change);
-                });
-            } else if (this.historyPosition < target) {
-                const changes = this.events[this.historyPosition].changes;
-                changes.forEach((change: any) => {
-                    applyChange(this.graphSnapshot, true, change);
-                });
-                this.historyPosition += 1;
-            }
-        }
-        this.graph = deref(this.graphSnapshot);
+        if (!this.crdtSession) { return; }
+        this.crdtSession.move(move);
     },
     createGraph(id: string): Graph {
       const name = getName();
@@ -404,36 +413,141 @@ export default {
         await callback(this.graphSnapshot);
         this.updateGraphFromSnapshot(description);
     },
+    /**
+     * Save the working snapshot into the CRDT document.
+     *
+     * The reconciler turns "the graph should now look like this" into the
+     * smallest set of granular operations that will get there, which is what
+     * makes a concurrent edit from someone else merge instead of collide.
+     */
     updateGraphFromSnapshot(description: string) {
-        if (!diff(this.graph, this.graphSnapshot)) {
+        if (!this.crdtSession || !this.graphSnapshot) {
+            // A panel can outlive the graph it belongs to, for instance while
+            // navigating away mid-edit.
             return;
         }
-        // there was an actual change detected
-        // tick the version number by 1
-        this.graphSnapshot.version += 1;
-        const changes = diff(this.graph, this.graphSnapshot);
-        console.debug('Save changes:', description, changes, this.graph.version, this.graphSnapshot.version)
-        // gather the difference and store it in an event list for undo/redo
-        const graphDiff = {
-            id: newId(),
-            description,
-            changes: deref(changes),
-        };
-        this.events.push(deref(graphDiff));
-        // write to the graph in the graph store
-        this.$patch((state: any) => {
-          state.description = description;
-          graphDiff.changes.forEach((change: any) => {
-              applyChange(state.graph, true, change);
-          });
-        });
-        this.historyPosition += 1;
-        // make a copy of the change in the snapshot store for data providers
+        const current = this.crdtSession.projection();
+        if (current && deepEqual(withoutVolatileFields(current), withoutVolatileFields(this.graphSnapshot))) {
+            return;
+        }
+        this.graphSnapshot.version = ((current && current.version) || 0) + 1;
+        if (this.graphSnapshot.properties) {
+            this.graphSnapshot.properties.lastUpdate = Date.now();
+        }
+        this.lastChangeName = description;
+        this.crdtSession.commit(description, this.graphSnapshot);
+    },
+    /**
+     * Fold a new projection of the document into the three plain-JSON trees
+     * the editor reads from, patching in place so untouched nodes keep their
+     * object identity and Vue leaves them alone.
+     */
+    applyProjection(projection: any, info: {local: boolean}) {
+        this.graph = patchInto(this.graph, projection);
+        if (!info.local) {
+            // Undo, redo, browser storage and remote peers all arrive here.
+            // The working snapshot has to follow them, because the next local
+            // save reconciles the document against it and would otherwise
+            // quietly revert whatever just arrived.
+            this.graphSnapshot = patchInto(this.graphSnapshot, projection);
+        }
         this.updatingSnapshotLocally = true;
-        this.graphSnapshotStore.$patch((state: any) => {
-            state.graph = deref(this.graph);
-        });
+        this.graphSnapshotStore.graph = patchInto(this.graphSnapshotStore.graph, projection);
         this.updatingSnapshotLocally = false;
+    },
+    /** Detach from the open graph, releasing its document and providers. */
+    closeGraph() {
+        if (!this.crdtSession) {
+            // Nothing is open, so there is nothing for the providers to let go
+            // of.  Without this guard the first open would disconnect providers
+            // that had never connected.
+            return;
+        }
+        const orchestrator = useOrchestratorStore();
+        orchestrator.syncProviders.forEach((provider: any) => {
+            if (typeof provider.disconnect !== "function") {
+                return;
+            }
+            try {
+                provider.disconnect();
+            } catch (err) {
+                console.error(`Sync provider "${provider.name}" could not disconnect.`, err);
+            }
+        });
+        if (this.crdtSession) {
+            this.crdtSession.destroy();
+            this.crdtSession = null;
+        }
+        this.events = [];
+        this.historyPosition = 0;
+        this.graphLoaded = false;
+    },
+    /** Read a pre-CRDT graph out of the legacy event store, if there is one. */
+    async loadLegacyGraph(graphId: string) {
+        const orchestrator = useOrchestratorStore();
+        if (!orchestrator.dataProviders.graph) {
+            return null;
+        }
+        try {
+            const graph = await orchestrator.dataProviders.graph.get(graphId);
+            return graph && graph.id ? graph : null;
+        } catch (err) {
+            return null;
+        }
+    },
+    async open(graphId: string) {
+        const orchestrator = useOrchestratorStore();
+        // Opening a second graph in the same session would otherwise leave the
+        // first one's document, undo manager and provider subscriptions alive
+        // and still listening.
+        this.closeGraph();
+        const session = markRaw(new GraphCrdtSession(graphId));
+        this.crdtSession = session;
+        this.isNewGraph = false;
+
+        for (const provider of orchestrator.syncProviders) {
+            try {
+                await provider.connect(graphId, session);
+            } catch (err) {
+                console.error(`Sync provider "${provider.name}" could not connect.`, err);
+            }
+        }
+
+        if (session.isEmpty) {
+            const legacy = await this.loadLegacyGraph(graphId);
+            if (legacy) {
+                console.info("Importing a pre-CRDT graph into a Yjs document.", graphId);
+                session.seed(legacy);
+            } else {
+                this.isNewGraph = true;
+                session.seed(this.createGraph(graphId));
+            }
+        }
+
+        const projection = session.projection();
+        this.graphSnapshot = deref(projection);
+        this.graph = deref(projection);
+        this.graphSnapshotStore.graph = deref(projection);
+
+        session.onProjection((next: any, info: any) => {
+            this.applyProjection(next, info);
+        });
+        session.onHistory((historyEvents: any[], position: number) => {
+            this.events = historyEvents;
+            this.historyPosition = position;
+        });
+        session.refresh();
+
+        await this.loadAllScripts(this.graphSnapshot);
+
+        console.groupCollapsed("%cPlastic-IO: %cGraph (CRDT)",
+            "color: blue",
+            "color: lightblue");
+        console.log(deref(this.graphSnapshot));
+        console.groupEnd();
+
+        this.graphLoaded = true;
+        orchestrator.createScheduler();
     },
     async loadAllScripts(graphSnapshot: any) {
       // Extracting the root-level scripts
@@ -457,54 +571,6 @@ export default {
       getGraphScripts(graphSnapshot, nodeScripts);
       // Combine and load all scripts
       await loadScripts([...rootScripts, ...nodeScripts]);
-    },
-    async open(graphId: string) {
-      const graphOrchestrator = useOrchestratorStore();
-      if (!graphOrchestrator.dataProviders.graph) {
-        throw new Error('No data providers to open a graph with.');
-        return;
-      }
-      let graph: Graph | null = null;
-      try {
-        this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
-      } catch (err: any) {
-        // auto create missing graphs
-        this.isNewGraph = true;
-        this.graphSnapshot = this.createGraph(graphId);
-      }
-      this.graphSnapshotStore.graph = deref(this.graphSnapshot);
-      graphOrchestrator.dataProviders.graph.subscribe(graphId, async () => {
-        // this.graphSnapshot = await graphOrchestrator.dataProviders.graph!.get(graphId);
-      });
-      // block loading until graph scripts are loaded if any
-      const scripts = (this.graphSnapshot.properties.scripts || '').replace('\n', ',').split(',');
-      await this.loadAllScripts(this.graphSnapshot);
-
-      // This must be patch to trigger stores to update
-      this.$patch((state: any) => {
-          // don't allow an opening graph to count as a history change
-          state.graph = deref(state.graphSnapshot);
-      });
-
-      this.graphSnapshotStore.$subscribe((mutation: any, state: any) => {
-        if (this.updatingSnapshotLocally) {
-          return;
-        }
-        const changes = diff(this.graph, state.graph);
-        if (changes) {
-            changes.forEach((change: any) => {
-                applyChange(this.graphSnapshot, true, change);
-            });
-            this.graph = deref(this.graphSnapshot);
-        }
-      });
-      console.groupCollapsed('%cPlastic-IO: %cGraph',
-        "color: blue",
-        "color: lightblue");
-      console.log(deref(this.graphSnapshot));
-      console.groupEnd();
-      this.graphLoaded = true;
-      graphOrchestrator.createScheduler();
     },
     updateNodeTemplate(e: {type: string, value: string, nodeId: string}) {
         const node = this.getNodeById(e.nodeId);
