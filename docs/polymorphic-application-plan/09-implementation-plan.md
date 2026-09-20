@@ -41,8 +41,8 @@
 | tests | `tests/unit/Scheduler.spec.js` | assert ordering, async completion, fan-out concurrency, cancellation, budgets, cross-graph |
 | compat | consumers on 2.0.x | 2.1 keeps `url()` thenable (handle has `.then`) so existing callers work; `afterSet` restores `err` for parity with 2.0.1 |
 
-### 9.1.4 plastic-io-rust (optional workstream, M6)
-PB-130 generate `schema.rs` from graph-schema; PB-131 rewrite `Scheduler::edge` setter to one accessor per *field* dispatching all connectors (RT-26), transport full JSON (RT-29), classic-script → function-body compile with `return`; PB-132 crate `v8` 152.x, isolate per execution, `heap_limits`, near-heap-limit + OOM handlers, watchdog thread with `IsolateHandle::terminate_execution`, no `process::exit` (RT-33), dispose platform; PB-133 host bindings mirroring `host`; PB-134 embed as an alternative executor behind the same `ExecutionHandle` (Lambda custom runtime or container) — only after M5, if measurements justify it.
+### 9.1.4 plastic-io-rust (last workstream, M6: security upgrade on both domains)
+PB-130 generate `schema.rs` from graph-schema; PB-131 rewrite `Scheduler::edge` setter to one accessor per *field* dispatching all connectors (RT-26), transport full JSON (RT-29), classic-script → function-body compile with `return`; PB-132 crate `v8` 152.x, isolate per execution, `heap_limits`, near-heap-limit + OOM handlers, watchdog thread with `IsolateHandle::terminate_execution`, no `process::exit` (RT-33), dispose platform; PB-133 host bindings mirroring `host`; PB-134 embed as the server executor behind the same `ExecutionHandle` (Lambda custom runtime or container) after M5; PB-135 browser build (wasm, embedded QuickJS/Boa for node code, same `host` bridge) so `set` code is isolated from the page realm.
 
 ## 9.2 Concrete shared types (TS; Rust generated)
 See §5.1 (`MutationEnvelope`, `AdmissionResult`, `MutationOp`), §4.3.2 (`ComponentManifest`, `PortContract`), §4.5.2 (`CapabilityRequirement/Grant`), §4.5.3 (`Observation`), §4.6.4/4.6.6 (`BudgetSpec`, `ExecutionHandle`), §4.7.1 (`Revision`), §4.9.2 (`IacDesiredState/Observed`), §8.1.2/8.1.7 (`ComponentTest`, `IntentJourney`), plus:
@@ -63,7 +63,7 @@ W0 discovery/baseline (done) ──► W1 schema+crdt packages (PB-120,121) ─�
                                                                          ├─► W10 capabilities+observations (PB-050..057) ──► W9, W11 components/publication (PB-040..047)
                                                                          ├─► W12 MCP read (PB-080,081,084,086, S-3) ──► W8
                                                                          └─► W13 editor visibility (PB-110..114, S-2) (parallel after W3 ack protocol is fixed)
-W14 IaC (PB-090..095, S-5) depends on W5, W10, W2 ;  W15 testing/journeys (PB-100..107) runs alongside every W ;  W16 migration/substrate (PB-122..125) depends on W1, W5 ;  W17 Rust (PB-130..134, S-6) optional, depends on W1, W4
+W14 IaC (PB-090..095, S-5) depends on W5, W10, W2 ;  W15 testing/journeys (PB-100..107) runs alongside every W ;  W16 migration/substrate (PB-122..125) depends on W1, W5 ;  W17 Rust (PB-130..134, S-6) last (after M5), depends on W1, W4
 ```
 Parallelisable: W1‖W2 start immediately; W4‖W10‖W12‖W13 after W1; W7 needs only W4 and S-1; W11 needs W10. Serialised on settled semantics: W3 (admission contract) must be frozen before W8/W13 ack UI; W5 before W6/W9.
 
@@ -86,7 +86,7 @@ Parallelisable: W1‖W2 start immediately; W4‖W10‖W12‖W13 after W1; W7 nee
 | M3 | W5, W6, W10, W11 (contracts + immutable publish), W9 basic hybrid, W7 isolated-vm, first journey (W15) | IaC, replay/shadow, Rust | M2, S-1, S-2 | commit→activate→hybrid execution→observations→contract validation→one journey; capability host in both domains | backend + editor + runtime | 6–10 wk | isolate perf | traces §6.1, §6.3, §6.4 executable as tests; journey green in CI | activation pointer revert |
 | M4 | W14 IaC | prod environments | M3, S-5 | IacStack component, orchestrator stack, roles, deployment panel, runbook | backend + AWS | 5–8 wk | IAM scoping errors | §6.6 success/failure in isolated env | remove orchestrator stack; graphs keep desired state |
 | M5 | full budgets/OOM, publication migration, replay/shadow, rollback/compensation, editor workflows, hardening, retention | Rust | M4 | per-component budgets, simulation classes, rollback reports, journeys at scale, alarms | all | 8–14 wk | scope | §8.1 gates enforced; threat negative tests all green | per-feature flags |
-| M6 | W17 Rust runtime parity (optional) | — | S-6 | Rust executor behind `ExecutionHandle` | Rust eng | 10–16 wk | crate upgrade churn | A3 §G table rows "same" | not deployed by default |
+| M6 | W17 Rust runtime on server (V8 isolates) and browser (wasm + embedded JS engine) as the security upgrade — last, after M5 | — | S-6, M5 complete | Rust executor behind `ExecutionHandle` on both domains | Rust eng | 14–24 wk | crate upgrade churn; wasm JS-engine parity with V8 semantics | A3 §G table rows "same"; browser `set` code cannot reach the page realm | not deployed by default |
 
 Smallest useful demonstration: M2 (§1.6). Effort is uncertain by ±50 % until S-1/S-4 report.
 

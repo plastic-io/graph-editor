@@ -8,7 +8,7 @@
 | 4 | **Get the baseline green (M0):** pin Node, add editor test + type-check steps to CI, fix the four bare-`<script>` SFCs, chain scheduler build→test, run server tests on Node 18. | **done 2026-09-20** (local branches, not pushed) | editor `m0-baseline` b63db9f, server `m0-baseline` 877051e, scheduler patch in `patches/`; evidence below |
 | 5 | **Unblock parallel work:** publish `@plastic-io/graph-crdt` to npm (PB-120), configure the Auth0 API with the §4.4.5 scope names and one test agent client, create a CI deploy role with OIDC (PB-125); a `staging` stage and a `pio-test-` AWS environment before M3. | not started | — |
 
-Explicitly deferred: any Rust runtime work (W17) and any IaC work (W14).
+Explicitly deferred: any Rust runtime work (W17 — decided 2026-09-20 to be the last workstream, on both server and browser, as the security upgrade after the app is fully functional) and any IaC work (W14).
 
 ## Task 1 log
 
