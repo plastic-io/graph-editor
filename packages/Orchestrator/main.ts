@@ -14,10 +14,53 @@ import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-pre
 import SchedulerWorker from "./schedulerWorker?worker";
 import {useTheme} from 'vuetify';
 import {deref, newId} from "@plastic-io/graph-editor-vue3-utils";
+import {deepEqual as crdtDeepEqual} from "@plastic-io/graph-crdt";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import AuthenticationProvider, {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
 import * as mdi from "@mdi/js";
 import moment from "moment";
+/** Trailing debounce for pushing graph changes into the scheduler worker. */
+const SCHEDULER_PUSH_DEBOUNCE = 250;
+
+/**
+ * The parts of a graph the scheduling engine actually runs on.
+ *
+ * Moving a node, renaming it or recolouring it changes the picture, not the
+ * program, so rebuilding and re-shipping the whole graph to the worker for
+ * those is pure waste.  Under the CRDT pipeline that waste would land on every
+ * frame of a drag and every keystroke in the code editor, so the push is
+ * debounced and then skipped entirely unless one of these fields moved.
+ */
+const schedulerRelevantShape = (graph: any) => {
+    if (!graph) {
+        return null;
+    }
+    const properties = {...(graph.properties || {})};
+    delete properties.lastUpdate;
+    delete properties.lastUpdatedBy;
+    return {
+        id: graph.id,
+        url: graph.url,
+        properties,
+        nodes: (graph.nodes || []).map((node: any) => ({
+            id: node.id,
+            url: node.url,
+            graphId: node.graphId,
+            artifact: node.artifact,
+            data: node.data,
+            linkedGraph: node.linkedGraph,
+            linkedNode: node.linkedNode,
+            edges: node.edges,
+            template: node.template,
+            properties: {
+                inputs: (node.properties || {}).inputs,
+                outputs: (node.properties || {}).outputs,
+                scripts: (node.properties || {}).scripts,
+            },
+        })),
+    };
+};
+
 const hyphenateProperty = (prop: any) => {
     var p = "";
     Array.prototype.forEach.call(prop, function (char) {
@@ -139,6 +182,9 @@ export const useStore = defineStore('orchestrator', {
     panelVisibility: true,
     graphSnapshot: null,
     loading: {},
+    /** CRDT sync providers (local persistence, network) attached to the open
+     * graph document.  Populated by provider modules at startup. */
+    syncProviders: [] as any[],
     dataProviders: {
         artifact: null as DocumentProvider | null,
         toc: null as DocumentProvider | null,
@@ -191,6 +237,19 @@ export const useStore = defineStore('orchestrator', {
       textarea.select();
       document.execCommand("copy");
       document.body.removeChild(textarea);
+    },
+    /** Drop a graph's collaborative document from every attached provider. */
+    async removeGraphDocument(graphId: string) {
+      for (const provider of this.syncProviders) {
+        if (typeof provider.remove !== 'function') {
+          continue;
+        }
+        try {
+          await provider.remove(graphId);
+        } catch (err) {
+          console.error(`Sync provider "${provider.name}" could not delete the document.`, err);
+        }
+      }
     },
     async getToc() {
       try {
@@ -575,12 +634,17 @@ export const useStore = defineStore('orchestrator', {
         (this.scheduler.instance as any) = {
           url: sendMessage('url'),
         };
-        useGraphSnapshotStore().$subscribe(async (mutation: any, state: any) => {
-          if (!state.graph) {
+        let lastPushedShape: any = schedulerRelevantShape(this.graphStore.graph);
+        let pushTimer: any = null;
+        const pushGraphToWorker = async (source: any) => {
+          const shape = schedulerRelevantShape(source);
+          if (crdtDeepEqual(shape, lastPushedShape)) {
+            // Only the layout moved, so the running program is unchanged.
             return;
           }
-          const graph = deref(state.graph);
-          let globalNodes = [...graph.nodes] as any[];
+          lastPushedShape = shape;
+          const graph = deref(source);
+          const globalNodes = [...graph.nodes] as any[];
           console.groupCollapsed('%cPlastic-IO: %cIntegrated Graph',
               "color: blue",
               "color: lightblue");
@@ -592,6 +656,17 @@ export const useStore = defineStore('orchestrator', {
             method: 'change',
             args: [deref(graph)],
           });
+        };
+        useGraphSnapshotStore().$subscribe((mutation: any, state: any) => {
+          if (!state.graph) {
+            return;
+          }
+          clearTimeout(pushTimer);
+          pushTimer = setTimeout(() => {
+            pushGraphToWorker(state.graph).catch((err) => {
+              console.error('Cannot send the graph to the scheduler.', err);
+            });
+          }, SCHEDULER_PUSH_DEBOUNCE);
         });
     },
     clearInfo() {},

@@ -28,23 +28,10 @@ export default class LocalStorageDocumentProvider extends EditorModule {
     if (!preferencesStore.preferences!.useLocalStorage) {
         return;
     }
+    // The graph document is persisted by the CRDT provider; this one remains
+    // only as a worked example of an async data provider and as a source for
+    // importing graphs created before the migration.
     orchistratorStore.dataProviders.graph = localDataProvider;
-    let writeDebounceTimer: any;
-    graphStore.$subscribe((mutation: any, state: any) => {
-        if (!state.graph) {
-            return;
-        }
-        const changes = diff(localDataProvider.graph || {}, JSON.parse(JSON.stringify(state.graph)));
-        if (changes) {
-          localDataProvider.graph = JSON.parse(JSON.stringify(state.graph));
-          const ev = {
-              id: newId(),
-              changes,
-              description: '',
-          };
-          localDataProvider.set(localDataProvider.graph!.id, ev as any);
-        }
-    }, { detached: true });
     orchistratorStore.dataProviders.publish = localDataProvider;
     orchistratorStore.dataProviders.toc = localDataProvider;
     orchistratorStore.dataProviders.artifact = localDataProvider;

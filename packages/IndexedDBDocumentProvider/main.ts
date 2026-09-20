@@ -2,12 +2,10 @@ import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import type {Node, Graph} from "@plastic-io/plastic-io";
 import type {Toc, TocItem, GraphDiff, NodeArtifact, GraphArtifact} from "@plastic-io/graph-editor-vue3-document-provider";
 import {useStore as useOrchistratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
-import {useGraphSnapshotStore, useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import EditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 import DocumentProvider from "@plastic-io/graph-editor-vue3-document-provider";
 import {Appearance} from "@plastic-io/graph-editor-vue3-appearance";
-import {applyChange, diff} from "deep-diff";
 import IndexedDBWorker from "./storageWorker?worker";
 import {fromJSON, toJSON} from 'flatted';
 const preferencesKey = "preferences";
@@ -19,8 +17,6 @@ export default class IndexedDBProvider extends EditorModule {
   constructor(config: Record<string, any>) {
     super();
     const orchistratorStore = useOrchistratorStore();
-    const graphSnapshotStore = useGraphSnapshotStore();
-    const graphStore = useGraphStore();
     const localDataProviderGraph = new IndexedDBDataProvider();
     localDataProviderGraph.type = 'update';
     const localDataProviderArtifact = new IndexedDBDataProvider();
@@ -29,26 +25,11 @@ export default class IndexedDBProvider extends EditorModule {
     if (!preferencesStore.preferences!.useLocalStorage) {
         return;
     }
+    // The graph document itself is persisted by the CRDT provider now.  This
+    // module stays because the table of contents, artifacts and publishing all
+    // still go through it, and because opening a graph created before the
+    // migration reads its projection from here.
     orchistratorStore.dataProviders.graph = localDataProviderGraph;
-    const updatStore = (state: any) => {
-        if (!state.graph) {
-            return;
-        }
-        const changes = diff(localDataProviderGraph.graph || {}, JSON.parse(JSON.stringify(state.graph)));
-        if (changes) {
-            localDataProviderGraph.graph = JSON.parse(JSON.stringify(state.graph));
-            const ev = {
-                id: newId(),
-                changes,
-                version: state.graph.version,
-                description: '',
-            };
-            localDataProviderGraph.set(localDataProviderGraph.graph!.id, ev as any);
-        }
-    }
-    graphStore.$subscribe((mutation: any, state: any) => {
-        updatStore(state);
-    }, { detached: true });
     orchistratorStore.dataProviders.publish = localDataProviderArtifact;
     orchistratorStore.dataProviders.toc = localDataProviderArtifact;
     orchistratorStore.dataProviders.artifact = localDataProviderArtifact;

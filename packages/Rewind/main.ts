@@ -19,7 +19,8 @@ export default class GraphRewind extends EditorModule {
       order: 3.5,
       divider: true,
     });
-    // this really isn't working well
-    // graphOrchestratorStore.addPlugin(rewindPluginIcon);
+    // Rewind now replays the CRDT update log rather than depending on a full
+    // JSON projection being written for every edit, so it can be switched on.
+    graphOrchestratorStore.addPlugin(rewindPluginIcon);
   }
 };

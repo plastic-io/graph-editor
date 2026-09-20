@@ -54,6 +54,8 @@
                 :graphId="graphSnapshot.id"
                 :errors="errors.filter(e => e.type === 'graph')"
                 :value="graphTemplateValue"
+                :ytext="graphTemplateText()"
+                :awareness="collaborationAwareness()"
                 helpLink="https://plastic-io.github.io/plastic-io/interfaces/NodeInterface.html"
                 @close="showGraphCodeEditor = false"
                 @dirty="setIsDirty = $event"
@@ -132,6 +134,8 @@ export default {
     ...mapActions(useGraphStore, [
         'drop',
         'updateGraphFromSnapshot',
+        'graphTemplateText',
+        'collaborationAwareness',
     ]),
     color(color) {
         if (!colors[color]) {
@@ -260,7 +264,10 @@ export default {
         return this.compiledTemplate ? this.compiledTemplate.component : 'div';
     },
     sortedNodes() {
-        return this.graphSnapshot.nodes.sort((a, b) => {
+        // Copy before sorting.  Sorting in place would mutate the working
+        // snapshot from inside a computed property, which under the CRDT
+        // pipeline turns a render into a document write.
+        return [...this.graphSnapshot.nodes].sort((a, b) => {
             return (a.properties.presentation.sort || 0)
                 - (b.properties.presentation.sort || 0);
         });

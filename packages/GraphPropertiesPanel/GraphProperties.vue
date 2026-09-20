@@ -108,7 +108,6 @@
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
-import {diff} from "deep-diff";
 import {deref} from "@plastic-io/graph-editor-vue3-utils";
 import {mapActions, mapState, mapWritableState} from "pinia";
 

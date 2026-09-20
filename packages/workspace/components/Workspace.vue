@@ -35,6 +35,7 @@
                     <component :is="plugin.component" v-bind="plugin.props"/>
                 </template>
             </v-system-bar>
+            <shared-mouse v-if="!presentation"/>
             <connector-info v-if="!presentation && showConnectorView" @close="showConnectorView = false;"/>
         </template>
         <help-overlay/>

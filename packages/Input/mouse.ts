@@ -10,6 +10,9 @@ import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-or
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import {useStore as useInputStore} from "./store";
+/** How often this user's pointer position is shared with collaborators. */
+const PRESENCE_INTERVAL = 100;
+let lastPresenceAt = 0;
 // let the person who writes perfect code be the first to judge this file!
 export default class MouseAction {
     inputStore: any
@@ -285,7 +288,7 @@ export default class MouseAction {
         if (this.graphStore.movingNodes.length > 0) {
             this.graphStore.movingNodes = [];
             if (pastDeadZone) {
-                this.applyGraphChanges("Move Nodes");
+                this.graphStore.endNodeDrag("Move Nodes");
             }
         }
         if (this.graphStore.movingConnector && pastDeadZone) {
@@ -404,25 +407,37 @@ export default class MouseAction {
     }
     // move nodes
     if (this.graphStore.movingNodes.length > 0 && !locked) {
+        const positions = [] as {id: string, x: number, y: number}[];
         this.graphStore.movingNodes.forEach((movingNode: any) => {
-            const node = this.graphStore.graphSnapshot.nodes.find((v: Node) => movingNode.id === v.id);
             const transNode = this.graphStore.translating.nodes.find((v: any) => movingNode.id === v.id);
+            if (!transNode) {
+                return;
+            }
             const oldX = this.graphStore.presentation ? transNode.properties.presentation.x : transNode.properties.x;
             const oldY = this.graphStore.presentation ? transNode.properties.presentation.y : transNode.properties.y;
             const x = oldX + ((mouse.x - this.graphStore.translating.mouse.x) / this.graphStore.view.k);
             const y = oldY + ((mouse.y - this.graphStore.translating.mouse.y) / this.graphStore.view.k);
-            const newX = Math.floor(x / gridSize) * gridSize;
-            const newY = Math.floor(y / gridSize) * gridSize;
-            if (this.graphStore.presentation) {
-                node.properties.presentation.x = newX;
-                node.properties.presentation.y = newY;
-            } else {
-                node.properties.x = newX;
-                node.properties.y = newY;
-            }
+            positions.push({
+                id: movingNode.id,
+                x: Math.floor(x / gridSize) * gridSize,
+                y: Math.floor(y / gridSize) * gridSize,
+            });
         });
+        // Positions go straight into the document, so other people watching the
+        // graph see the drag as it happens rather than as a jump at the end.
+        this.graphStore.setNodePositions(positions, this.graphStore.presentation);
     }
     this.graphStore.updateBoundingRect();
+    // Share the pointer, in graph coordinates so that everyone sees it in the
+    // right place whatever their own pan and zoom happen to be.
+    const now = Date.now();
+    if (now - lastPresenceAt > PRESENCE_INTERVAL) {
+        lastPresenceAt = now;
+        this.graphStore.publishPresence({x, y}, {
+            nodes: this.graphStore.selectedNodes.map((v: any) => v.id),
+            connectors: this.graphStore.selectedConnectors.map((v: any) => v.id),
+        });
+    }
     // set state last so we can check this.inputStore.mouse/mouse diff
     this.inputStore.mouse = mouse;
   }

@@ -2,10 +2,10 @@
   <teleport to=".v-application__wrap">
     <div class="rewind" @click.stop>
         <div class="rewind-input">
-          Version <input v-model="displayVersion"/>
+          Step <input readonly :value="displayVersion"/>
         </div>
         <i class="rewind-title">Rewind</i>
-        <p class="t-120">T-120</p>
+        <p class="t-120">{{stepDescription}}</p>
         <v-btn-toggle mandatory v-model="transportSelection" class="rewind-buttons">
             <v-btn @click="restart">
               <v-icon>mdi-step-backward-2</v-icon>
@@ -55,11 +55,7 @@
 </template>
 <script>
 import {mapWritableState, mapActions} from "pinia";
-import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
-import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
-import {deref} from "@plastic-io/graph-editor-vue3-utils";
-import {applyChange, diff} from "deep-diff";
 
 export default {
   data() {
@@ -75,17 +71,24 @@ export default {
       playForward: true,
       rewinding: true,
       fastForwarding: true,
+      history: [],
       graphStore: useGraphStore(),
     }
   },
   async mounted() {
-    this.localGraph = deref(this.graphSnapshot);
-    this.currentSelectedVersion = this.localGraph.version;
-    this.maxVersion = this.localGraph.version;
-    this.events = await this.getEvents(this.graphSnapshot.id);
+    // Each entry in the log is one recorded action, so the transport counts
+    // steps through history rather than graph version numbers, which under
+    // concurrent editing are no longer a timeline.
+    this.history = await this.listRewindHistory();
+    this.maxVersion = this.history.length;
+    this.currentSelectedVersion = this.history.length;
+  },
+  unmounted() {
+    clearTimeout(this.playbackTimeout);
+    this.exitRewind();
   },
   computed: {
-    ...mapWritableState(useGraphStore, ['graphSnapshot', 'rewindVersion', 'inRewindMode']),
+    ...mapWritableState(useGraphStore, ['graphSnapshot', 'inRewindMode']),
     sliderVersion: {
       get() {
         return this.currentSelectedVersion;
@@ -94,24 +97,28 @@ export default {
         this.setVersion(val);
       }
     },
+    stepDescription() {
+      const entry = this.history[this.currentSelectedVersion - 1];
+      return entry ? entry.description : "Start";
+    },
     displayVersion() {
-      // Convert the version number to a string
-      let versionString = this.currentSelectedVersion.toString();
-      // Ensure the string is at least 6 characters long, padding with zeros if necessary
+      let versionString = String(this.currentSelectedVersion);
       versionString = versionString.padStart(6, '0');
-      // Insert colons to resemble an LCD clock display, e.g., "00:00:01"
       return versionString.slice(0, 2) + ":" + versionString.slice(2, 4) + ":" + versionString.slice(4, 6);
     }
   },
   methods: {
-    ...mapActions(useOrchestratorStore, ['getEvents']),
-    ...mapActions(useGraphStore, ['transact']),
+    ...mapActions(useGraphStore, [
+      'listRewindHistory',
+      'previewRewind',
+      'exitRewind',
+    ]),
     async stepForward() {
-      this.setVersion(this.currentSelectedVersion + 1);
+      await this.setVersion(this.currentSelectedVersion + 1);
       this.stop();
     },
     async stepBack() {
-      this.setVersion(this.currentSelectedVersion - 1);
+      await this.setVersion(this.currentSelectedVersion - 1);
       this.stop();
     },
     async restart() {
@@ -119,7 +126,6 @@ export default {
       this.stop();
     },
     async reset() {
-      console.log('reset');
       await this.setVersion(this.maxVersion);
       this.stop();
     },
@@ -151,62 +157,46 @@ export default {
       clearTimeout(this.playbackTimeout);
     },
     async discardRewind() {
-      await this.setVersion(this.maxVersion);
-      this.inRewindMode = false;
+      this.stop();
+      await this.exitRewind();
+      this.currentSelectedVersion = this.maxVersion;
     },
     async setVersion(version) {
       if (!(version <= this.maxVersion && version > 0)) {
         return;
       }
       this.currentSelectedVersion = version;
-      const graph = await this.projectGraphEvents(this.currentSelectedVersion);
-      const changes = diff(deref(graph), deref(this.graphSnapshot));
-      if (changes) {
-        this.graphStore.$patch((state) => {
-          state.graphSnapshot = graph;
-        });
-        this.localGraph = deref(this.graphSnapshot);
+      const entry = this.history[version - 1];
+      if (!entry) {
+        return;
       }
-    },
-    async projectGraphEvents(version) {
-        const start = performance.now();
-        const state = {};
-        this.events.sort((a, b) => {
-          return a.version - b.version;
-        }).forEach((event) => {
-          if (event.version > version) {
-            return;
-          }
-          event.changes.forEach((change) => {
-            applyChange(state, true, change);
-          });
-        });
-        return state;
+      await this.previewRewind(entry);
     },
     async commitRewind() {
-      this.inRewindMode = false;
-      this.$nextTick(async () => {
-        const revertedGraph = await this.projectGraphEvents(this.currentSelectedVersion);
-        this.graphStore.$patch((state) => {
-          state.graphSnapshot = revertedGraph;
-        });
-        this.graphStore.updateGraphFromSnapshot("Revert");
-      });
+      this.stop();
+      const entry = this.history[this.currentSelectedVersion - 1];
+      if (!entry) {
+        return;
+      }
+      // Reverting is an ordinary edit, so it merges with anything a
+      // collaborator did meanwhile and it can itself be undone.
+      await this.graphStore.commitRewind(entry);
+      this.history = await this.listRewindHistory();
+      this.maxVersion = this.history.length;
+      this.currentSelectedVersion = this.history.length;
     },
     startPlayback() {
       clearTimeout(this.playbackTimeout);
-      const nextFrame = () => {
+      const nextFrame = async () => {
           if (this.playForward) {
               if (this.currentSelectedVersion < this.maxVersion) {
-                  this.currentSelectedVersion += 1;
-                  this.setVersion(this.currentSelectedVersion);
+                  await this.setVersion(this.currentSelectedVersion + 1);
                   this.startPlayback();
                   return;
               }
           } else {
               if (this.currentSelectedVersion > 1) {
-                  this.currentSelectedVersion -= 1;
-                  this.setVersion(this.currentSelectedVersion);
+                  await this.setVersion(this.currentSelectedVersion - 1);
                   this.startPlayback();
                   return;
               }

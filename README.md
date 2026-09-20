@@ -37,7 +37,7 @@ Interactive Graph Programming
 6. [Change Update Sequence Diagram](#change-update-sequence-diagram)
 7. [Implementing the Graph Scheduler Directly](#implementing-the-graph-scheduler-directly)
     1. [Going Deeper](#going-deeper)
-8. [Operational Transformation](#operational-transformation)
+8. [Collaborative Editing](#collaborative-editing)
 9. [Contributing](#contributing)
     1. [Graphs and Nodes](#graphs-and-Nodes)
     2. [Graph Editor IDE](#graph-editor-ide)
@@ -67,7 +67,7 @@ Declarative graph programming is great for parallel and asynchronous tasks and g
 
 * Build your components in the same interface where you build your graph.
 * Pure serverless environment.  Plastic-IO only uses lambdas and CDN based client applications.
-* Operational Transformation ensures you can rewind or fast-forward changes made to your graph.
+* Conflict-free replicated data types (CRDTs) let several people edit one graph at once, and let you rewind or fast-forward through its history.
 * Multiuser debug environment for server side _and_ client side programming.
 * See the actual animated server data flow in your program _live_ via web sockets.
 * Typescript Graph Scheduling Engine built on promises from the ground up.
@@ -267,21 +267,24 @@ You can add your own components to the graph editor using the vue plugin framewo
 
 # Change Update Sequence Diagram
 
-    +-----------+ +------------------+ +-----------------------------+       +----------------+
-    |           | |                  | |                             |       |                |
-    |  Browser  | |   Local Graph    | |   Local Remote Graph Copy   |       |  Remote Graph  |
-    |           | |                  | |                             |       |                |
-    +-----+-----+ +--------+---------+ +-------------+---------------+       +--------+-------+
-          |                |                         |                                |
-          |               +++                        |                               +++
-          +----Change---> | | +----Diff Calc----------------Change sent to Server--> | |
-          |               | |                        |                               | |
-          |               | |                       +++                              | |
-          |               | |                       | |                              | |
-          |               | | <----Diff Calc------+ | | <---Change Sent to Client--+ | |
-          |               +++                       +++                              +++
-          |                |                         |                                |
-          |                |                         |                                |
+    +-----------+  +-------------------+  +------------------+  +------------------+
+    |           |  |                   |  |                  |  |                  |
+    |  Browser  |  |  Graph Document   |  |  Browser Storage |  |   Graph Server   |
+    |           |  |     (Yjs doc)     |  |   (IndexedDB)    |  |    (S3 + WSS)    |
+    +-----+-----+  +---------+---------+  +---------+--------+  +---------+--------+
+          |                  |                      |                     |
+          +----Change------> |                      |                     |
+          |                 +++---Update----------> |                     |
+          |                 | |---Update-----------------------------> +--+--+
+          |                 | |                     |                  |     |
+          |                 | | <---------Update from another person---+-----+
+          | <---Re-render---+++                     |                     |
+          |                  |                      |                     |
+
+An edit becomes a small binary update rather than a diff against a shared
+baseline.  Updates commute, so the order they arrive in does not matter and two
+people editing at once cannot overwrite each other.  The server never reads a
+graph in order to write one: it appends the update and passes it on.
 
 # Implementing the Graph Scheduler Directly
 
@@ -306,15 +309,42 @@ You can hook into a variety of events listed in the scheduling engine documentat
 
 Scheduling engine documentation: [Scheduler](https://plastic-io.github.io/plastic-io/classes/_scheduler_.scheduler.html)
 
-# Operational Transformation
+# Collaborative Editing
 
-Plastic-IO uses [Operational Transformation (OT)](https://en.wikipedia.org/wiki/Operational_transformation), Event Sourcing (ES), [Command Query Resource Separation (CQRS)](https://en.wikipedia.org/wiki/Command%E2%80%93query_separation), [Blockchain](https://en.wikipedia.org/wiki/Blockchain), and [Domain Driven Design (DDD)](https://en.wikipedia.org/wiki/Domain-driven_design) for event bus, and storage patterns.  By using these patterns Plastic-IO works very much like git.  Each change creates an event that is saved into a collection of change events that is then projected into a state, all verified on a simple linked list blockchain.
+Plastic-IO graphs are [conflict-free replicated data types](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type),
+built on [Yjs](https://yjs.dev/).  Each graph is one document, and everything
+in it is addressed by identity rather than by position: nodes live in a map
+keyed by node id, connectors in a list keyed by connector id, and code in
+collaborative text.
 
-DDD and ES are used to create different views using the OT events in conjunction with real time runtime ES data pushed to graph data subscribers, for example using your graph as an interactive web site.
+That addressing is what makes concurrent editing safe.  If you delete a node
+while a colleague drags another one, their drag lands on the node they grabbed,
+not on whatever moved into that slot.  If you rename an output while they wire
+a connector to it, both changes survive.  If you both type in the same node's
+set function, the edits merge character by character.
 
-The event bus itself is CQRS, which means all OT messages are fire and forget.  No response is sent back from the [websocket](https://en.wikipedia.org/wiki/WebSocket) based server.  Rather, interested clients subscribe to the graph's notification topic and events are pushed out to the client.
+An edit produces a small binary update.  Updates commute and are idempotent, so
+they can arrive in any order, more than once, or after hours offline, and every
+copy of the graph ends up identical.  There is no central lock and no rebase.
 
-In order to maintain consistency in OT edits, a Blockchain pattern is used.  Each OT change event sent to the central server contains a cryptographic link to the previous state and the projected changed state.  This cryptographic signature ensures that, in theory, the OT event ledger can never be corrupted due to invalid state change messages.
+## Where changes are kept
+
+* **In your browser.**  The document is persisted to IndexedDB, so a graph
+  opens instantly and keeps working with no network at all.  Alongside it, an
+  append-only log records every update with the name of the action that
+  produced it; that log is what the rewind transport replays.
+* **On the graph server.**  Each update is written to its own object in S3 and
+  passed on to everyone else editing that graph.  Writes never read, so two
+  people saving at the same moment cannot overwrite one another.  Periodically
+  the log is folded into a snapshot, and the plain JSON projection that graph
+  execution and publishing read is refreshed.
+
+## Undo and presence
+
+Undo is per person.  The undo stack follows only the changes you made, so
+undoing your own work never reaches into a colleague's.  Everyone's pointer,
+selection and identity travel on a separate presence channel that is never
+stored and disappears when they close the tab.
 
 # Contributing
 
@@ -349,7 +379,7 @@ Contributing to the graph editor is not for beginners, but there are some ticket
 
 ## Graph Server Lambda
 
-The [Graph Server](https://github.com/plastic-io/graph-server) is an AWS HTTP Lambda {proxy+} implementation of the graph server.  Using Operational Transformation (OT) and a publishing pipeline, the graph server lambda represents an entire micro service architecture framework.  Graphs are accessed via their registered URLs and served to the users as HTTPS APIs.  Graphs running on the graph server have full access to the AWS infrastructure and can do anything AWS allows.
+The [Graph Server](https://github.com/plastic-io/graph-server) is an AWS HTTP Lambda {proxy+} implementation of the graph server.  Using CRDT document sync and a publishing pipeline, the graph server lambda represents an entire micro service architecture framework.  Graphs are accessed via their registered URLs and served to the users as HTTPS APIs.  Graphs running on the graph server have full access to the AWS infrastructure and can do anything AWS allows.
 
 Work on the graph server is not for beginners.  Here we are creating new O(1) routing paradigms that fit with graph programming.  Additionally the graph server is used to communicate debugging and business intelligence events to AWS cloud watch and the Graph Editor IDE.  These are highly complex system and require a skilled and careful hand to maintain.  If you think you're up for it check out the [issues](https://github.com/plastic-io/graph-server/issues) list on the graph server.
 

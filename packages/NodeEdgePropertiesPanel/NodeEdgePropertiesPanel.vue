@@ -77,7 +77,7 @@
   </v-dialog>
 </template>
 <script lang="typescript">
-import {diff} from "deep-diff";
+import {deepEqual} from "@plastic-io/graph-crdt";
 import {mapWritableState, mapActions, mapState} from "pinia";
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
@@ -205,7 +205,7 @@ export default {
   watch: {
     graphSnapshot: {
       handler: function () {
-        if (diff(this.getNode(), this.node)) {
+        if (!deepEqual(this.getNode(), this.node)) {
           this.setLocalNode();
         }
       },

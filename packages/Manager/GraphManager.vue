@@ -112,6 +112,7 @@
           'init',
           'setTheme',
           'getToc',
+          'removeGraphDocument',
           'getPluginsByType',
       ]),
       openGraph(id) {
@@ -119,6 +120,7 @@
       },
       async deleteGraph() {
         this.showDeleteDialog = false;
+        await this.removeGraphDocument(this.deletingGraph.id);
         await this.dataProviders.graph.delete(this.deletingGraph.id);
         await this.dataProviders.toc.updateToc(this.deletingGraph.id, undefined);
         await this.getToc();

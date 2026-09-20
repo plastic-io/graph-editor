@@ -2,9 +2,7 @@ import type {App} from "vue";
 import type {Router} from "vue-router";
 import type {Toc, TocItem, GraphDiff, NodeArtifact, GraphArtifact} from "@plastic-io/graph-editor-vue3-document-provider";
 import {useStore as useOrchistratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
-import {useGraphSnapshotStore, useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
-import {applyChange, diff} from "deep-diff";
 import {deref, newId} from "@plastic-io/graph-editor-vue3-utils";
 import EditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 const CHUNK_SIZE = 35000;
@@ -12,19 +10,11 @@ import HTTPDataProvider from "./HTTPDataProvider";
 export default class WssDocumentProvider extends EditorModule {
   constructor(config: Record<string, any>, app: App<Element>, hostRouter: Router) {
     super();
-    const providerState = {
-      graph: null as any,
-      localUpdate: false,
-      subscribed: false,
-      sentEventIds: [],
-    };
     const orchistratorStore = useOrchistratorStore();
-    const graphSnapshotStore = useGraphSnapshotStore();
     const preferencesStore = usePreferencesStore();
     if (preferencesStore.preferences!.useLocalStorage) {
         return;
     }
-    const graphStore = useGraphStore();
     const wssDataProvider = new WSSDataProvider(
       preferencesStore.preferences!.graphWSSServer,
       preferencesStore.preferences!.graphHTTPServer,
@@ -32,55 +22,11 @@ export default class WssDocumentProvider extends EditorModule {
       () => {},
       () => {},
     );
-    graphStore.$subscribe((mutation: any, state: any) => {
-        if (!state.graph || providerState.localUpdate) {
-            return;
-        }
-        if (!providerState.subscribed) {
-            console.log('subscribe to remote');
-            providerState.subscribed = true;
-            orchistratorStore.dataProviders.graph.subscribe('graph-event-' + state.graph.id, async (e: any) => {
-                // apply remote event
-                console.log('remote event', e);
-                graphSnapshotStore.$patch((state) => {
-                    providerState.localUpdate = true;
-                    e.forEach((event) => {
-                        if (providerState.sentEventIds.includes(event.id)) {
-                            return;
-                        }
-                        // apply changes to the graphStore
-                        event.changes.forEach((change: any) => {
-                            applyChange(state.graph, true, change);
-                        });
-                        // clone graph store to keep provider state up to date
-                        providerState.graph = JSON.parse(JSON.stringify(state.graph));
-                    });
-                    providerState.localUpdate = false;
-                });
-            });
-        }
-        if (!providerState.graph && !state.isNewGraph) {
-            providerState.graph = JSON.parse(JSON.stringify(state.graph));
-        }
-        if (mutation.type !== 'patch function') {
-            return;
-        }
-        const changes = diff(providerState.graph || {}, JSON.parse(JSON.stringify(state.graph)));
-        if (changes) {
-          providerState.graph = JSON.parse(JSON.stringify(state.graph));
-          const ev = {
-              id: newId(),
-              changes,
-              description: '',
-              graphId: state.graph!.id,
-          };
-          providerState.sentEventIds.push(ev.id);
-          wssDataProvider.set(state.graph!.url, ev as any);
-        }
-    }, { detached: true });
-
+    // Graph changes travel over the CRDT provider now, which writes an
+    // append-only update log instead of a diff that the server has to apply on
+    // top of whatever it last read.  This module stays for the table of
+    // contents, artifacts, publishing and fetching a graph by id.
     (orchistratorStore.dataProviders.graph as any) = wssDataProvider;
-    let writeDebounceTimer: any;
     (orchistratorStore.dataProviders as any).publish = wssDataProvider;
     (orchistratorStore.dataProviders as any).toc = {
       ...wssDataProvider,
