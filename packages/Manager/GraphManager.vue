@@ -104,7 +104,9 @@
         newGraphUrl: '',
         deletingGraph: {},
         lastDeleted: null,
+        lastDeletedEntries: null,
         showUndoDelete: false,
+        tocRefreshTimer: 0,
         newGraphRules: [
           value => !!value || 'Field must not be empty',
           value => !!Object.keys(this.toc).indexOf(value) || 'This URL is already taken by another graph.'
@@ -140,6 +142,15 @@
         this.showDeleteDialog = false;
         const graph = this.deletingGraph;
         this.deletingGraph = {};
+        // Take it off the list here rather than waiting to be told.  The
+        // delete goes out over the socket, which does not answer, so asking
+        // the server for the list straight away would get the old one back and
+        // the graph would sit there as though nothing had happened.
+        this.lastDeletedEntries = {
+          [graph.id]: this.toc[graph.id],
+          [`endpoint/${graph.id}`]: this.toc[`endpoint/${graph.id}`],
+        };
+        this.forgetLocally(graph.id);
         try {
           await this.dataProviders.graph.delete(graph.id);
         } catch (err) {
@@ -147,13 +158,39 @@
         }
         this.lastDeleted = graph;
         this.showUndoDelete = true;
-        await this.getToc();
+        this.refreshSoon();
+      },
+      /** Drop a graph from the list this browser is showing. */
+      forgetLocally(id) {
+        const next = {...this.toc};
+        delete next[id];
+        delete next[`endpoint/${id}`];
+        this.toc = next;
+      },
+      /** Put entries back on the list this browser is showing. */
+      rememberLocally(entries) {
+        const next = {...this.toc};
+        Object.keys(entries || {}).forEach((key) => {
+          if (entries[key]) {
+            next[key] = entries[key];
+          }
+        });
+        this.toc = next;
+      },
+      /** Ask the server for the list once it has had time to rebuild it. */
+      refreshSoon() {
+        clearTimeout(this.tocRefreshTimer);
+        this.tocRefreshTimer = setTimeout(() => {
+          this.getToc();
+        }, 2500);
       },
       /** Put the graph that was just taken off the list back. */
       async undoDelete() {
         const graph = this.lastDeleted;
+        const entries = this.lastDeletedEntries;
         this.showUndoDelete = false;
         this.lastDeleted = null;
+        this.lastDeletedEntries = null;
         if (!graph) {
           return;
         }
@@ -162,12 +199,14 @@
           console.warn('This data provider cannot put a graph back.');
           return;
         }
+        this.rememberLocally(entries);
         try {
           await provider.restore(graph.id);
         } catch (err) {
           console.error('Cannot restore the graph.', err);
+          this.forgetLocally(graph.id);
         }
-        await this.getToc();
+        this.refreshSoon();
       },
       create() {
         this.openGraph(newId());
