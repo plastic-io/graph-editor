@@ -1,0 +1,29 @@
+# 11. Preparation tasks (agreed 2026-09-20, before M0/M1 start)
+
+| # | Task | Status | Evidence / notes |
+|---|---|---|---|
+| 1 | **Close the exposed surface on the deployed dev server.** Remove the client-callable `sendToChannel`, `sendToConnection`, `broadcast`, `addEvent` (WS + HTTP), `listSubscribers`, `listSubscriptions` routes; require an API key on the HTTP execution route (`ANY /{proxy+}`) and on the anonymous destructive/expensive HTTP routes (`POST /toc/rebuild`, `DELETE /graph/{id}`, `POST /graph/{id}/restore`); disable WebSocket `$default` execution unless `WS_EXECUTION_ENABLED=true`; enable S3 versioning with 30-day noncurrent expiry so a poisoned document is recoverable; fetch the OpenAI secret only for graphs that opt in (`graph.properties.openai === true`). Pulls forward PB-015 and PB-124. | **done 2026-09-20** (deployed to dev) | graph-server branch `harden-dev-surface`, commit `96e89d8`; evidence in the log below |
+| 2 | **Decide the open questions that gate M1/M2:** Q-1 agent self-commit, Q-2 tenant model, Q-8 public editor default, D-8 retention; confirm or reject D-11 (templates lose Pinia stores/`transact`). | open (owner: you) | §10.2, §10.3 |
+| 3 | **Run spikes S-1 (isolated-vm in Lambda) and S-4 (staged validation cost)** before trusting the M1/M3 estimates. | not started | §9.3 spike table |
+| 4 | **Get the baseline green (M0):** pin Node, add editor test + type-check steps to CI, fix the four bare-`<script>` SFCs, chain scheduler build→test, run server tests on Node 18. | not started | PB-100, PB-117 |
+| 5 | **Unblock parallel work:** publish `@plastic-io/graph-crdt` to npm (PB-120), configure the Auth0 API with the §4.4.5 scope names and one test agent client, create a CI deploy role with OIDC (PB-125); a `staging` stage and a `pio-test-` AWS environment before M3. | not started | — |
+
+Explicitly deferred: any Rust runtime work (W17) and any IaC work (W14).
+
+## Task 1 log
+
+Branch `harden-dev-surface` in graph-server, commit `96e89d8` (tests 83/83, `npx serverless package` clean), deployed with `npx serverless deploy --aws-profile tony` at 2026-09-20T22:19Z.
+
+| Check | Result |
+|---|---|
+| WebSocket routes after deploy (`aws apigatewayv2 get-routes`) | `$connect $default $disconnect deleteGraph getGraph panic publishGraph publishNode subscribe undeleteGraph unsubscribe yjs` — `sendToChannel`, `sendToConnection`, `broadcast`, `addEvent`, `listSubscribers`, `listSubscriptions` gone; Lambda functions for all six return `ResourceNotFoundException` |
+| REST execution route without key | `GET/POST /probe-graph` → 403 `ForbiddenException`; with the stage key → 200 `ok` |
+| `POST /toc/rebuild`, `DELETE /graph/{id}`, `POST /graph/{id}/restore` without key | 403 `ForbiddenException`; rebuild with key → 200 `{"entries":121}` |
+| `POST /addEvent` | 500 for ~3 minutes after deploy (the new API Gateway deployment snapshot was taken before CloudFormation deleted the old resource, so the stage briefly served a method whose Lambda was gone); after `aws apigateway create-deployment --stage-name dev` and propagation → 403 like any other keyed path |
+| Read routes the editor uses (`GET /toc.json`, `/crdt/{id}/state`, `/deleted.json`) | 200, unchanged (an earlier 403 was CloudFront rejecting a GET with a request body from the probe itself, not the API) |
+| `WS_EXECUTION_ENABLED` on `default` and `httpDefault` | `false` |
+| Forged fan-out over WebSocket (socket B sends `sendToChannel` / `sendToConnection` / `listSubscriptions` / `executeGraph` / `addEvent` while socket A is subscribed) | A receives only its `subscribed` ack; B receives nothing; no forged payload delivered (script in the session log, exit 0) |
+| S3 bucket | `VersioningConfiguration.Status = Enabled`; lifecycle rule `expire-noncurrent-versions` (30 days noncurrent, 7-day incomplete-multipart abort) |
+| Still anonymous by design until M1 | `yjs` (CRDT sync), `subscribe`, `getGraph`, `publishGraph/Node`, `deleteGraph` (WS), `POST /crdt/{id}/update`, `POST /crdt/{id}/checkpoint` and all GET routes — the editor needs them; the M1 authorizer (PB-011/012) covers them. A forged `yjs` frame can still poison a graph (GS-13) but is now recoverable from the versioned bucket. |
+
+Follow-ups noted while doing this: `GET /events/{id}` still returns 400 `Missing required request parameters: [version]` live (GS-25, phantom path parameter); the `serverless deploy` step should be followed by an explicit API Gateway re-deployment (or `serverless deploy` twice) whenever routes are removed.
