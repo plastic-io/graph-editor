@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  pull_request:
 
 jobs:
   build-and-deploy:
@@ -21,13 +22,24 @@ jobs:
     - name: Install dependencies
       run: npm install
 
+    - name: Unit tests (CRDT packages)
+      run: npm run test:crdt
+
+    - name: Integration tests (editor stores)
+      run: npm run test:integration
+
+    - name: Type-check ratchet
+      run: npm run type-check:ratchet
+
     - name: Build project
       run: npm run build
 
     - name: Prepare for SPA Deployment
+      if: github.event_name == 'push'
       run: cp ./dist/index.html ./dist/404.html
 
     - name: Deploy to GitHub Pages
+      if: github.event_name == 'push'
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
