@@ -88,6 +88,7 @@ Effort: S ≤ 3 days, M ≤ 2 weeks, L ≤ 6 weeks; U = uncertainty (low/med/hig
 | PB-114 | P1 | Journey health + observation replay in `ConnectorInfo` | `packages/JourneyHealth`, `ConnectorInfo.vue` | PB-106, PB-054 | — | step 1 | Playwright | M/med | FE |
 | PB-115 | P3 | Nested navigation (read-only drill-down) | router, new view | — | — | — | — | M/low | FE |
 | PB-116 | P1 | Dead code/dependency removal (A1 §J) | many | — | — | build size drop; no behaviour change | CI | M/low | FE |
+| PB-118 | P1 | Editor type errors driven from 505 to 0 (ratchet baseline lowered with every change); interfaces imported as values (GE-B.1) replaced by `import type`; the four bare-`<script>` SFCs converted to `lang="ts"` | `packages/**/*.vue`, `scripts/type-check-ratchet.mjs`, `.type-check-baseline` | PB-100 | — | ratchet at 0, then `type-check` made blocking | CI | L/med | FE |
 | PB-122 | P1 | Migration backfill Lambda (schemaVersion 2, pins, placement, rev0, manifests) | `src/migrations/*` | PB-030, PB-041, PB-070 | — | idempotent resume test | tests | M/med | BE |
 | PB-123 | P0 | Feature flags (`admissionMode`, `executionSource`, `legacyTemplateAccess`, `legacy-client`) | `src/config/flags.ts`, editor prefs | — | — | flag tests | tests | S/low | BE |
 | PB-124 | P1 | S3 versioning, lifecycle, cross-region copy, restore drill | `serverless.yaml` resources / infra | — | — | drill doc | AWS | S/low | AWS |
