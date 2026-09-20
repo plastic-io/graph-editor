@@ -1,0 +1,30 @@
+From 263e7e24406ae80d7e26ee46e6c9e4e0466337a0 Mon Sep 17 00:00:00 2001
+From: Tony Germaneri <tonygermaneri@gmail.com>
+Date: Sun, 20 Sep 2026 16:16:02 -0700
+Subject: [PATCH] Build before testing so jest never runs against a stale dist
+
+The spec requires ../../dist/index.js, but nothing rebuilt it before jest ran
+locally; CI happened to build first. An npm pretest hook makes the local
+command match CI.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01TfaonRphAE5yYSrXUeJqbJ
+---
+ package.json | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/package.json b/package.json
+index bd6716c..029efb9 100644
+--- a/package.json
++++ b/package.json
+@@ -15,6 +15,7 @@
+     "scripts": {
+         "build": "./node_modules/.bin/tsc",
+         "lint": "./node_modules/.bin/tslint -p tsconfig.json",
++        "pretest": "./node_modules/.bin/tsc",
+         "test": "./node_modules/.bin/jest",
+         "build-docs": "./node_modules/.bin/typedoc ./src"
+     },
+-- 
+2.50.1 (Apple Git-155)
+
