@@ -238,6 +238,37 @@ export const useStore = defineStore('orchestrator', {
       document.execCommand("copy");
       document.body.removeChild(textarea);
     },
+    /**
+     * Destroy a graph and everything it is made of, everywhere.
+     *
+     * Deleting a graph from the interface hides it and keeps it, so this is
+     * not wired to anything: it is a debugging tool, meant to be called by
+     * hand.  Nothing it removes comes back.
+     *
+     *   plastic.pinia._s.get('orchestrator').destroyGraph('<graph id>')
+     */
+    async destroyGraph(graphId: string) {
+      if (!graphId) {
+        throw new Error('destroyGraph needs a graph id.');
+      }
+      console.warn(`Destroying ${graphId}.  This cannot be undone.`);
+      await this.removeGraphDocument(graphId);
+      if (this.dataProviders.graph) {
+        await (this.dataProviders.graph as any).delete(graphId, true);
+      }
+      await this.getToc();
+      return { id: graphId, destroyed: true };
+    },
+    /** Put a graph that was taken off the list back on it. */
+    async restoreGraph(graphId: string) {
+      const provider: any = this.dataProviders.graph;
+      if (!provider || typeof provider.restore !== 'function') {
+        throw new Error('This data provider cannot put a graph back.');
+      }
+      await provider.restore(graphId);
+      await this.getToc();
+      return { id: graphId, restored: true };
+    },
     /** Drop a graph's collaborative document from every attached provider. */
     async removeGraphDocument(graphId: string) {
       for (const provider of this.syncProviders) {

@@ -126,7 +126,13 @@ class IndexedDBDataProvider extends DocumentProvider {
         }
         return response;
     }
-    async delete(url: string): Promise<void> {
-        return this.createWorkerResponder('delete', [url]);
+    async delete(url: string, permanent = false): Promise<void> {
+        return this.createWorkerResponder('delete', [url, permanent]);
+    }
+    async restore(url: string): Promise<void> {
+        return this.createWorkerResponder('restore', [url]);
+    }
+    async listDeleted(): Promise<any[]> {
+        return this.createWorkerResponder('listDeleted', []);
     }
 }

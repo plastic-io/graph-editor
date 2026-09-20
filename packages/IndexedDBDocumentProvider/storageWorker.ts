@@ -101,7 +101,57 @@ class IndexDBDataProvider {
             };
         });
     }
+    /** Graph ids that are hidden, kept beside the table of contents. */
+    async getDeletedIndex(): Promise<any> {
+        const index: any = await this.fetchItem('documents', 'deleted');
+        return index || {id: 'deleted', ids: {}};
+    }
+    async setDeletedIndex(index: any): Promise<void> {
+        const db = await this.open();
+        return new Promise((resolve) => {
+            const tx = db.transaction("documents", "readwrite");
+            tx.oncomplete = () => resolve();
+            tx.objectStore("documents").put({...index, id: 'deleted'});
+        });
+    }
+    /** Hide a graph, keeping everything it is made of. */
+    async softDelete(url: string): Promise<void> {
+        const index = await this.getDeletedIndex();
+        index.ids = index.ids || {};
+        index.ids[url] = {id: url, deletedOn: Date.now()};
+        await this.setDeletedIndex(index);
+        await this.updateToc(url, 'update');
+    }
+    /** Put a hidden graph back in the list. */
+    async restore(url: string): Promise<void> {
+        const index = await this.getDeletedIndex();
+        if (index.ids && index.ids[url]) {
+            delete index.ids[url];
+            await this.setDeletedIndex(index);
+        }
+        await this.updateToc(url, 'update');
+    }
+    async listDeleted(): Promise<any[]> {
+        const index = await this.getDeletedIndex();
+        return Object.keys(index.ids || {}).map((key) => index.ids[key]);
+    }
+    /** The stored table of contents, without anything hidden. */
     async getToc(): Promise<any> {
+        const toc = await this.fetchItem('documents', 'toc') as any;
+        if (!toc) {
+            return {id: 'toc'};
+        }
+        const index = await this.getDeletedIndex();
+        const hidden = index.ids || {};
+        Object.keys(toc).forEach((key) => {
+            if (toc[key] && hidden[toc[key].id]) {
+                delete toc[key];
+            }
+        });
+        return toc;
+    }
+    /** The table of contents as stored, hidden graphs included. */
+    async getRawToc(): Promise<any> {
         const toc = await this.fetchItem('documents', 'toc');
         return toc || {id: 'toc'};
     }
@@ -111,7 +161,7 @@ class IndexDBDataProvider {
             item = await this.get(url, type) as any;
         } catch (_) {}
         const db = await this.open();
-        const toc = await this.getToc();
+        const toc = await this.getRawToc();
         const tx = db.transaction("documents", "readwrite");
         item = item && item.graph ? item.graph : item;
         if (item) {
@@ -164,8 +214,17 @@ class IndexDBDataProvider {
         const graph = await this.projectGraphEvents(url);
         return JSON.parse(JSON.stringify(graph));
     }
-    async delete(url: string): Promise<void> {
-        await this.deleteEvents(url);
+    async delete(url: string, permanent = false): Promise<void> {
+        if (permanent) {
+            await this.deleteEvents(url);
+            const index = await this.getDeletedIndex();
+            if (index.ids && index.ids[url]) {
+                delete index.ids[url];
+                await this.setDeletedIndex(index);
+            }
+            return;
+        }
+        await this.softDelete(url);
     }
 }
 

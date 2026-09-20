@@ -265,9 +265,22 @@ class WSSDataProvider {
             };
         });
     }
-    delete(url: string) {
+    /**
+     * Delete a graph.  The server hides it by default and keeps everything it
+     * is made of; `permanent` destroys it, which nothing in the interface
+     * asks for.
+     */
+    delete(url: string, permanent = false) {
         this.send({
             action: "deleteGraph",
+            id: url,
+            permanent,
+        });
+    }
+    /** Put a hidden graph back in the list. */
+    restore(url: string) {
+        this.send({
+            action: "undeleteGraph",
             id: url,
         });
     }

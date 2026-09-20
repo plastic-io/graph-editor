@@ -43,5 +43,14 @@ export default abstract class DocumentProvider {
   abstract get(url: string): Promise<Graph | any>;
   abstract getEvents(url: string): Promise<GraphDiff[] | any>;
   abstract set(url: string, value: GraphDiff | NodeArtifact | GraphArtifact | any): Promise<void>;
-  abstract delete(url: string): Promise<void>;
+  /**
+   * Delete a graph.
+   *
+   * The default hides it and keeps everything it is made of, so an accidental
+   * delete costs nothing.  `permanent` destroys it instead, which is a
+   * debugging tool and is not reachable from the interface.
+   */
+  abstract delete(url: string, permanent?: boolean): Promise<void>;
+  /** Put a hidden graph back in the list. */
+  restore?(url: string): Promise<void>;
 }

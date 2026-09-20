@@ -56,11 +56,21 @@
         </v-card-text>
       </v-card>
     </v-snackbar>
+    <v-snackbar :timeout="8000" v-model="showUndoDelete">
+      {{(lastDeleted && (lastDeleted.name || lastDeleted.url)) || 'Graph'}} was deleted.
+      <template v-slot:actions>
+        <v-btn variant="text" @click="undoDelete">Undo</v-btn>
+      </template>
+    </v-snackbar>
     <v-dialog max-width="700px" v-model="showDeleteDialog">
       <v-card>
         <v-card-title>
-          Are you sure you want to delete {{deletingGraph.name || deletingGraph.url}}?
+          Delete {{deletingGraph.name || deletingGraph.url}}?
         </v-card-title>
+        <v-card-text>
+          It will be taken off this list. Nothing is thrown away, so it can be
+          put back.
+        </v-card-text>
         <v-card-actions>
           <v-btn @click="showDeleteDialog = false; deletingGraph = {}">Cancel</v-btn>
           <v-btn @click="deleteGraph" color="warning">Delete</v-btn>
@@ -93,6 +103,8 @@
         showDeleteDialog: false,
         newGraphUrl: '',
         deletingGraph: {},
+        lastDeleted: null,
+        showUndoDelete: false,
         newGraphRules: [
           value => !!value || 'Field must not be empty',
           value => !!Object.keys(this.toc).indexOf(value) || 'This URL is already taken by another graph.'
@@ -112,19 +124,50 @@
           'init',
           'setTheme',
           'getToc',
-          'removeGraphDocument',
           'getPluginsByType',
       ]),
       openGraph(id) {
         window.location = `/graph-editor/${id}`;
       },
+      /**
+       * Take a graph off the list.
+       *
+       * This hides it and keeps everything it is made of, including its
+       * collaborative document, so it can be put back.  Destroying a graph is
+       * a separate thing that nothing here asks for.
+       */
       async deleteGraph() {
         this.showDeleteDialog = false;
-        await this.removeGraphDocument(this.deletingGraph.id);
-        await this.dataProviders.graph.delete(this.deletingGraph.id);
-        await this.dataProviders.toc.updateToc(this.deletingGraph.id, undefined);
-        await this.getToc();
+        const graph = this.deletingGraph;
         this.deletingGraph = {};
+        try {
+          await this.dataProviders.graph.delete(graph.id);
+        } catch (err) {
+          console.error('Cannot delete the graph.', err);
+        }
+        this.lastDeleted = graph;
+        this.showUndoDelete = true;
+        await this.getToc();
+      },
+      /** Put the graph that was just taken off the list back. */
+      async undoDelete() {
+        const graph = this.lastDeleted;
+        this.showUndoDelete = false;
+        this.lastDeleted = null;
+        if (!graph) {
+          return;
+        }
+        const provider: any = this.dataProviders.graph;
+        if (typeof provider.restore !== 'function') {
+          console.warn('This data provider cannot put a graph back.');
+          return;
+        }
+        try {
+          await provider.restore(graph.id);
+        } catch (err) {
+          console.error('Cannot restore the graph.', err);
+        }
+        await this.getToc();
       },
       create() {
         this.openGraph(newId());
@@ -147,6 +190,7 @@
           return Object.keys(this.toc)
             .filter((t: any) => !!this.toc[t])
             .filter((t: any) => this.toc[t].type === 'graph')
+            .filter((t: any) => !this.toc[t].deleted)
             .filter((t: any) => t !== 'id')
             .filter((t: any) => !/^endpoint\//.test(t))
             .sort((a: any, b: any) => a.localeCompare(b))
