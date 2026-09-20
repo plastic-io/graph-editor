@@ -116,14 +116,14 @@ Release blockers vs follow-ons: everything marked P0 blocks M1/M2; P1 blocks M3;
 ## 10.3 Open questions (owner role · recommended default · blocks)
 | Q | Question | Owner | Default | Blocks |
 |---|---|---|---|---|
-| Q-1 | Can agents self-commit on `dev` graphs by default? | product | no; humans commit in M2, agents may hold `graph:commit` per delegation from M3 | PB-086 rules |
-| Q-2 | Tenant model: one tenant per Auth0 organization, or per user? | product | per Auth0 org, users default to a personal tenant | PB-013 |
+| Q-1 | Can agents self-commit on `dev` graphs by default? | product | **Decided 2026-09-20: yes.** An agent whose delegation record includes `graph:commit` may commit its own proposals from M2 on; review rules per namespace (§4.4.5) and the audit chain still apply, and `proposal.decide` self-approval remains governed by `selfApprove`. | PB-086 rules |
+| Q-2 | Tenant model: one tenant per Auth0 organization, or per user? | product | **Decided 2026-09-20: one tenant per Auth0 organization, with a personal tenant per user as the fallback** for users outside any organization. | PB-013 |
 | Q-3 | Public (unauthenticated) endpoints for deployed apps? | product/security | allowed only for graphs whose ACL marks the endpoint `public`, executed with a `public` principal that has no effect grants beyond the instance grants | PB-033 |
 | Q-4 | CodeBuild egress allow-list | security | package registries only | PB-092 |
 | Q-5 | Node runtime upgrade (18 → 20/22) before adding isolated-vm | ops | yes, in M1 (A2 notes `@types/node` 9.x and Node 25 locally) | S-1 |
 | Q-6 | Keep the `git-lambda2` layer? | ops | remove (unused, GS-40) | PB-015 |
 | Q-7 | Meriyah upgrade to 4.x in scheduler (top-level await) | RT | yes behind option, default on in 2.1 | PB-060 |
-| Q-8 | Should the public GitHub Pages editor keep local-only default? | product | yes until M2; then default to the server with login | PB-014 |
+| Q-8 | Should the public GitHub Pages editor keep local-only default? | product | **Decided 2026-09-20: it stays local-only permanently; the GitHub Pages build is the public demo.** Server-backed editors are separate deployments (their own `appConfig`/build), never the demo. PB-014 applies only to those. | PB-014 |
 
 ## 10.4 Final self-review (checklist against §18 of the brief)
 - Every current-state claim traces to an appendix ledger row (GE/GS/RT) with path:lines; failed checks are recorded (type-check, dev-server TOC, Rust debug CLI, unverified AWS-only behaviours in A2 (e)).
