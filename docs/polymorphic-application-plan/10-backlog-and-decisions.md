@@ -1,0 +1,134 @@
+# 10. Prioritized execution backlog and decision log
+
+## 10.1 Backlog (P0 = release blocker for M1/M2, P1 = needed for M3, P2 = M4/M5, P3 = follow-on)
+Effort: S ≤ 3 days, M ≤ 2 weeks, L ≤ 6 weeks; U = uncertainty (low/med/high). Owner roles: BE backend (server), FE editor, RT runtime (scheduler/isolate), AWS infra, QA test.
+
+| ID | P | Outcome | Repo / target modules (existing → proposed) | Deps | Interface changes | Acceptance tests | Completion evidence | Effort/U | Owner |
+|---|---|---|---|---|---|---|---|---|---|
+| PB-100 | P0 (CI is blind) | CI runs editor+server+scheduler suites and type-check on every PR | `graph-editor/.github/workflows/main.yml`, `graph-server` (new workflow), `plastic-io` (chain build→test) | — | — | workflow green on a no-op PR | CI logs | S/low | QA |
+| PB-117 | P0 | `npm run type-check` passes | four SFCs (`GraphRewind.vue`, `ProviderSettings.vue`, `HelpOverlay.vue`, `Auth0LogOffMenu.vue`) `lang="ts"` or `allowJs` | — | — | exit 0 | log | S/low | FE |
+| PB-120 | P0 | `@plastic-io/graph-crdt` built + versioned on npm; `semanticDiff`, `applyOps` | `packages/GraphCrdt` → add `dist/`, `diff.ts`, `ops.ts`, `namespaces.ts`; server `package.json` pin | — | new exports | diff/ops specs; server builds without `file:` | npm version | M/low | BE |
+| PB-121 | P0 | `@plastic-io/graph-schema` with JSON Schemas + generated TS/Rust | new `packages/GraphSchema` | — | §5.4 | round-trip tests | package published | M/med | BE |
+| PB-010 | P0 | JWT verification (Auth0 RS256, JWKS cache, audience) | `graph-server/src/auth/jwt.ts` | — | — | unit: valid/expired/wrong-aud | tests | S/low | BE |
+| PB-011 | P0 | REST Lambda TOKEN authorizer on every HTTP route | `serverless.yaml` (authorizer per `http` event), `src/auth/authorizer.ts` | PB-010 | 401/403 | anonymous GET → 401 (route inventory test) | cf template shows authorizer on 32 methods | S/low | BE |
+| PB-012 | P0 | WS `$connect` REQUEST authorizer; principal stored on `connections/<id>`; every WS handler derives principal | `serverless.yaml`, `broadcastService.ts:88-96`, `crdtService.ts:31-37` (`userIdOf`) | PB-010 | connection record schema | anonymous connect refused; forged fields ignored | tests | M/med | BE |
+| PB-013 | P0 | ACL documents + rules + `decide()` | new `src/policy/{acl,rules,decide}.ts`; `policy/` S3 prefix | PB-121 | §7.2 | table-driven tests incl. self-broadening | tests | M/med | BE |
+| PB-014 | P0 | Editor sends the token (WS subprotocol, HTTP Bearer) and requires login when a server is configured | `Auth0AuthenticationProvider/main.ts`, `WssDocumentProvider/main.ts:84`, `HTTPDataProvider.ts` | PB-012 | — | headers asserted in integration test | test | S/low | FE |
+| PB-015 | P0 | Client-forgeable/unsafe routes removed; `subscribe` authorized; `addEvent` retired | `serverless.yaml`, `broadcastService.ts:152-175,324-352`, `eventSourceService.ts:332-375` | PB-013 | routes removed | inventory test: exactly the allowed routes | cf | S/low | BE |
+| PB-020 | P0 | `MutationEnvelope` v2 on WS and HTTP; legacy v1 accepted for flagged principals | `packages/GraphCrdt/schema.ts`, `WssCrdtProvider/main.ts:177-207`, `crdtService.ts` | PB-120 | §5.1 | v1/v2 acceptance tests | tests | S/low | BE+FE |
+| PB-021 | P0 | Staging validation: decode guards, apply on clone, semantic diff | new `src/admission/{staging,admit}.ts` | PB-120, S-4 | `AdmissionResult` | poisoning frame rejected; oversize rejected | tests | M/med | BE |
+| PB-022 | P0 | Policy applied to the diff (namespaces, privilege delta, privileged edges) | `src/admission/admit.ts` + `src/policy/decide.ts` | PB-013, PB-021 | — | denied/allowed fixtures | tests | M/med | BE |
+| PB-023 | P0 | Audit `MutationRecord` (hash-chained, immutable) on accept/reject | new `src/audit/chain.ts` | PB-021 | — | chain verification test | tests | S/low | BE |
+| PB-024 | P0 | ack/reject frames; editor SyncStatus; reject recovery (`replaceDoc`); reconnect resync | `crdtService.ts`, `WssCrdtProvider/main.ts` (`open` hook), `Graph/crdt.ts`, new `packages/SyncStatus` | PB-020, S-2 | frames | reject → doc rebuilt, no data loss; reconnect replay | Playwright | M/high | FE+BE |
+| PB-025 | P0 | Size/struct/rate limits | `src/admission/limits.ts` | PB-021 | — | 10 MB body → rejected; rate-limit test | tests | S/low | BE |
+| PB-026 | P1 | Agent ops materialisation via `applyOps` + `reconcile` | `src/admission/materialise.ts` | PB-120 | `MutationOp` | same diff as editor for the same change (trace §6.1) | tests | M/med | BE |
+| PB-027 | P0 | `mutationId` idempotency | `src/admission/idempotency.ts` (S3 If-None-Match) | — | — | duplicate → same ack, one object | tests | S/low | BE |
+| PB-060 | P0 | Scheduler 2.1: `ExecutionHandle`, completion tracking, cancellation token, budgets, `host` binding, ids on events, cross-graph fix | `plastic-io/src/{Scheduler,Node,Edge,Shared}.ts` | PB-121 | §4.6.6 | ordering/async/fan-out/cancel/budget specs | npm 2.1.0 | L/med | RT |
+| PB-061 | P0 | Both consumers on 2.1.0 | `graph-server/package.json:34`, `graph-editor/package.json:33`, `graphService.ts:475` | PB-060 | — | existing suites green | pins | S/low | BE+FE |
+| PB-064 | P0 | Browser watchdog + terminate + budgets | `Orchestrator/main.ts`, `schedulerWorker.ts` | PB-060 | — | `while(true)` node stops UI-side ≤ budget | test | S/med | FE |
+| PB-030 | P1 | Revision manifests + digests + canonical JSON | new `src/revisions/store.ts`, `graph-schema/canonical.ts` | PB-121 | `Revision` | digest stable across runtimes | tests | M/med | BE |
+| PB-031 | P1 | `revision.commit` + HEAD CAS | `src/revisions/commit.ts` | PB-030 | — | CAS race test | tests | S/low | BE |
+| PB-032 | P1 | Activation pointer + projection at activation + `endpoints/<url>` index | `src/revisions/activate.ts`; replaces `crdtStore.ts:322-346` role | PB-031 | — | activation idempotent; crash recovery sweeper | tests | M/med | BE |
+| PB-033 | P1 | Executor loads the active revision only | `graphService.ts:194-197` | PB-032 | — | live edit does not change execution | integration | S/low | BE |
+| PB-034 | P1 | Semantic diff service exposed (resource `diff/{a}/{b}`) | `graph-crdt/diff.ts` | PB-120 | — | fixture pairs | tests | S/low | BE |
+| PB-035 | P1 | Proposal store + lifecycle + sweeper | `src/proposals/*` | PB-026, PB-031 | `Proposal` | state-machine tests incl. expiry/crash | tests | M/med | BE |
+| PB-036 | P1 | Approvals bound to digest/base/policyVersion | `src/proposals/decide.ts` | PB-035 | — | substitution test (T11) | tests | S/low | BE |
+| PB-037 | P2 | Rollback of definition/activation + drift report | `src/revisions/rollback.ts` | PB-032 | — | trace §6.5 | tests | M/med | BE |
+| PB-038 | P2 | Log compaction with revision snapshots; lifecycle rules | `crdtStore.ts` + bucket lifecycle | PB-030 | — | reconstruct after compaction | tests | M/med | BE+AWS |
+| PB-040 | P1 | `ComponentManifest`/`PortContract` types + validation | `graph-schema` | PB-121 | §4.3.2 | schema tests | — | S/low | BE |
+| PB-041 | P1 | Immutable publish (`If-None-Match:*`) + digest + manifest; legacy artifacts read-only | `eventSourceService.ts:376-538` → `src/components/publish.ts` | PB-040, PB-030 | — | republish same version → 412 | tests | M/low | BE |
+| PB-042 | P2 | Node publish reachable in the editor | `NodePropertiesPanel.vue` | PB-041 | — | Playwright | — | S/low | FE |
+| PB-043 | P1 | Instance pins + digest verification at admission/load | `Graph/mutation.ts:182-370`, `src/admission/admit.ts`, resolver | PB-041 | `properties.component` | drift → `INTEGRITY_FAILURE` | tests | M/med | BE+FE |
+| PB-044 | P2 | Consumers index + impact | `src/components/consumers.ts` | PB-043 | — | impact lists consumers | tests | S/low | BE |
+| PB-045 | P1 | Contract validation at edges (ajv), assignability at connect | scheduler hooks (PB-060), `src/runtime/contracts.ts`, editor connect check | PB-040, PB-060 | `onViolation` | violation observation; connect warning | tests | M/med | RT+FE |
+| PB-046 | P1 | Server linked-graph pre-flattening (shared `flattenLinkedGraphs`) | `Orchestrator/main.ts:396-460` → `graph-schema/flatten.ts`; `graphService.ts:406` | PB-121 | — | A3 linked fixtures run on server | tests | S/med | BE |
+| PB-047 | P3 | Registry digests + SRI for deps | registry repo, `ImportPanelRegistry.vue` | PB-041 | — | tampered artifact rejected | tests | S/low | FE |
+| PB-050 | P1 | Capability types + resolver (intersection) | `graph-schema`, `src/policy/capabilities.ts` | PB-121 | §4.5.2 | laundering tests (T5) | tests | M/med | BE |
+| PB-051 | P1 | Server capability host; remove `AWS`/`require`/`openai`/`fetch` ambient | `graphService.ts:408-446`, `:31-50` → `src/runtime/host/*` | PB-050, PB-062 | `host` API | negative probes | tests | M/high | BE |
+| PB-052 | P1 | Browser capability host; stores/`transact`/`OpenAI`/scripts removed (flagged) | `NodeComponent.vue`, `schedulerWorker.ts`, `src/main.ts`, `Utils/main.ts` | PB-050 | breaking (flag) | template cannot reach stores | tests | M/high | FE |
+| PB-053 | P1 | `Observation` emitter in scheduler wrapper (both domains) | `src/runtime/observe.ts`, `Orchestrator/main.ts:514-583` | PB-060 | §4.5.3 | every hop has ids | tests | M/med | RT |
+| PB-054 | P1 | Observation store + per-execution index | `src/observations/{store,index}.ts` | PB-053 | — | query by executionId | tests | M/med | BE |
+| PB-055 | P1 | Authorized subscriptions + redaction | `broadcastService.ts` subscribe, `src/observations/redact.ts` | PB-013, PB-054 | — | redaction tests | tests | S/med | BE |
+| PB-056 | P1 | Audit for privileged effects | `src/audit/*` | PB-051 | — | effect audit present | tests | S/low | BE |
+| PB-057 | P2 | Volume caps, sampling, retention | `src/observations/sink.ts`, lifecycle | PB-054 | — | flood test | tests | S/low | BE |
+| PB-062 | P1 | isolated-vm executor (per S-1) | `graphService.ts:209-262,263-480` → `src/runtime/executor.ts` | PB-060, S-1 | `ExecutionHandle` | adversarial suite in Lambda container | tests | L/high | RT |
+| PB-063 | P1 | Watchdog termination + cleanup + `executions/` records | `src/runtime/watchdog.ts` | PB-062 | — | ≤ wall+100 ms; no leaks after 1 000 cancels | tests | M/med | RT |
+| PB-065 | P1 | `execution.cancel` API (WS + MCP) | `src/runtime/executions.ts` | PB-063 | — | cancel test | tests | S/low | BE |
+| PB-066 | P2 | Memory pressure/OOM handling; tenant buckets | `src/runtime/budgets.ts` | PB-062 | — | OOM isolate disposed, Lambda survives | tests | M/med | RT |
+| PB-070 | P1 | Placement field + validator + migration derivation | `graph-schema`, admission, backfill | PB-121 | — | server refuses browser-only node | tests | S/low | BE |
+| PB-071 | P1 | `edge.deliver` protocol both directions; execution owner rule | `graphService.ts:172-181`, `NodeComponent.vue:62-71`, `Orchestrator/main.ts` | PB-053, PB-070 | message schema | trace §6.3 | Playwright | L/high | BE+FE |
+| PB-072 | P1 | Dedup keys + durable deliveries | `src/runtime/deliveries.ts` | PB-071 | — | N viewers, 1 effect | tests | S/med | BE |
+| PB-073 | P2 | Reconnect resume + parking TTL | `WssCrdtProvider`, `src/runtime/deliveries.ts` | PB-072 | — | reconnect test | Playwright | M/med | FE+BE |
+| PB-074 | P2 | Revision pinning for in-flight; activation strategies | `src/revisions/activate.ts`, executor | PB-032 | — | old revision completes | tests | S/med | BE |
+| PB-080 | P0 (M2) | MCP Lambda with SDK v2, RFC 9728 metadata, auth, envelopes, error model | new `src/mcp/{server,auth,envelope,errors}.ts`, `serverless.yaml` `POST /mcp`, `/.well-known/...` | PB-011, PB-013 | §5.0–5.1 | 401/403 flows; unknown field → SCHEMA_INVALID | tests | M/med | BE |
+| PB-081 | P0 (M2) | Read tools + resources (`graph.summary`, `graph.expand`, `component.search`, `observations.query`, all resources) | `src/mcp/tools/read/*`, `src/mcp/resources/*`, `src/summary/*` | PB-080, PB-054 (observations optional in M2) | §5.2–5.3 | bounded traversal tests (truncation, cursors, denied children) | tests | L/med | BE |
+| PB-082 | P0 (M2) | `proposal.create/validate` | `src/mcp/tools/proposal.ts` | PB-026, PB-035 | — | valid + rejected examples | tests | M/med | BE |
+| PB-083 | P1 | `proposal.decide/commit`, `revision.activate/rollback`, `component.publish`, `graph.invoke`, `tests.run`, `execution.cancel` | `src/mcp/tools/*` | PB-036, PB-032, PB-041, PB-065 | — | per-tool pre/postconditions | tests | L/med | BE |
+| PB-084 | P0 (M2) | Tasks extension (`tasks/*`, durable records) | `src/mcp/tasks.ts` | PB-080 | — | task lifecycle tests | tests | M/med | BE |
+| PB-085 | P2 | `subscriptions/listen` on Function URL streaming | `src/mcp/subscriptions.ts`, `serverless.yaml` function URL | S-3 | — | 10-min stream test | tests | M/high | BE |
+| PB-086 | P0 (M2) | Agent delegation records + editor Settings → Agents | `src/policy/delegation.ts`, `packages/SettingsPanel` | PB-013 | — | scopes ⊆ delegator; expiry | tests | M/med | BE+FE |
+| PB-087 | P2 | Integrated chat client (browser) using the same MCP | new `packages/AgentChat` | PB-081 | — | chat call = MCP call in audit | Playwright | M/med | FE |
+| PB-090 | P2 | `IacStack` component + contract + builtin node kind | `src/iac/component.ts`, `graph-schema` | PB-040, PB-050 | §4.9.2 | schema tests | tests | M/med | BE |
+| PB-091 | P2 | Template validator (deny-list, boundary, prefixes) | `src/iac/validator.ts` | PB-090 | — | fixture templates | tests | M/med | BE |
+| PB-092 | P2 | Orchestrator stack (Step Functions, roles, EventBridge) | new `infra/iac-orchestrator.yaml` | S-5 | IAM §4.9.6 | fake-AWS state machine tests; nightly real run | tests | L/high | AWS |
+| PB-093 | P2 | Feedback Lambda → status doc, observation, mirror, lock/supersede | `src/iac/feedback.ts`, `src/iac/service.ts` | PB-092, PB-054 | — | out-of-order/duplicate events | tests | M/med | BE |
+| PB-094 | P2 | Deployment status panel + node badge | new `packages/DeploymentStatus`, `Node.vue` | PB-093 | — | integration | tests | M/low | FE |
+| PB-095 | P2 | Runbook + break-glass + substrate deny in exec role | docs, IAM | PB-092 | — | drill | doc | S/low | AWS |
+| PB-101 | P1 | Component contract/property tests runner + storage | `src/tests/runner.ts`, `tests.run` | PB-045 | `ComponentTest` | example RateLimiter tests | tests | M/med | QA |
+| PB-102 | P0 | Admission adversarial suite | `src/admission/__tests__/*` | PB-021 | — | §8.1.3 | tests | M/low | QA |
+| PB-103 | P1 | Containment adversarial suite in Lambda container | `src/runtime/__tests__/adversarial.spec.ts` | PB-062 | — | §8.1.4 | tests | M/med | QA |
+| PB-104 | P1 | Hybrid Playwright suite | `e2e/hybrid/*` | PB-071 | — | §8.1.5 | tests | M/med | QA |
+| PB-105 | P2 | IaC fixtures + fake AWS + nightly isolated env | `src/iac/__tests__/*` | PB-092 | — | §8.1.6 | tests | M/med | QA |
+| PB-106 | P1 | Intent journey runner + first journey | `src/journeys/*`, scheduler (EventBridge cron) | PB-033, PB-054 | `IntentJourney` | journey green/red visible | tests | M/med | QA+BE |
+| PB-107 | P2 | Gates (publication, pre-activation simulation, post-activation window, auto-rollback guard) | `src/gates/*` | PB-101, PB-106, PB-037 | — | gate tests | tests | M/med | BE |
+| PB-110 | P0 | SyncStatus panel | `packages/SyncStatus` | PB-024 | — | integration | tests | S/low | FE |
+| PB-111 | P0 (M2) | Proposal review panel + edge highlighting via `errorConnectors/watchConnectors` | `packages/ProposalReview`, `Graph/state.ts`, `NodeEdgeConnector.vue` | PB-034, PB-082 | — | walkthrough §8.2.4 steps 3–4 | Playwright | L/med | FE |
+| PB-112 | P0 (M2) | Agent activity panel + agent awareness peer | `packages/AgentActivity`, `SharedUsers.vue`, `SharedMouse.vue` | PB-080 | — | steps 2, 7 | Playwright | M/med | FE |
+| PB-113 | P1 | Revision/activation bar | `packages/Revisions`, `TopShortcutIcons.vue` | PB-032 | — | step 4–5 | Playwright | S/low | FE |
+| PB-114 | P1 | Journey health + observation replay in `ConnectorInfo` | `packages/JourneyHealth`, `ConnectorInfo.vue` | PB-106, PB-054 | — | step 1 | Playwright | M/med | FE |
+| PB-115 | P3 | Nested navigation (read-only drill-down) | router, new view | — | — | — | — | M/low | FE |
+| PB-116 | P1 | Dead code/dependency removal (A1 §J) | many | — | — | build size drop; no behaviour change | CI | M/low | FE |
+| PB-122 | P1 | Migration backfill Lambda (schemaVersion 2, pins, placement, rev0, manifests) | `src/migrations/*` | PB-030, PB-041, PB-070 | — | idempotent resume test | tests | M/med | BE |
+| PB-123 | P0 | Feature flags (`admissionMode`, `executionSource`, `legacyTemplateAccess`, `legacy-client`) | `src/config/flags.ts`, editor prefs | — | — | flag tests | tests | S/low | BE |
+| PB-124 | P1 | S3 versioning, lifecycle, cross-region copy, restore drill | `serverless.yaml` resources / infra | — | — | drill doc | AWS | S/low | AWS |
+| PB-125 | P1 | CI deploy with OIDC role; package-then-deploy; tagged releases | GitHub Actions | — | — | deploy from tag | logs | S/low | AWS |
+| PB-130..134 | P3 | Rust runtime parity (see §9.1.4) | plastic-io-rust | S-6 | — | A3 §G rows → "same" | tests | L/high | RT |
+
+Release blockers vs follow-ons: everything marked P0 blocks M1/M2; P1 blocks M3; P2 blocks M4/M5; P3 is follow-on.
+
+## 10.2 Decision log
+| ID | Decision | Alternatives considered | Rationale (evidence) | Status |
+|---|---|---|---|---|
+| D-1 | Editors keep sending raw Yjs V2 updates wrapped in a `MutationEnvelope`; agents send semantic ops; both are validated by staged application + semantic diff | (a) semantic commands only for everyone; (b) trust raw updates with ACL only | (a) would discard the working reconcile pipeline and Monaco Y.Text binding (GE-22) and force a rewrite of ~30 actions; (b) cannot detect namespace/capability changes (GS-13 shows bytes are opaque). Staging reuses `reconcile`/`toJSON` [FACT] | decided |
+| D-2 | Stay S3-only for authoritative state, using conditional writes for CAS; add Step Functions only for IaC | DynamoDB for pointers/locks; Step Functions for everything | conditional writes verified (A4); keeps the "S3 is the only store" constraint and the existing store code; Step Functions justified only where durable multi-hour orchestration is needed | decided; revisit if CAS contention appears (S-4) |
+| D-3 | MCP on REST `POST /mcp` + Tasks extension; `subscriptions/listen` via Function URL streaming (S-3) or omitted | WebSocket custom transport; separate always-on container | REST 29 s + Lambda 900 s constraints (A4); Tasks extension is designed for exactly this; custom transports reduce client compatibility | decided pending S-3 |
+| D-4 | Server containment = isolated-vm inside the existing per-request Worker; fallback = Worker `resourceLimits` + terminate | vm2 (unmaintained/insecure), Deno/Rust runtime now, Firecracker | need a real isolate boundary with memory limits and out-of-band termination that a Lambda can host; Rust is not integrated (RT-40) | decided pending S-1 |
+| D-5 | Rust runtime is an optional M6 workstream, not a dependency | make Rust the server engine first | fan-out broken (RT-26), schema incompatible (RT-21), V8 9.6 (2021), no consumer (RT-40) | decided |
+| D-6 | Activation unit = graph revision; component versions go live through consumer activation | per-component hot activation | runtimes load whole projections (GE-36, GS-27); no hot-swap primitive exists | decided |
+| D-7 | Auth0 is the authorization server for humans, agents and MCP (RFC 9728 metadata served by the server) | Cognito; self-issued API keys (the vscode extension's unused `apiKey`) | editor already integrates Auth0 (GE-33); MCP spec requires OAuth 2.1 resource-server behaviour | decided |
+| D-8 | Retention: audit forever, observations 14 d, S3 versioning 30 d, cross-region copy daily | — | proposal; cost unknown | OPEN — owner: product/ops; default as stated; blocks PB-124 lifecycle rules only |
+| D-9 | Observation payload capture default `meta` | `full` by default | leakage risk (T8) vs debuggability | decided (per-port override) |
+| D-10 | Signatures on manifests/revisions with KMS asymmetric keys | hash chain only | needed only if artifacts leave the trusted store (registry mirroring) | OPEN — owner: security; default: hash chain in M3, KMS signing in M5 |
+| D-11 | Breaking change: node Vue templates lose Pinia stores/`transact`; `properties.scripts` replaced by SRI deps | keep with warnings | ambient graph-mutation authority from templates (GE-40) defeats admission; scripts are an unpinned supply chain (GE-42) | decided with `legacyTemplateAccess` flag through M3 |
+| D-12 | One isolate per root execution in M3; per-component isolates later | per-node isolates (Rust prototype style) | per-node isolates cost ~ms each and the Rust experiment shows OOM risks when unbounded (RT-35); budgets at component level mitigate | decided; revisit after S-1 numbers |
+
+## 10.3 Open questions (owner role · recommended default · blocks)
+| Q | Question | Owner | Default | Blocks |
+|---|---|---|---|---|
+| Q-1 | Can agents self-commit on `dev` graphs by default? | product | no; humans commit in M2, agents may hold `graph:commit` per delegation from M3 | PB-086 rules |
+| Q-2 | Tenant model: one tenant per Auth0 organization, or per user? | product | per Auth0 org, users default to a personal tenant | PB-013 |
+| Q-3 | Public (unauthenticated) endpoints for deployed apps? | product/security | allowed only for graphs whose ACL marks the endpoint `public`, executed with a `public` principal that has no effect grants beyond the instance grants | PB-033 |
+| Q-4 | CodeBuild egress allow-list | security | package registries only | PB-092 |
+| Q-5 | Node runtime upgrade (18 → 20/22) before adding isolated-vm | ops | yes, in M1 (A2 notes `@types/node` 9.x and Node 25 locally) | S-1 |
+| Q-6 | Keep the `git-lambda2` layer? | ops | remove (unused, GS-40) | PB-015 |
+| Q-7 | Meriyah upgrade to 4.x in scheduler (top-level await) | RT | yes behind option, default on in 2.1 | PB-060 |
+| Q-8 | Should the public GitHub Pages editor keep local-only default? | product | yes until M2; then default to the server with login | PB-014 |
+
+## 10.4 Final self-review (checklist against §18 of the brief)
+- Every current-state claim traces to an appendix ledger row (GE/GS/RT) with path:lines; failed checks are recorded (type-check, dev-server TOC, Rust debug CLI, unverified AWS-only behaviours in A2 (e)).
+- Every required future behaviour maps to a `PB-` item with a test and to a section of §4–§8; the four repository areas are covered (§9.1.1–9.1.4); unchanged code is listed (§1.3, §3 tail); debt and contradictions are exposed (§1.5, §2.4, appendices §J/§I/§G).
+- Humans and agents share admission semantics (§4.4.2, trace §6.1); unauthorized CRDT changes cannot become trusted or executable (§4.4.2 step 7, §6.2, T1/T2); effects have explicit capability checks (§4.5.2, T4/T5); cross-domain execution has owners and deduplication (§4.8.2); termination and budgets have real mechanisms with named APIs (§4.6.3, A4 V8 API list) and measurable criteria (§4.6.6); component contracts remain meaningful under topology change via digests, contracts and capability-resolved journeys (§4.3, §8.1.7).
+- MCP schemas use the discovered primitives (graphId/nodeId/edge field/connector/revision/published id+version, §5.2–5.3) with a lossless `MutationOp → reconcile` mapping (§5.1); traversal is bounded and revision-aware (§4.2); revisions, approvals, simulation, activation, observation, replay, rollback and compensation have explicit semantics (§4.7); IaC authority and status feedback are specified without assuming existing AWS permissions (§4.9, GS-02).
+- The editor reveals inspection, proposals, mutations, deployment and runtime outcomes (§8.2); journeys run continuously against intent (§8.1.7); substrate tests are retained and CI is fixed (§8.1.1); migration and emergency recovery are planned (§9.5, §4.10).
+- Depth pass (2026-09-20, second iteration): full schemas for all 19 tools with validated examples (A6, `schemas/`), the recursive component as validated JSON fixtures with digest and diffs (A7), the traversal as exact JSON-RPC with measured sizes (A7.5), IAM policy documents (A8), test definitions and spec files (A9), Mermaid diagrams (A10).
+- Remaining uncertainties with resolution paths: S-1 (containment build), S-2 (reject UX), S-3 (streams on Lambda), S-4 (staging cost), S-5 (CFN callback latency), S-6 (Rust viability), D-8/D-10, Q-1..Q-8. Nothing in this document is implemented or proven secure; it is a plan grounded in the inspected revisions.

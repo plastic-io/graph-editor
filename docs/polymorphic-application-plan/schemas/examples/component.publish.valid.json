@@ -1,0 +1,62 @@
+{
+ "schemaVersion": 1,
+ "graphId": "rl-graph",
+ "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+ "target": {
+  "graph": true
+ },
+ "version": "next",
+ "contract": {
+  "inputs": [
+   {
+    "name": "key",
+    "schema": {
+     "type": "string",
+     "maxLength": 256
+    },
+    "required": true
+   },
+   {
+    "name": "cost",
+    "schema": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "required": false,
+    "default": 1
+   }
+  ],
+  "outputs": [
+   {
+    "name": "allowed",
+    "schema": {
+     "type": "boolean"
+    },
+    "required": true
+   },
+   {
+    "name": "retryAfterMs",
+    "schema": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "required": false
+   }
+  ]
+ },
+ "summary": {
+  "intent": "Sliding-window rate limiter keyed by caller",
+  "invariants": [
+   "allowed === false implies retryAfterMs > 0"
+  ]
+ },
+ "capabilities": [
+  {
+   "kind": "storage:kv",
+   "scope": [
+    "ratelimit/*"
+   ]
+  }
+ ],
+ "placement": "server"
+}

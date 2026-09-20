@@ -1,0 +1,97 @@
+{
+ "schemaVersion": 1,
+ "publishedId": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+ "version": 1,
+ "kind": "graph",
+ "digest": "sha256:7ecfa038f58f694462411e57405779edd989673510e2054393fcbad1e5346916",
+ "contract": {
+  "inputs": [
+   {
+    "name": "key",
+    "schema": {
+     "type": "string",
+     "maxLength": 256
+    },
+    "required": true
+   },
+   {
+    "name": "cost",
+    "schema": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "required": false,
+    "default": 1
+   }
+  ],
+  "outputs": [
+   {
+    "name": "allowed",
+    "schema": {
+     "type": "boolean"
+    },
+    "required": true
+   },
+   {
+    "name": "retryAfterMs",
+    "schema": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "required": false
+   }
+  ]
+ },
+ "capabilities": [
+  {
+   "kind": "storage:kv",
+   "scope": [
+    "ratelimit/*"
+   ]
+  }
+ ],
+ "placement": "server",
+ "dependencies": [],
+ "summary": {
+  "intent": "Sliding-window rate limiter keyed by caller",
+  "invariants": [
+   "allowed === false implies retryAfterMs > 0",
+   "count is monotonic within a window"
+  ],
+  "provenance": "authored"
+ },
+ "tests": [
+  {
+   "kind": "contract",
+   "id": "basic-limit",
+   "artifactRef": {
+    "graphId": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+    "nodeId": "tests",
+    "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+    "sha256": "b9724adb30c2b89bdf9ff23ad0cb6885b509b2f41c05071e089176012a4b804c"
+   }
+  }
+ ],
+ "budgets": {
+  "hops": 50,
+  "wallMs": 2000
+ },
+ "provenance": {
+  "publishedBy": {
+   "sub": "auth0|u1",
+   "kind": "human",
+   "tenant": "t1"
+  },
+  "fromGraph": {
+   "graphId": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+   "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E"
+  },
+  "at": "2026-09-20T18:20:00Z",
+  "mutationId": "01J8ZKAA0B1C2D3E4F5G6H7J8K"
+ },
+ "compat": {
+  "runtime": {
+   "ts": ">=2.1.0"
+  }
+ }
+}

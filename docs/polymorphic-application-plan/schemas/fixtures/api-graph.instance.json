@@ -1,0 +1,588 @@
+{
+ "id": "api-2b7c9d40-1e5f-4a6b-8c3d-7f9e0a1b2c33",
+ "url": "api",
+ "version": 5,
+ "nodes": [
+  {
+   "id": "http",
+   "edges": [
+    {
+     "field": "out",
+     "connectors": [
+      {
+       "id": "c-api-1",
+       "nodeId": "N",
+       "field": "key",
+       "graphId": "api-2b7c9d40-1e5f-4a6b-8c3d-7f9e0a1b2c33",
+       "version": 5
+      }
+     ]
+    }
+   ],
+   "version": 5,
+   "graphId": "api-2b7c9d40-1e5f-4a6b-8c3d-7f9e0a1b2c33",
+   "artifact": null,
+   "url": "api",
+   "data": null,
+   "properties": {
+    "inputs": [
+     {
+      "name": "in",
+      "type": "Object",
+      "external": true,
+      "visible": true
+     }
+    ],
+    "outputs": [
+     {
+      "name": "out",
+      "type": "Object",
+      "external": false,
+      "visible": true
+     }
+    ],
+    "groups": [],
+    "name": "HTTP entry",
+    "description": "",
+    "createdOn": 1758400000000,
+    "lastUpdate": 1758400000000,
+    "tags": [],
+    "icon": "mdi-node-rectangle",
+    "positionAbsolute": false,
+    "appearsInPresentation": false,
+    "appearsInExport": false,
+    "x": 40,
+    "y": 120,
+    "z": 0,
+    "presentation": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "placement": "server",
+    "capabilities": {
+     "provides": [
+      "api.rate-limited-entry"
+     ]
+    }
+   },
+   "template": {
+    "set": "edges.out = value.key || value.headers['x-caller'];\n",
+    "vue": ""
+   }
+  },
+  {
+   "id": "N",
+   "edges": [
+    {
+     "field": "allowed",
+     "connectors": [
+      {
+       "id": "c-api-2",
+       "nodeId": "handler",
+       "field": "in",
+       "graphId": "api-2b7c9d40-1e5f-4a6b-8c3d-7f9e0a1b2c33",
+       "version": 5
+      }
+     ]
+    },
+    {
+     "field": "retryAfterMs",
+     "connectors": [
+      {
+       "id": "c-api-3",
+       "nodeId": "reject",
+       "field": "retryAfterMs",
+       "graphId": "api-2b7c9d40-1e5f-4a6b-8c3d-7f9e0a1b2c33",
+       "version": 5
+      }
+     ]
+    }
+   ],
+   "version": 5,
+   "graphId": "api-2b7c9d40-1e5f-4a6b-8c3d-7f9e0a1b2c33",
+   "artifact": "artifacts/rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11.1",
+   "url": "RateLimiter",
+   "data": null,
+   "properties": {
+    "inputs": [
+     {
+      "name": "key",
+      "type": "String",
+      "external": false,
+      "visible": true
+     },
+     {
+      "name": "cost",
+      "type": "Number",
+      "external": false,
+      "visible": true
+     }
+    ],
+    "outputs": [
+     {
+      "name": "allowed",
+      "type": "Boolean",
+      "external": false,
+      "visible": true
+     },
+     {
+      "name": "retryAfterMs",
+      "type": "Number",
+      "external": false,
+      "visible": true
+     }
+    ],
+    "groups": [],
+    "name": "RateLimiter",
+    "description": "",
+    "createdOn": 1758400000000,
+    "lastUpdate": 1758400000000,
+    "tags": [],
+    "icon": "mdi-node-rectangle",
+    "positionAbsolute": false,
+    "appearsInPresentation": false,
+    "appearsInExport": false,
+    "x": 300,
+    "y": 120,
+    "z": 0,
+    "presentation": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "placement": "server",
+    "component": {
+     "publishedId": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+     "version": 1,
+     "digest": "sha256:7ecfa038f58f694462411e57405779edd989673510e2054393fcbad1e5346916"
+    },
+    "capabilities": {
+     "required": [
+      {
+       "kind": "storage:kv",
+       "scope": [
+        "ratelimit/*"
+       ]
+      }
+     ],
+     "granted": [
+      {
+       "kind": "storage:kv",
+       "scope": [
+        "ratelimit/*"
+       ],
+       "operations": [
+        "get",
+        "incr"
+       ]
+      }
+     ]
+    }
+   },
+   "template": {
+    "set": "",
+    "vue": ""
+   },
+   "linkedGraph": {
+    "id": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+    "version": 1,
+    "data": {},
+    "loaded": true,
+    "graph": {
+     "id": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+     "url": "rate-limiter",
+     "version": 3,
+     "nodes": [
+      {
+       "id": "window",
+       "edges": [
+        {
+         "field": "count",
+         "connectors": [
+          {
+           "id": "c-rl-1",
+           "nodeId": "decide",
+           "field": "count",
+           "graphId": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+           "version": 3
+          }
+         ]
+        }
+       ],
+       "version": 3,
+       "graphId": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+       "artifact": null,
+       "url": "window",
+       "data": null,
+       "properties": {
+        "inputs": [
+         {
+          "name": "key",
+          "type": "String",
+          "external": true,
+          "visible": true
+         },
+         {
+          "name": "cost",
+          "type": "Number",
+          "external": true,
+          "visible": true
+         }
+        ],
+        "outputs": [
+         {
+          "name": "count",
+          "type": "Object",
+          "external": false,
+          "visible": true
+         }
+        ],
+        "groups": [],
+        "name": "Window counter",
+        "description": "",
+        "createdOn": 1758400000000,
+        "lastUpdate": 1758400000000,
+        "tags": [],
+        "icon": "mdi-node-rectangle",
+        "positionAbsolute": false,
+        "appearsInPresentation": false,
+        "appearsInExport": false,
+        "x": 120,
+        "y": 80,
+        "z": 0,
+        "presentation": {
+         "x": 0,
+         "y": 0,
+         "z": 0
+        },
+        "placement": "server",
+        "capabilities": {
+         "required": [
+          {
+           "kind": "storage:kv",
+           "scope": [
+            "ratelimit/*"
+           ]
+          }
+         ],
+         "granted": []
+        },
+        "contract": {
+         "inputs": [
+          {
+           "name": "key",
+           "schema": {
+            "type": "string",
+            "maxLength": 256
+           },
+           "required": true
+          },
+          {
+           "name": "cost",
+           "schema": {
+            "type": "integer",
+            "minimum": 1
+           },
+           "required": false,
+           "default": 1
+          }
+         ],
+         "outputs": [
+          {
+           "name": "count",
+           "schema": {
+            "type": "object"
+           },
+           "required": true
+          }
+         ]
+        }
+       },
+       "template": {
+        "set": "// counts hits in a 60 s window; host.kv is the storage:kv capability binding (proposed)\nvar win = Math.floor(Date.now() / 60000);\nvar k = 'ratelimit/' + value.key + '/' + win;\nreturn host.kv.incr(k, value.cost || 1, { ttlMs: 120000 }).then(function (count) {\n  edges.count = { key: value.key, count: count, windowEndsAt: (win + 1) * 60000 };\n});\n",
+        "vue": ""
+       }
+      },
+      {
+       "id": "decide",
+       "edges": [
+        {
+         "field": "allowed",
+         "connectors": []
+        },
+        {
+         "field": "retryAfterMs",
+         "connectors": []
+        }
+       ],
+       "version": 3,
+       "graphId": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+       "artifact": null,
+       "url": "decide",
+       "data": null,
+       "properties": {
+        "inputs": [
+         {
+          "name": "count",
+          "type": "Object",
+          "external": false,
+          "visible": true
+         }
+        ],
+        "outputs": [
+         {
+          "name": "allowed",
+          "type": "Boolean",
+          "external": true,
+          "visible": true
+         },
+         {
+          "name": "retryAfterMs",
+          "type": "Number",
+          "external": true,
+          "visible": true
+         }
+        ],
+        "groups": [],
+        "name": "Decide",
+        "description": "",
+        "createdOn": 1758400000000,
+        "lastUpdate": 1758400000000,
+        "tags": [],
+        "icon": "mdi-node-rectangle",
+        "positionAbsolute": false,
+        "appearsInPresentation": false,
+        "appearsInExport": false,
+        "x": 420,
+        "y": 80,
+        "z": 0,
+        "presentation": {
+         "x": 0,
+         "y": 0,
+         "z": 0
+        },
+        "placement": "portable",
+        "contract": {
+         "inputs": [
+          {
+           "name": "count",
+           "schema": {
+            "type": "object"
+           },
+           "required": true
+          }
+         ],
+         "outputs": [
+          {
+           "name": "allowed",
+           "schema": {
+            "type": "boolean"
+           },
+           "required": true
+          },
+          {
+           "name": "retryAfterMs",
+           "schema": {
+            "type": "integer",
+            "minimum": 0
+           },
+           "required": false
+          }
+         ]
+        },
+        "limit": 5
+       },
+       "template": {
+        "set": "var limit = properties.limit || 5;\nif (value.count <= limit) { edges.allowed = true; }\nelse { edges.allowed = false; edges.retryAfterMs = Math.max(0, value.windowEndsAt - Date.now()); }\n",
+        "vue": ""
+       }
+      }
+     ],
+     "properties": {
+      "name": "RateLimiter",
+      "description": "Sliding-window rate limiter keyed by caller",
+      "exportable": true,
+      "icon": "mdi-speedometer",
+      "createdBy": "auth0|u1",
+      "createdOn": 1758400000000,
+      "lastUpdate": 1758400000000,
+      "height": 150,
+      "width": 300,
+      "timeout": 30000,
+      "logLevel": 2,
+      "template": "",
+      "tags": [
+       "server"
+      ]
+     },
+     "meta": {
+      "schemaVersion": 2
+     }
+    },
+    "properties": {},
+    "fields": {
+     "inputs": {
+      "key": {
+       "id": "window",
+       "field": "key",
+       "type": "String",
+       "visible": true,
+       "external": false
+      },
+      "cost": {
+       "id": "window",
+       "field": "cost",
+       "type": "Number",
+       "visible": true,
+       "external": false
+      }
+     },
+     "outputs": {
+      "allowed": {
+       "id": "decide",
+       "field": "allowed",
+       "type": "Boolean",
+       "visible": true,
+       "external": false
+      },
+      "retryAfterMs": {
+       "id": "decide",
+       "field": "retryAfterMs",
+       "type": "Number",
+       "visible": true,
+       "external": false
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "handler",
+   "edges": [
+    {
+     "field": "response",
+     "connectors": []
+    }
+   ],
+   "version": 5,
+   "graphId": "api-2b7c9d40-1e5f-4a6b-8c3d-7f9e0a1b2c33",
+   "artifact": null,
+   "url": "handler",
+   "data": null,
+   "properties": {
+    "inputs": [
+     {
+      "name": "in",
+      "type": "Boolean",
+      "external": false,
+      "visible": true
+     }
+    ],
+    "outputs": [
+     {
+      "name": "response",
+      "type": "Object",
+      "external": false,
+      "visible": true
+     }
+    ],
+    "groups": [],
+    "name": "Handler",
+    "description": "",
+    "createdOn": 1758400000000,
+    "lastUpdate": 1758400000000,
+    "tags": [],
+    "icon": "mdi-node-rectangle",
+    "positionAbsolute": false,
+    "appearsInPresentation": false,
+    "appearsInExport": false,
+    "x": 580,
+    "y": 60,
+    "z": 0,
+    "presentation": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "placement": "portable"
+   },
+   "template": {
+    "set": "edges.response = { status: 200, body: 'ok' };\n",
+    "vue": ""
+   }
+  },
+  {
+   "id": "reject",
+   "edges": [
+    {
+     "field": "response",
+     "connectors": []
+    }
+   ],
+   "version": 5,
+   "graphId": "api-2b7c9d40-1e5f-4a6b-8c3d-7f9e0a1b2c33",
+   "artifact": null,
+   "url": "reject",
+   "data": null,
+   "properties": {
+    "inputs": [
+     {
+      "name": "retryAfterMs",
+      "type": "Number",
+      "external": false,
+      "visible": true
+     }
+    ],
+    "outputs": [
+     {
+      "name": "response",
+      "type": "Object",
+      "external": false,
+      "visible": true
+     }
+    ],
+    "groups": [],
+    "name": "Reject",
+    "description": "",
+    "createdOn": 1758400000000,
+    "lastUpdate": 1758400000000,
+    "tags": [],
+    "icon": "mdi-node-rectangle",
+    "positionAbsolute": false,
+    "appearsInPresentation": false,
+    "appearsInExport": false,
+    "x": 580,
+    "y": 200,
+    "z": 0,
+    "presentation": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "placement": "portable"
+   },
+   "template": {
+    "set": "edges.response = { status: 429, headers: { 'retry-after': Math.ceil(value / 1000) } };\n",
+    "vue": ""
+   }
+  }
+ ],
+ "properties": {
+  "name": "api-graph",
+  "description": "Rate-limited API entry",
+  "exportable": false,
+  "icon": "mdi-graph",
+  "createdBy": "auth0|u1",
+  "createdOn": 1758400000000,
+  "lastUpdate": 1758400001000,
+  "height": 150,
+  "width": 300,
+  "timeout": 30000,
+  "logLevel": 2,
+  "template": ""
+ },
+ "meta": {
+  "schemaVersion": 2
+ }
+}

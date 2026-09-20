@@ -1,0 +1,25 @@
+{
+ "schemaVersion": 1,
+ "graphId": "rl-graph",
+ "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+ "target": {
+  "graph": true
+ },
+ "version": 1,
+ "contract": {
+  "inputs": [],
+  "outputs": []
+ },
+ "summary": {
+  "intent": "x"
+ },
+ "capabilities": [
+  {
+   "kind": "storage:kv",
+   "scope": [
+    "ratelimit/*"
+   ]
+  }
+ ],
+ "placement": "server"
+}

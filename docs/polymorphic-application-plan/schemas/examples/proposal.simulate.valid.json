@@ -1,0 +1,9 @@
+{
+ "schemaVersion": 1,
+ "proposalId": "01J8ZK6M0N1P2Q3R4S5T6V7W8X",
+ "mode": "shadow",
+ "executionSample": {
+  "sinceMinutes": 60,
+  "max": 10
+ }
+}

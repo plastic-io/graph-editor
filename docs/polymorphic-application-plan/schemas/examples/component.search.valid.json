@@ -1,0 +1,6 @@
+{
+ "schemaVersion": 1,
+ "query": "rate limit",
+ "placement": "server",
+ "limit": 10
+}

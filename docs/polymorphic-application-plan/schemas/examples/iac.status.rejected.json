@@ -1,0 +1,6 @@
+{
+ "schemaVersion": 1,
+ "graphId": "infra",
+ "instanceId": "stack-api",
+ "includeLogs": true
+}

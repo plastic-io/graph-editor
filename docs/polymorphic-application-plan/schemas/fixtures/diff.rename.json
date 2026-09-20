@@ -1,0 +1,61 @@
+{
+ "fromRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+ "toRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2F",
+ "namespaces": [
+  "definition"
+ ],
+ "layoutOnly": false,
+ "privilegeDelta": [],
+ "changes": [
+  {
+   "kind": "port.changed",
+   "nodeId": "validate",
+   "field": "ok",
+   "before": {
+    "name": "out",
+    "type": "Object",
+    "external": false
+   },
+   "after": {
+    "name": "ok",
+    "type": "Object",
+    "external": false
+   },
+   "privilege": "none"
+  },
+  {
+   "kind": "edge.removed",
+   "nodeId": "validate",
+   "field": "out",
+   "before": {
+    "field": "out",
+    "connectors": [
+     {
+      "id": "c-7",
+      "nodeId": "handler",
+      "field": "in",
+      "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+      "version": 11
+     }
+    ]
+   }
+  },
+  {
+   "kind": "edge.added",
+   "nodeId": "validate",
+   "field": "ok",
+   "after": {
+    "field": "ok",
+    "connectors": [
+     {
+      "id": "c-7",
+      "nodeId": "handler",
+      "field": "in",
+      "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+      "version": 11
+     }
+    ]
+   }
+  }
+ ]
+}

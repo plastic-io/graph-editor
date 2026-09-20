@@ -1,0 +1,12 @@
+{
+ "schemaVersion": 1,
+ "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+ "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+ "root": {
+  "nodeId": "validate"
+ },
+ "direction": "in",
+ "depth": 1,
+ "maxNodes": 20,
+ "maxBytes": 65536
+}

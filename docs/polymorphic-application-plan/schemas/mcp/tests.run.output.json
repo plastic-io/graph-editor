@@ -1,0 +1,1568 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://plastic-io.github.io/schemas/mcp/tests.run.output.json",
+ "title": "tests.run.output",
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+  "envelope": {
+   "$ref": "#/$defs/envelope"
+  },
+  "result": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "results": {
+     "type": "array",
+     "maxItems": 500,
+     "items": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+       "testId": {
+        "type": "string",
+        "maxLength": 128
+       },
+       "kind": {
+        "type": "string"
+       },
+       "status": {
+        "enum": [
+         "pass",
+         "fail",
+         "error",
+         "skipped",
+         "unresolvable"
+        ]
+       },
+       "durationMs": {
+        "type": "integer"
+       },
+       "message": {
+        "type": "string",
+        "maxLength": 4000
+       },
+       "observationsUri": {
+        "type": "string"
+       },
+       "seed": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "testId",
+       "kind",
+       "status",
+       "durationMs"
+      ]
+     }
+    },
+    "revisionBound": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "componentDigest": {
+       "$ref": "#/$defs/digest"
+      },
+      "revisionId": {
+       "$ref": "#/$defs/revisionId"
+      },
+      "runtime": {
+       "type": "string"
+      }
+     }
+    },
+    "coverage": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "nodesExercised": {
+       "type": "integer"
+      },
+      "nodesTotal": {
+       "type": "integer"
+      },
+      "portsValidated": {
+       "type": "integer"
+      }
+     },
+     "required": [
+      "nodesExercised",
+      "nodesTotal"
+     ]
+    },
+    "summary": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "pass": {
+       "type": "integer"
+      },
+      "fail": {
+       "type": "integer"
+      },
+      "error": {
+       "type": "integer"
+      },
+      "skipped": {
+       "type": "integer"
+      }
+     },
+     "required": [
+      "pass",
+      "fail",
+      "error",
+      "skipped"
+     ]
+    }
+   },
+   "required": [
+    "results",
+    "coverage",
+    "summary"
+   ]
+  }
+ },
+ "required": [
+  "envelope",
+  "result"
+ ],
+ "$defs": {
+  "ulid": {
+   "type": "string",
+   "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+  },
+  "id": {
+   "type": "string",
+   "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+  },
+  "revisionId": {
+   "type": "string",
+   "pattern": "^rev_[0-9A-HJKMNP-TV-Z]{26}$"
+  },
+  "digest": {
+   "type": "string",
+   "pattern": "^sha256:[0-9a-f]{64}$"
+  },
+  "principal": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "sub": {
+     "type": "string",
+     "maxLength": 256
+    },
+    "kind": {
+     "enum": [
+      "human",
+      "agent",
+      "system",
+      "synthetic"
+     ]
+    },
+    "tenant": {
+     "type": "string",
+     "maxLength": 128
+    },
+    "delegatedBy": {
+     "type": "string",
+     "maxLength": 256
+    }
+   },
+   "required": [
+    "sub",
+    "kind",
+    "tenant"
+   ]
+  },
+  "envelope": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "schemaVersion": {
+     "const": "1"
+    },
+    "requestId": {
+     "$ref": "#/$defs/ulid"
+    },
+    "principal": {
+     "$ref": "#/$defs/principal"
+    },
+    "graphId": {
+     "$ref": "#/$defs/id"
+    },
+    "baseRevision": {
+     "$ref": "#/$defs/revisionId"
+    },
+    "resultRevision": {
+     "$ref": "#/$defs/revisionId"
+    },
+    "correlationId": {
+     "$ref": "#/$defs/ulid"
+    },
+    "policyVersion": {
+     "type": "string",
+     "maxLength": 32
+    },
+    "serverTime": {
+     "type": "string",
+     "format": "date-time"
+    },
+    "truncated": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "schemaVersion",
+    "requestId",
+    "principal",
+    "correlationId",
+    "policyVersion",
+    "serverTime",
+    "truncated"
+   ]
+  },
+  "error": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "code": {
+     "enum": [
+      "ADMISSION_DENIED",
+      "STALE_BASE",
+      "SCHEMA_INVALID",
+      "CAPABILITY_MISSING",
+      "NOT_FOUND",
+      "CONFLICT",
+      "BUDGET_EXCEEDED",
+      "APPROVAL_REQUIRED",
+      "UNSUPPORTED_FIELD",
+      "RATE_LIMITED",
+      "INTEGRITY_FAILURE",
+      "UNRESOLVED_COMPONENT"
+     ]
+    },
+    "message": {
+     "type": "string",
+     "maxLength": 2000
+    },
+    "retry": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "retryable": {
+       "type": "boolean"
+      },
+      "afterMs": {
+       "type": "integer",
+       "minimum": 0,
+       "maximum": 3600000
+      },
+      "rebaseTo": {
+       "$ref": "#/$defs/revisionId"
+      }
+     },
+     "required": [
+      "retryable"
+     ]
+    },
+    "details": {
+     "type": "object"
+    }
+   },
+   "required": [
+    "code",
+    "message",
+    "retry"
+   ]
+  },
+  "budget": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "wallMs": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 900000
+    },
+    "cpuMs": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 900000
+    },
+    "heapMb": {
+     "type": "integer",
+     "minimum": 8,
+     "maximum": 1024
+    },
+    "hops": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 1000000
+    },
+    "fanOut": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 100000
+    },
+    "depth": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 256
+    },
+    "observations": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 1000000
+    },
+    "observationBytes": {
+     "type": "integer",
+     "minimum": 1024,
+     "maximum": 268435456
+    },
+    "payloadBytes": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 6291456
+    },
+    "concurrentChildren": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 1024
+    }
+   }
+  },
+  "portContract": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "name": {
+     "$ref": "#/$defs/id"
+    },
+    "schema": {
+     "type": "object"
+    },
+    "required": {
+     "type": "boolean"
+    },
+    "default": {},
+    "redaction": {
+     "enum": [
+      "none",
+      "hash",
+      "secret"
+     ]
+    },
+    "capture": {
+     "enum": [
+      "none",
+      "meta",
+      "full"
+     ]
+    }
+   },
+   "required": [
+    "name",
+    "schema",
+    "required"
+   ]
+  },
+  "capabilityRequirement": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "kind": {
+     "enum": [
+      "net:https",
+      "storage:kv",
+      "storage:s3",
+      "secret",
+      "timer",
+      "browser:dom",
+      "browser:storage",
+      "aws:cfn",
+      "aws:codebuild",
+      "llm",
+      "graph:invoke"
+     ]
+    },
+    "scope": {
+     "type": "array",
+     "maxItems": 64,
+     "items": {
+      "type": "string",
+      "maxLength": 256
+     }
+    },
+    "optional": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "kind",
+    "scope"
+   ]
+  },
+  "capabilityGrant": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "kind": {
+     "enum": [
+      "net:https",
+      "storage:kv",
+      "storage:s3",
+      "secret",
+      "timer",
+      "browser:dom",
+      "browser:storage",
+      "aws:cfn",
+      "aws:codebuild",
+      "llm",
+      "graph:invoke"
+     ]
+    },
+    "scope": {
+     "type": "array",
+     "maxItems": 64,
+     "items": {
+      "type": "string",
+      "maxLength": 256
+     }
+    },
+    "operations": {
+     "type": "array",
+     "maxItems": 32,
+     "items": {
+      "type": "string",
+      "maxLength": 64
+     }
+    },
+    "lifetime": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "until": {
+       "type": "string",
+       "format": "date-time"
+      },
+      "revisionBound": {
+       "$ref": "#/$defs/revisionId"
+      }
+     }
+    },
+    "delegable": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "kind",
+    "scope",
+    "operations"
+   ]
+  },
+  "componentPin": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "publishedId": {
+     "$ref": "#/$defs/id"
+    },
+    "version": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "digest": {
+     "$ref": "#/$defs/digest"
+    }
+   },
+   "required": [
+    "publishedId",
+    "version",
+    "digest"
+   ]
+  },
+  "placement": {
+   "enum": [
+    "browser",
+    "server",
+    "portable"
+   ]
+  },
+  "health": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "lastRunAt": {
+     "type": "string",
+     "format": "date-time"
+    },
+    "errorRate24h": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1
+    },
+    "p95Ms": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "lastFailure": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "observationId": {
+       "$ref": "#/$defs/ulid"
+      },
+      "kind": {
+       "type": "string"
+      },
+      "at": {
+       "type": "string",
+       "format": "date-time"
+      }
+     }
+    }
+   }
+  },
+  "componentSummary": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/id"
+    },
+    "graphId": {
+     "$ref": "#/$defs/id"
+    },
+    "revisionId": {
+     "$ref": "#/$defs/revisionId"
+    },
+    "kind": {
+     "enum": [
+      "graph",
+      "node",
+      "published-component"
+     ]
+    },
+    "name": {
+     "type": "string",
+     "maxLength": 128
+    },
+    "purpose": {
+     "type": "string",
+     "maxLength": 2000
+    },
+    "intentProvenance": {
+     "enum": [
+      "authored",
+      "generated",
+      "derived"
+     ]
+    },
+    "freshness": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "computedAt": {
+       "type": "string",
+       "format": "date-time"
+      },
+      "sourceRevision": {
+       "$ref": "#/$defs/revisionId"
+      },
+      "stale": {
+       "type": "boolean"
+      }
+     },
+     "required": [
+      "computedAt",
+      "sourceRevision",
+      "stale"
+     ]
+    },
+    "inputs": {
+     "type": "array",
+     "maxItems": 64,
+     "items": {
+      "$ref": "#/$defs/portContract"
+     }
+    },
+    "outputs": {
+     "type": "array",
+     "maxItems": 64,
+     "items": {
+      "$ref": "#/$defs/portContract"
+     }
+    },
+    "invariants": {
+     "type": "array",
+     "maxItems": 32,
+     "items": {
+      "type": "string",
+      "maxLength": 500
+     }
+    },
+    "dependencies": {
+     "type": "array",
+     "maxItems": 128,
+     "items": {
+      "$ref": "#/$defs/componentPin"
+     }
+    },
+    "effects": {
+     "type": "array",
+     "maxItems": 32,
+     "items": {
+      "$ref": "#/$defs/capabilityRequirement"
+     }
+    },
+    "placement": {
+     "$ref": "#/$defs/placement"
+    },
+    "health": {
+     "$ref": "#/$defs/health"
+    },
+    "pointers": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "node": {
+       "type": "string"
+      },
+      "code": {
+       "type": "string"
+      },
+      "observations": {
+       "type": "string"
+      },
+      "tests": {
+       "type": "string"
+      }
+     }
+    },
+    "degree": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "in": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "out": {
+       "type": "integer",
+       "minimum": 0
+      },
+      "nestedNodes": {
+       "type": "integer",
+       "minimum": 0
+      }
+     },
+     "required": [
+      "in",
+      "out"
+     ]
+    },
+    "untrusted": {
+     "type": "array",
+     "maxItems": 3,
+     "items": {
+      "enum": [
+       "purpose",
+       "invariants",
+       "name"
+      ]
+     }
+    }
+   },
+   "required": [
+    "id",
+    "graphId",
+    "revisionId",
+    "kind",
+    "name",
+    "purpose",
+    "intentProvenance",
+    "freshness",
+    "inputs",
+    "outputs",
+    "placement",
+    "degree"
+   ]
+  },
+  "observationKind": {
+   "enum": [
+    "edge.input",
+    "edge.output",
+    "route",
+    "exec.begin",
+    "exec.end",
+    "exec.error",
+    "effect",
+    "effect.denied",
+    "budget.exhausted",
+    "contract.violation",
+    "component.unresolved",
+    "deploy.status",
+    "test.result",
+    "summary.generated",
+    "custom"
+   ]
+  },
+  "observation": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "$ref": "#/$defs/ulid"
+    },
+    "seq": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "at": {
+     "type": "string",
+     "format": "date-time"
+    },
+    "kind": {
+     "$ref": "#/$defs/observationKind"
+    },
+    "graphId": {
+     "$ref": "#/$defs/id"
+    },
+    "revisionId": {
+     "$ref": "#/$defs/revisionId"
+    },
+    "instancePath": {
+     "type": "array",
+     "maxItems": 64,
+     "items": {
+      "$ref": "#/$defs/id"
+     }
+    },
+    "nodeId": {
+     "$ref": "#/$defs/id"
+    },
+    "edgeField": {
+     "$ref": "#/$defs/id"
+    },
+    "connectorId": {
+     "$ref": "#/$defs/id"
+    },
+    "executionId": {
+     "$ref": "#/$defs/ulid"
+    },
+    "spanId": {
+     "$ref": "#/$defs/ulid"
+    },
+    "parentSpanId": {
+     "$ref": "#/$defs/ulid"
+    },
+    "correlationId": {
+     "$ref": "#/$defs/ulid"
+    },
+    "causationId": {
+     "$ref": "#/$defs/ulid"
+    },
+    "domain": {
+     "enum": [
+      "browser",
+      "server"
+     ]
+    },
+    "owner": {
+     "$ref": "#/$defs/principal"
+    },
+    "actor": {
+     "$ref": "#/$defs/principal"
+    },
+    "payload": {},
+    "capability": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "kind": {
+       "enum": [
+        "net:https",
+        "storage:kv",
+        "storage:s3",
+        "secret",
+        "timer",
+        "browser:dom",
+        "browser:storage",
+        "aws:cfn",
+        "aws:codebuild",
+        "llm",
+        "graph:invoke"
+       ]
+      },
+      "scope": {
+       "type": "array",
+       "maxItems": 64,
+       "items": {
+        "type": "string"
+       }
+      },
+      "decision": {
+       "enum": [
+        "allowed",
+        "denied"
+       ]
+      }
+     },
+     "required": [
+      "kind",
+      "scope",
+      "decision"
+     ]
+    },
+    "budget": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "dimension": {
+       "type": "string"
+      },
+      "used": {
+       "type": "number"
+      },
+      "limit": {
+       "type": "number"
+      }
+     },
+     "required": [
+      "dimension",
+      "used",
+      "limit"
+     ]
+    }
+   },
+   "required": [
+    "id",
+    "seq",
+    "at",
+    "kind",
+    "graphId",
+    "revisionId",
+    "instancePath",
+    "executionId",
+    "spanId",
+    "correlationId",
+    "domain",
+    "owner"
+   ]
+  },
+  "diffChange": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "kind": {
+     "enum": [
+      "node.added",
+      "node.removed",
+      "node.renamed",
+      "port.added",
+      "port.removed",
+      "port.changed",
+      "edge.added",
+      "edge.removed",
+      "connector.added",
+      "connector.removed",
+      "code.changed",
+      "component.pin.changed",
+      "placement.changed",
+      "capability.added",
+      "capability.removed",
+      "budget.changed",
+      "test.changed",
+      "iac.desired.changed",
+      "layout.changed",
+      "graph.props.changed"
+     ]
+    },
+    "nodeId": {
+     "$ref": "#/$defs/id"
+    },
+    "field": {
+     "$ref": "#/$defs/id"
+    },
+    "connectorId": {
+     "$ref": "#/$defs/id"
+    },
+    "before": {},
+    "after": {},
+    "hunks": {
+     "type": "array",
+     "maxItems": 200,
+     "items": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+       "oldStart": {
+        "type": "integer"
+       },
+       "oldLines": {
+        "type": "integer"
+       },
+       "newStart": {
+        "type": "integer"
+       },
+       "newLines": {
+        "type": "integer"
+       },
+       "text": {
+        "type": "string",
+        "maxLength": 65536
+       }
+      },
+      "required": [
+       "oldStart",
+       "oldLines",
+       "newStart",
+       "newLines",
+       "text"
+      ]
+     }
+    },
+    "privilege": {
+     "enum": [
+      "none",
+      "widens",
+      "narrows"
+     ]
+    }
+   },
+   "required": [
+    "kind"
+   ]
+  },
+  "diffSummary": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "fromRevision": {
+     "$ref": "#/$defs/revisionId"
+    },
+    "toRevision": {
+     "$ref": "#/$defs/revisionId"
+    },
+    "namespaces": {
+     "type": "array",
+     "maxItems": 9,
+     "items": {
+      "enum": [
+       "definition",
+       "layout",
+       "code",
+       "capabilities",
+       "placement",
+       "budgets",
+       "tests",
+       "iac",
+       "policy"
+      ]
+     }
+    },
+    "changes": {
+     "type": "array",
+     "maxItems": 5000,
+     "items": {
+      "$ref": "#/$defs/diffChange"
+     }
+    },
+    "privilegeDelta": {
+     "type": "array",
+     "maxItems": 100,
+     "items": {
+      "$ref": "#/$defs/capabilityRequirement"
+     }
+    },
+    "layoutOnly": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "namespaces",
+    "changes",
+    "privilegeDelta",
+    "layoutOnly"
+   ]
+  },
+  "artifactRef": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "graphId": {
+     "$ref": "#/$defs/id"
+    },
+    "nodeId": {
+     "$ref": "#/$defs/id"
+    },
+    "revisionId": {
+     "$ref": "#/$defs/revisionId"
+    },
+    "sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-f]{64}$"
+    }
+   },
+   "required": [
+    "graphId",
+    "nodeId",
+    "revisionId",
+    "sha256"
+   ]
+  },
+  "iacDesiredState": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "schemaVersion": {
+     "const": 1
+    },
+    "stack": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "name": {
+       "type": "string",
+       "pattern": "^[A-Za-z][A-Za-z0-9-]{0,127}$"
+      },
+      "account": {
+       "type": "string",
+       "pattern": "^[0-9]{12}$"
+      },
+      "region": {
+       "type": "string",
+       "pattern": "^[a-z]{2}-[a-z]+-[0-9]$"
+      },
+      "environment": {
+       "enum": [
+        "dev",
+        "staging",
+        "prod"
+       ]
+      }
+     },
+     "required": [
+      "name",
+      "account",
+      "region",
+      "environment"
+     ]
+    },
+    "template": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "artifactRef": {
+       "$ref": "#/$defs/artifactRef"
+      },
+      "format": {
+       "enum": [
+        "yaml",
+        "json"
+       ]
+      }
+     },
+     "required": [
+      "artifactRef",
+      "format"
+     ]
+    },
+    "parameters": {
+     "type": "object",
+     "maxProperties": 200,
+     "additionalProperties": {
+      "oneOf": [
+       {
+        "type": "string",
+        "maxLength": 4096
+       },
+       {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+         "secretRef": {
+          "type": "string",
+          "maxLength": 512
+         }
+        },
+        "required": [
+         "secretRef"
+        ]
+       }
+      ]
+     }
+    },
+    "capabilities": {
+     "type": "array",
+     "maxItems": 3,
+     "items": {
+      "enum": [
+       "CAPABILITY_IAM",
+       "CAPABILITY_NAMED_IAM",
+       "CAPABILITY_AUTO_EXPAND"
+      ]
+     }
+    },
+    "operation": {
+     "enum": [
+      "plan",
+      "apply",
+      "destroy",
+      "cancel",
+      "detect-drift"
+     ]
+    },
+    "trigger": {
+     "oneOf": [
+      {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "kind": {
+         "const": "explicit"
+        },
+        "approvalRef": {
+         "$ref": "#/$defs/ulid"
+        }
+       },
+       "required": [
+        "kind"
+       ]
+      },
+      {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "kind": {
+         "const": "reconcile"
+        },
+        "sourceRevision": {
+         "$ref": "#/$defs/revisionId"
+        }
+       },
+       "required": [
+        "kind",
+        "sourceRevision"
+       ]
+      }
+     ]
+    },
+    "build": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "project": {
+       "type": "string",
+       "maxLength": 128
+      },
+      "sourceArtifactRef": {
+       "$ref": "#/$defs/artifactRef"
+      },
+      "buildspecArtifactRef": {
+       "$ref": "#/$defs/artifactRef"
+      }
+     },
+     "required": [
+      "project",
+      "sourceArtifactRef",
+      "buildspecArtifactRef"
+     ]
+    },
+    "correlation": {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "proposalId": {
+       "$ref": "#/$defs/ulid"
+      },
+      "idempotencyKey": {
+       "$ref": "#/$defs/ulid"
+      }
+     },
+     "required": [
+      "idempotencyKey"
+     ]
+    }
+   },
+   "required": [
+    "schemaVersion",
+    "stack",
+    "template",
+    "parameters",
+    "capabilities",
+    "operation",
+    "trigger",
+    "correlation"
+   ]
+  },
+  "task": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "taskId": {
+     "$ref": "#/$defs/ulid"
+    },
+    "status": {
+     "enum": [
+      "working",
+      "input_required",
+      "completed",
+      "failed",
+      "cancelled"
+     ]
+    },
+    "ttlMs": {
+     "type": "integer"
+    },
+    "pollIntervalMs": {
+     "type": "integer"
+    },
+    "statusMessage": {
+     "type": "string",
+     "maxLength": 500
+    }
+   },
+   "required": [
+    "taskId",
+    "status",
+    "ttlMs",
+    "pollIntervalMs"
+   ]
+  },
+  "mutationOp": {
+   "oneOf": [
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "op": {
+       "const": "add-node"
+      },
+      "node": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "id": {
+         "$ref": "#/$defs/id"
+        },
+        "url": {
+         "$ref": "#/$defs/id"
+        },
+        "name": {
+         "type": "string",
+         "maxLength": 128
+        },
+        "inputs": {
+         "type": "array",
+         "maxItems": 64,
+         "items": {
+          "$ref": "#/$defs/portContract"
+         }
+        },
+        "outputs": {
+         "type": "array",
+         "maxItems": 64,
+         "items": {
+          "$ref": "#/$defs/portContract"
+         }
+        },
+        "placement": {
+         "$ref": "#/$defs/placement"
+        },
+        "template": {
+         "type": "object",
+         "additionalProperties": false,
+         "properties": {
+          "set": {
+           "type": "string",
+           "maxLength": 262144
+          },
+          "vue": {
+           "type": "string",
+           "maxLength": 262144
+          }
+         }
+        },
+        "layout": {
+         "type": "object",
+         "additionalProperties": false,
+         "properties": {
+          "x": {
+           "type": "number"
+          },
+          "y": {
+           "type": "number"
+          },
+          "z": {
+           "type": "number"
+          }
+         }
+        }
+       },
+       "required": [
+        "id",
+        "url"
+       ]
+      }
+     },
+     "required": [
+      "op",
+      "node"
+     ]
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "op": {
+       "const": "remove-node"
+      },
+      "nodeId": {
+       "$ref": "#/$defs/id"
+      }
+     },
+     "required": [
+      "op",
+      "nodeId"
+     ]
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "op": {
+       "const": "set-node-code"
+      },
+      "nodeId": {
+       "$ref": "#/$defs/id"
+      },
+      "template": {
+       "enum": [
+        "set",
+        "vue"
+       ]
+      },
+      "text": {
+       "type": "string",
+       "maxLength": 262144
+      }
+     },
+     "required": [
+      "op",
+      "nodeId",
+      "template",
+      "text"
+     ]
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "op": {
+       "const": "set-node-props"
+      },
+      "nodeId": {
+       "$ref": "#/$defs/id"
+      },
+      "patch": {
+       "type": "object",
+       "maxProperties": 64
+      }
+     },
+     "required": [
+      "op",
+      "nodeId",
+      "patch"
+     ]
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "op": {
+       "const": "set-graph-props"
+      },
+      "patch": {
+       "type": "object",
+       "maxProperties": 64
+      }
+     },
+     "required": [
+      "op",
+      "patch"
+     ]
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "op": {
+       "const": "connect"
+      },
+      "from": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "nodeId": {
+         "$ref": "#/$defs/id"
+        },
+        "field": {
+         "$ref": "#/$defs/id"
+        }
+       },
+       "required": [
+        "nodeId",
+        "field"
+       ]
+      },
+      "to": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "nodeId": {
+         "$ref": "#/$defs/id"
+        },
+        "field": {
+         "$ref": "#/$defs/id"
+        },
+        "graphId": {
+         "$ref": "#/$defs/id"
+        }
+       },
+       "required": [
+        "nodeId",
+        "field"
+       ]
+      }
+     },
+     "required": [
+      "op",
+      "from",
+      "to"
+     ]
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "op": {
+       "const": "disconnect"
+      },
+      "connectorId": {
+       "$ref": "#/$defs/id"
+      }
+     },
+     "required": [
+      "op",
+      "connectorId"
+     ]
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "op": {
+       "const": "set-component-pin"
+      },
+      "nodeId": {
+       "$ref": "#/$defs/id"
+      },
+      "pin": {
+       "$ref": "#/$defs/componentPin"
+      }
+     },
+     "required": [
+      "op",
+      "nodeId",
+      "pin"
+     ]
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "op": {
+       "const": "set-capabilities"
+      },
+      "nodeId": {
+       "$ref": "#/$defs/id"
+      },
+      "granted": {
+       "type": "array",
+       "maxItems": 32,
+       "items": {
+        "$ref": "#/$defs/capabilityGrant"
+       }
+      }
+     },
+     "required": [
+      "op",
+      "nodeId",
+      "granted"
+     ]
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "op": {
+       "const": "set-placement"
+      },
+      "nodeId": {
+       "$ref": "#/$defs/id"
+      },
+      "placement": {
+       "$ref": "#/$defs/placement"
+      }
+     },
+     "required": [
+      "op",
+      "nodeId",
+      "placement"
+     ]
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "op": {
+       "const": "set-budget"
+      },
+      "nodeId": {
+       "$ref": "#/$defs/id"
+      },
+      "budget": {
+       "$ref": "#/$defs/budget"
+      }
+     },
+     "required": [
+      "op",
+      "budget"
+     ]
+    },
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "properties": {
+      "op": {
+       "const": "set-iac-desired"
+      },
+      "nodeId": {
+       "$ref": "#/$defs/id"
+      },
+      "desired": {
+       "$ref": "#/$defs/iacDesiredState"
+      }
+     },
+     "required": [
+      "op",
+      "nodeId",
+      "desired"
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "schemaVersion": 1,
+ "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+ "baseRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+ "ops": [
+  {
+   "op": "set-capabilities",
+   "nodeId": "normalize",
+   "granted": [
+    {
+     "kind": "aws:cfn",
+     "scope": [
+      "*"
+     ],
+     "operations": [
+      "apply"
+     ]
+    }
+   ]
+  }
+ ],
+ "description": "widen",
+ "idempotencyKey": "01J8ZK4M0N1P2Q3R4S5T6V7W8X"
+}

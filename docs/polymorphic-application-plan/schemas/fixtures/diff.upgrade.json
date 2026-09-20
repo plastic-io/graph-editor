@@ -1,0 +1,51 @@
+{
+ "fromRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+ "toRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2G",
+ "namespaces": [
+  "definition",
+  "code"
+ ],
+ "layoutOnly": false,
+ "privilegeDelta": [],
+ "changes": [
+  {
+   "kind": "component.pin.changed",
+   "nodeId": "N",
+   "before": {
+    "publishedId": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+    "version": 1,
+    "digest": "sha256:7ecfa038f58f694462411e57405779edd989673510e2054393fcbad1e5346916"
+   },
+   "after": {
+    "publishedId": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+    "version": 2,
+    "digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+   },
+   "privilege": "none"
+  },
+  {
+   "kind": "port.changed",
+   "nodeId": "N",
+   "field": "retryAfterMs",
+   "before": {
+    "required": false
+   },
+   "after": {
+    "required": true
+   }
+  },
+  {
+   "kind": "code.changed",
+   "nodeId": "N",
+   "hunks": [
+    {
+     "oldStart": 2,
+     "oldLines": 1,
+     "newStart": 2,
+     "newLines": 2,
+     "text": "-else { edges.allowed = false; edges.retryAfterMs = Math.max(0, value.windowEndsAt - Date.now()); }\n+else { edges.allowed = false; edges.retryAfterMs = Math.max(1, value.windowEndsAt - Date.now()); }\n+edges.retryAfterMs = edges.retryAfterMs;"
+    }
+   ]
+  }
+ ]
+}

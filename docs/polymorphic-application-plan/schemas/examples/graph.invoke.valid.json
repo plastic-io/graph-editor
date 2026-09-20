@@ -1,0 +1,17 @@
+{
+ "schemaVersion": 1,
+ "graphId": "api-graph",
+ "entry": {
+  "nodeUrl": "api"
+ },
+ "field": "in",
+ "value": {
+  "key": "u1",
+  "cost": 1
+ },
+ "budget": {
+  "wallMs": 5000,
+  "hops": 200
+ },
+ "sync": true
+}

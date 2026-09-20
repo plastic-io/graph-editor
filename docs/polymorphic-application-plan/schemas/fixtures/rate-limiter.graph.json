@@ -1,0 +1,231 @@
+{
+ "id": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+ "url": "rate-limiter",
+ "version": 3,
+ "nodes": [
+  {
+   "id": "window",
+   "edges": [
+    {
+     "field": "count",
+     "connectors": [
+      {
+       "id": "c-rl-1",
+       "nodeId": "decide",
+       "field": "count",
+       "graphId": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+       "version": 3
+      }
+     ]
+    }
+   ],
+   "version": 3,
+   "graphId": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+   "artifact": null,
+   "url": "window",
+   "data": null,
+   "properties": {
+    "inputs": [
+     {
+      "name": "key",
+      "type": "String",
+      "external": true,
+      "visible": true
+     },
+     {
+      "name": "cost",
+      "type": "Number",
+      "external": true,
+      "visible": true
+     }
+    ],
+    "outputs": [
+     {
+      "name": "count",
+      "type": "Object",
+      "external": false,
+      "visible": true
+     }
+    ],
+    "groups": [],
+    "name": "Window counter",
+    "description": "",
+    "createdOn": 1758400000000,
+    "lastUpdate": 1758400000000,
+    "tags": [],
+    "icon": "mdi-node-rectangle",
+    "positionAbsolute": false,
+    "appearsInPresentation": false,
+    "appearsInExport": false,
+    "x": 120,
+    "y": 80,
+    "z": 0,
+    "presentation": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "placement": "server",
+    "capabilities": {
+     "required": [
+      {
+       "kind": "storage:kv",
+       "scope": [
+        "ratelimit/*"
+       ]
+      }
+     ],
+     "granted": []
+    },
+    "contract": {
+     "inputs": [
+      {
+       "name": "key",
+       "schema": {
+        "type": "string",
+        "maxLength": 256
+       },
+       "required": true
+      },
+      {
+       "name": "cost",
+       "schema": {
+        "type": "integer",
+        "minimum": 1
+       },
+       "required": false,
+       "default": 1
+      }
+     ],
+     "outputs": [
+      {
+       "name": "count",
+       "schema": {
+        "type": "object"
+       },
+       "required": true
+      }
+     ]
+    }
+   },
+   "template": {
+    "set": "// counts hits in a 60 s window; host.kv is the storage:kv capability binding (proposed)\nvar win = Math.floor(Date.now() / 60000);\nvar k = 'ratelimit/' + value.key + '/' + win;\nreturn host.kv.incr(k, value.cost || 1, { ttlMs: 120000 }).then(function (count) {\n  edges.count = { key: value.key, count: count, windowEndsAt: (win + 1) * 60000 };\n});\n",
+    "vue": ""
+   }
+  },
+  {
+   "id": "decide",
+   "edges": [
+    {
+     "field": "allowed",
+     "connectors": []
+    },
+    {
+     "field": "retryAfterMs",
+     "connectors": []
+    }
+   ],
+   "version": 3,
+   "graphId": "rl-4d3b6a1e-9f02-4c8e-b1a7-2e6f8c0d5a11",
+   "artifact": null,
+   "url": "decide",
+   "data": null,
+   "properties": {
+    "inputs": [
+     {
+      "name": "count",
+      "type": "Object",
+      "external": false,
+      "visible": true
+     }
+    ],
+    "outputs": [
+     {
+      "name": "allowed",
+      "type": "Boolean",
+      "external": true,
+      "visible": true
+     },
+     {
+      "name": "retryAfterMs",
+      "type": "Number",
+      "external": true,
+      "visible": true
+     }
+    ],
+    "groups": [],
+    "name": "Decide",
+    "description": "",
+    "createdOn": 1758400000000,
+    "lastUpdate": 1758400000000,
+    "tags": [],
+    "icon": "mdi-node-rectangle",
+    "positionAbsolute": false,
+    "appearsInPresentation": false,
+    "appearsInExport": false,
+    "x": 420,
+    "y": 80,
+    "z": 0,
+    "presentation": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "placement": "portable",
+    "contract": {
+     "inputs": [
+      {
+       "name": "count",
+       "schema": {
+        "type": "object"
+       },
+       "required": true
+      }
+     ],
+     "outputs": [
+      {
+       "name": "allowed",
+       "schema": {
+        "type": "boolean"
+       },
+       "required": true
+      },
+      {
+       "name": "retryAfterMs",
+       "schema": {
+        "type": "integer",
+        "minimum": 0
+       },
+       "required": false
+      }
+     ]
+    },
+    "limit": 5
+   },
+   "template": {
+    "set": "var limit = properties.limit || 5;\nif (value.count <= limit) { edges.allowed = true; }\nelse { edges.allowed = false; edges.retryAfterMs = Math.max(0, value.windowEndsAt - Date.now()); }\n",
+    "vue": ""
+   }
+  }
+ ],
+ "properties": {
+  "name": "RateLimiter",
+  "description": "Sliding-window rate limiter keyed by caller",
+  "exportable": true,
+  "icon": "mdi-speedometer",
+  "createdBy": "auth0|u1",
+  "createdOn": 1758400000000,
+  "lastUpdate": 1758400000000,
+  "height": 150,
+  "width": 300,
+  "timeout": 30000,
+  "logLevel": 2,
+  "template": "",
+  "tags": [
+   "server"
+  ]
+ },
+ "meta": {
+  "schemaVersion": 2
+ }
+}

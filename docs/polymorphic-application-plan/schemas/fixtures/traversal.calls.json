@@ -1,0 +1,917 @@
+{
+ "calls": [
+  {
+   "title": "resources/read journeys",
+   "request": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "resources/read",
+    "params": {
+     "uri": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/journeys",
+     "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": {
+       "name": "pio-agent",
+       "version": "0.3.0"
+      },
+      "io.modelcontextprotocol/clientCapabilities": {
+       "extensions": {
+        "io.modelcontextprotocol/tasks": {}
+       }
+      }
+     }
+    }
+   },
+   "response": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+     "resultType": "complete",
+     "contents": [
+      {
+       "uri": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/journeys",
+       "mimeType": "application/json",
+       "text": "{\"journeys\":[{\"id\":\"account-settings-change\",\"intent\":\"A signed-in user changes their account email and the change persists\",\"capability\":\"account.settings.update\",\"schedule\":\"*/5 * * * *\",\"lastResult\":{\"status\":\"failed\",\"at\":\"2026-09-20T18:25:03Z\",\"failingSince\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"correlationId\":\"01J8ZK5A0B1C2D3E4F5G6H7J8K\",\"lastFailure\":{\"observationId\":\"01J8ZK5B0B1C2D3E4F5G6H7J8K\",\"step\":2,\"message\":\"assert persisted: expected email to equal 'a.b@example.com'\"}},\"quarantined\":false}],\"nextCursor\":null}"
+      }
+     ],
+     "ttlMs": 5000,
+     "cacheScope": "private"
+    }
+   }
+  },
+  {
+   "title": "observations.query",
+   "request": {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/call",
+    "params": {
+     "name": "observations.query",
+     "arguments": {
+      "schemaVersion": 1,
+      "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+      "filter": {
+       "correlationId": "01J8ZK5A0B1C2D3E4F5G6H7J8K"
+      },
+      "limit": 20
+     },
+     "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": {
+       "name": "pio-agent",
+       "version": "0.3.0"
+      },
+      "io.modelcontextprotocol/clientCapabilities": {
+       "extensions": {
+        "io.modelcontextprotocol/tasks": {}
+       }
+      }
+     }
+    }
+   },
+   "response": {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "result": {
+     "resultType": "complete",
+     "content": [
+      {
+       "type": "text",
+       "text": "{\"envelope\":{\"schemaVersion\":\"1\",\"requestId\":\"01J8ZK5G0B1C2D3E4F5G6H7J8K\",\"principal\":{\"sub\":\"agent:a1\",\"kind\":\"agent\",\"tenant\":\"t1\",\"delegatedBy\":\"auth0|u1\"},\"graphId\":\"7ba47581-fb4e-4ee3-a200-80fcb6d83fe6\",\"correlationId\":\"01J8ZK5A0B1C2D3E4F5G6H7J8K\",\"policyVersion\":\"p12\",\"serverTime\":\"2026-09-20T18:31:00Z\",\"truncated\":false,\"resultRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\"},\"result\":{\"observations\":[{\"id\":\"01J8ZK5B0B1C2D3E4F5G6H7J8K\",\"seq\":7,\"at\":\"2026-09-20T18:25:02Z\",\"kind\":\"contract.violation\",\"graphId\":\"7ba47581-fb4e-4ee3-a200-80fcb6d83fe6\",\"revisionId\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"instancePath\":[],\"nodeId\":\"validate\",\"edgeField\":\"errors\",\"executionId\":\"01J8ZK5C0B1C2D3E4F5G6H7J8K\",\"spanId\":\"01J8ZK5D0B1C2D3E4F5G6H7J8K\",\"parentSpanId\":\"01J8ZK5E0B1C2D3E4F5G6H7J8K\",\"correlationId\":\"01J8ZK5A0B1C2D3E4F5G6H7J8K\",\"domain\":\"server\",\"owner\":{\"sub\":\"synthetic:journeys\",\"kind\":\"synthetic\",\"tenant\":\"synthetic\"},\"payload\":{\"field\":\"email\",\"reason\":\"pattern\",\"value\":{\"redacted\":\"hash\",\"hash\":\"sha256:9c1f\\u2026\",\"bytes\":16}}},{\"id\":\"01J8ZK5F0B1C2D3E4F5G6H7J8K\",\"seq\":8,\"at\":\"2026-09-20T18:25:02Z\",\"kind\":\"exec.error\",\"graphId\":\"7ba47581-fb4e-4ee3-a200-80fcb6d83fe6\",\"revisionId\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"instancePath\":[],\"nodeId\":\"validate\",\"executionId\":\"01J8ZK5C0B1C2D3E4F5G6H7J8K\",\"spanId\":\"01J8ZK5D0B1C2D3E4F5G6H7J8K\",\"correlationId\":\"01J8ZK5A0B1C2D3E4F5G6H7J8K\",\"domain\":\"server\",\"owner\":{\"sub\":\"synthetic:journeys\",\"kind\":\"synthetic\",\"tenant\":\"synthetic\"},\"payload\":{\"message\":\"validation failed: email\"}}],\"redactedCount\":1}}"
+      }
+     ],
+     "structuredContent": {
+      "envelope": {
+       "schemaVersion": "1",
+       "requestId": "01J8ZK5G0B1C2D3E4F5G6H7J8K",
+       "principal": {
+        "sub": "agent:a1",
+        "kind": "agent",
+        "tenant": "t1",
+        "delegatedBy": "auth0|u1"
+       },
+       "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+       "correlationId": "01J8ZK5A0B1C2D3E4F5G6H7J8K",
+       "policyVersion": "p12",
+       "serverTime": "2026-09-20T18:31:00Z",
+       "truncated": false,
+       "resultRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E"
+      },
+      "result": {
+       "observations": [
+        {
+         "id": "01J8ZK5B0B1C2D3E4F5G6H7J8K",
+         "seq": 7,
+         "at": "2026-09-20T18:25:02Z",
+         "kind": "contract.violation",
+         "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+         "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+         "instancePath": [],
+         "nodeId": "validate",
+         "edgeField": "errors",
+         "executionId": "01J8ZK5C0B1C2D3E4F5G6H7J8K",
+         "spanId": "01J8ZK5D0B1C2D3E4F5G6H7J8K",
+         "parentSpanId": "01J8ZK5E0B1C2D3E4F5G6H7J8K",
+         "correlationId": "01J8ZK5A0B1C2D3E4F5G6H7J8K",
+         "domain": "server",
+         "owner": {
+          "sub": "synthetic:journeys",
+          "kind": "synthetic",
+          "tenant": "synthetic"
+         },
+         "payload": {
+          "field": "email",
+          "reason": "pattern",
+          "value": {
+           "redacted": "hash",
+           "hash": "sha256:9c1f\u2026",
+           "bytes": 16
+          }
+         }
+        },
+        {
+         "id": "01J8ZK5F0B1C2D3E4F5G6H7J8K",
+         "seq": 8,
+         "at": "2026-09-20T18:25:02Z",
+         "kind": "exec.error",
+         "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+         "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+         "instancePath": [],
+         "nodeId": "validate",
+         "executionId": "01J8ZK5C0B1C2D3E4F5G6H7J8K",
+         "spanId": "01J8ZK5D0B1C2D3E4F5G6H7J8K",
+         "correlationId": "01J8ZK5A0B1C2D3E4F5G6H7J8K",
+         "domain": "server",
+         "owner": {
+          "sub": "synthetic:journeys",
+          "kind": "synthetic",
+          "tenant": "synthetic"
+         },
+         "payload": {
+          "message": "validation failed: email"
+         }
+        }
+       ],
+       "redactedCount": 1
+      }
+     }
+    }
+   }
+  },
+  {
+   "title": "graph.summary validate",
+   "request": {
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "tools/call",
+    "params": {
+     "name": "graph.summary",
+     "arguments": {
+      "schemaVersion": 1,
+      "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+      "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+      "nodeId": "validate",
+      "include": [
+       "contract",
+       "health",
+       "deps"
+      ]
+     },
+     "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": {
+       "name": "pio-agent",
+       "version": "0.3.0"
+      },
+      "io.modelcontextprotocol/clientCapabilities": {
+       "extensions": {
+        "io.modelcontextprotocol/tasks": {}
+       }
+      }
+     }
+    }
+   },
+   "response": {
+    "jsonrpc": "2.0",
+    "id": 3,
+    "result": {
+     "resultType": "complete",
+     "content": [
+      {
+       "type": "text",
+       "text": "{\"envelope\":{\"schemaVersion\":\"1\",\"requestId\":\"01J8ZK5H0B1C2D3E4F5G6H7J8K\",\"principal\":{\"sub\":\"agent:a1\",\"kind\":\"agent\",\"tenant\":\"t1\",\"delegatedBy\":\"auth0|u1\"},\"graphId\":\"7ba47581-fb4e-4ee3-a200-80fcb6d83fe6\",\"correlationId\":\"01J8ZK5A0B1C2D3E4F5G6H7J8K\",\"policyVersion\":\"p12\",\"serverTime\":\"2026-09-20T18:31:00Z\",\"truncated\":false,\"resultRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\"},\"result\":{\"id\":\"validate\",\"graphId\":\"7ba47581-fb4e-4ee3-a200-80fcb6d83fe6\",\"revisionId\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"kind\":\"node\",\"name\":\"Validate settings\",\"purpose\":\"Validates the normalised settings object against the account schema and emits errors per field\",\"intentProvenance\":\"authored\",\"freshness\":{\"computedAt\":\"2026-09-20T18:30:00Z\",\"sourceRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"stale\":false},\"inputs\":[{\"name\":\"value\",\"schema\":{\"type\":\"object\",\"properties\":{\"email\":{\"type\":\"string\",\"pattern\":\"^[^@]+@[^@]+$\"}},\"required\":[\"email\"]},\"required\":true}],\"outputs\":[{\"name\":\"ok\",\"schema\":{\"type\":\"object\"},\"required\":true},{\"name\":\"errors\",\"schema\":{\"type\":\"array\"},\"required\":true}],\"placement\":\"server\",\"degree\":{\"in\":2,\"out\":2},\"pointers\":{\"node\":\"plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/rev/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E/node/validate\",\"code\":\"plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/rev/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E/node/validate?expand=code\",\"observations\":\"plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/observations?nodeId=validate\",\"tests\":\"plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/journeys\"},\"untrusted\":[\"purpose\"],\"health\":{\"lastRunAt\":\"2026-09-20T18:25:02Z\",\"errorRate24h\":1.0,\"p95Ms\":4,\"lastFailure\":{\"observationId\":\"01J8ZK5F0B1C2D3E4F5G6H7J8K\",\"kind\":\"exec.error\",\"at\":\"2026-09-20T18:25:02Z\"}},\"dependencies\":[{\"publishedId\":\"EmailRules\",\"version\":7,\"digest\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}],\"invariants\":[\"errors is empty iff ok is emitted\"]}}"
+      }
+     ],
+     "structuredContent": {
+      "envelope": {
+       "schemaVersion": "1",
+       "requestId": "01J8ZK5H0B1C2D3E4F5G6H7J8K",
+       "principal": {
+        "sub": "agent:a1",
+        "kind": "agent",
+        "tenant": "t1",
+        "delegatedBy": "auth0|u1"
+       },
+       "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+       "correlationId": "01J8ZK5A0B1C2D3E4F5G6H7J8K",
+       "policyVersion": "p12",
+       "serverTime": "2026-09-20T18:31:00Z",
+       "truncated": false,
+       "resultRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E"
+      },
+      "result": {
+       "id": "validate",
+       "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+       "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+       "kind": "node",
+       "name": "Validate settings",
+       "purpose": "Validates the normalised settings object against the account schema and emits errors per field",
+       "intentProvenance": "authored",
+       "freshness": {
+        "computedAt": "2026-09-20T18:30:00Z",
+        "sourceRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+        "stale": false
+       },
+       "inputs": [
+        {
+         "name": "value",
+         "schema": {
+          "type": "object",
+          "properties": {
+           "email": {
+            "type": "string",
+            "pattern": "^[^@]+@[^@]+$"
+           }
+          },
+          "required": [
+           "email"
+          ]
+         },
+         "required": true
+        }
+       ],
+       "outputs": [
+        {
+         "name": "ok",
+         "schema": {
+          "type": "object"
+         },
+         "required": true
+        },
+        {
+         "name": "errors",
+         "schema": {
+          "type": "array"
+         },
+         "required": true
+        }
+       ],
+       "placement": "server",
+       "degree": {
+        "in": 2,
+        "out": 2
+       },
+       "pointers": {
+        "node": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/rev/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E/node/validate",
+        "code": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/rev/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E/node/validate?expand=code",
+        "observations": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/observations?nodeId=validate",
+        "tests": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/journeys"
+       },
+       "untrusted": [
+        "purpose"
+       ],
+       "health": {
+        "lastRunAt": "2026-09-20T18:25:02Z",
+        "errorRate24h": 1.0,
+        "p95Ms": 4,
+        "lastFailure": {
+         "observationId": "01J8ZK5F0B1C2D3E4F5G6H7J8K",
+         "kind": "exec.error",
+         "at": "2026-09-20T18:25:02Z"
+        }
+       },
+       "dependencies": [
+        {
+         "publishedId": "EmailRules",
+         "version": 7,
+         "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+       ],
+       "invariants": [
+        "errors is empty iff ok is emitted"
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "title": "graph.expand in",
+   "request": {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "tools/call",
+    "params": {
+     "name": "graph.expand",
+     "arguments": {
+      "schemaVersion": 1,
+      "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+      "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+      "root": {
+       "nodeId": "validate"
+      },
+      "direction": "in",
+      "depth": 1,
+      "maxNodes": 20,
+      "maxBytes": 65536
+     },
+     "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": {
+       "name": "pio-agent",
+       "version": "0.3.0"
+      },
+      "io.modelcontextprotocol/clientCapabilities": {
+       "extensions": {
+        "io.modelcontextprotocol/tasks": {}
+       }
+      }
+     }
+    }
+   },
+   "response": {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "result": {
+     "resultType": "complete",
+     "content": [
+      {
+       "type": "text",
+       "text": "{\"envelope\":{\"schemaVersion\":\"1\",\"requestId\":\"01J8ZK5J0B1C2D3E4F5G6H7J8K\",\"principal\":{\"sub\":\"agent:a1\",\"kind\":\"agent\",\"tenant\":\"t1\",\"delegatedBy\":\"auth0|u1\"},\"graphId\":\"7ba47581-fb4e-4ee3-a200-80fcb6d83fe6\",\"correlationId\":\"01J8ZK5A0B1C2D3E4F5G6H7J8K\",\"policyVersion\":\"p12\",\"serverTime\":\"2026-09-20T18:31:00Z\",\"truncated\":false,\"resultRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\"},\"result\":{\"nodes\":[{\"id\":\"form\",\"graphId\":\"7ba47581-fb4e-4ee3-a200-80fcb6d83fe6\",\"revisionId\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"kind\":\"node\",\"name\":\"Settings form\",\"purpose\":\"Collects the settings form values from the browser UI\",\"intentProvenance\":\"authored\",\"freshness\":{\"computedAt\":\"2026-09-20T18:30:00Z\",\"sourceRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"stale\":false},\"inputs\":[{\"name\":\"submit\",\"schema\":{\"type\":\"object\"},\"required\":true}],\"outputs\":[{\"name\":\"value\",\"schema\":{\"type\":\"object\"},\"required\":true}],\"placement\":\"browser\",\"degree\":{\"in\":0,\"out\":1},\"pointers\":{\"node\":\"plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/rev/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E/node/form\",\"code\":\"plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/rev/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E/node/form?expand=code\",\"observations\":\"plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/observations?nodeId=form\",\"tests\":\"plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/journeys\"},\"untrusted\":[\"purpose\"]},{\"id\":\"normalize\",\"graphId\":\"7ba47581-fb4e-4ee3-a200-80fcb6d83fe6\",\"revisionId\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"kind\":\"node\",\"name\":\"Normalize\",\"purpose\":\"Lowercases and trims the email before validation\",\"intentProvenance\":\"authored\",\"freshness\":{\"computedAt\":\"2026-09-20T18:30:00Z\",\"sourceRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"stale\":false},\"inputs\":[{\"name\":\"value\",\"schema\":{\"type\":\"object\"},\"required\":true}],\"outputs\":[{\"name\":\"out\",\"schema\":{\"type\":\"object\"},\"required\":true}],\"placement\":\"portable\",\"degree\":{\"in\":1,\"out\":1},\"pointers\":{\"node\":\"plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/rev/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E/node/normalize\",\"code\":\"plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/rev/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E/node/normalize?expand=code\",\"observations\":\"plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/observations?nodeId=normalize\",\"tests\":\"plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/journeys\"},\"untrusted\":[\"purpose\"],\"health\":{\"lastRunAt\":\"2026-09-20T18:25:02Z\",\"errorRate24h\":0.0,\"p95Ms\":1}}],\"edges\":[{\"connectorId\":\"c-3\",\"from\":{\"nodeId\":\"form\",\"field\":\"value\"},\"to\":{\"nodeId\":\"normalize\",\"field\":\"value\"}},{\"connectorId\":\"c-4\",\"from\":{\"nodeId\":\"normalize\",\"field\":\"out\"},\"to\":{\"nodeId\":\"validate\",\"field\":\"value\"}}],\"truncated\":{\"byDepth\":false,\"byCount\":false,\"byBytes\":false},\"cost\":{\"nodes\":2,\"bytes\":2210,\"ms\":12}}}"
+      }
+     ],
+     "structuredContent": {
+      "envelope": {
+       "schemaVersion": "1",
+       "requestId": "01J8ZK5J0B1C2D3E4F5G6H7J8K",
+       "principal": {
+        "sub": "agent:a1",
+        "kind": "agent",
+        "tenant": "t1",
+        "delegatedBy": "auth0|u1"
+       },
+       "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+       "correlationId": "01J8ZK5A0B1C2D3E4F5G6H7J8K",
+       "policyVersion": "p12",
+       "serverTime": "2026-09-20T18:31:00Z",
+       "truncated": false,
+       "resultRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E"
+      },
+      "result": {
+       "nodes": [
+        {
+         "id": "form",
+         "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+         "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+         "kind": "node",
+         "name": "Settings form",
+         "purpose": "Collects the settings form values from the browser UI",
+         "intentProvenance": "authored",
+         "freshness": {
+          "computedAt": "2026-09-20T18:30:00Z",
+          "sourceRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+          "stale": false
+         },
+         "inputs": [
+          {
+           "name": "submit",
+           "schema": {
+            "type": "object"
+           },
+           "required": true
+          }
+         ],
+         "outputs": [
+          {
+           "name": "value",
+           "schema": {
+            "type": "object"
+           },
+           "required": true
+          }
+         ],
+         "placement": "browser",
+         "degree": {
+          "in": 0,
+          "out": 1
+         },
+         "pointers": {
+          "node": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/rev/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E/node/form",
+          "code": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/rev/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E/node/form?expand=code",
+          "observations": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/observations?nodeId=form",
+          "tests": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/journeys"
+         },
+         "untrusted": [
+          "purpose"
+         ]
+        },
+        {
+         "id": "normalize",
+         "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+         "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+         "kind": "node",
+         "name": "Normalize",
+         "purpose": "Lowercases and trims the email before validation",
+         "intentProvenance": "authored",
+         "freshness": {
+          "computedAt": "2026-09-20T18:30:00Z",
+          "sourceRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+          "stale": false
+         },
+         "inputs": [
+          {
+           "name": "value",
+           "schema": {
+            "type": "object"
+           },
+           "required": true
+          }
+         ],
+         "outputs": [
+          {
+           "name": "out",
+           "schema": {
+            "type": "object"
+           },
+           "required": true
+          }
+         ],
+         "placement": "portable",
+         "degree": {
+          "in": 1,
+          "out": 1
+         },
+         "pointers": {
+          "node": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/rev/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E/node/normalize",
+          "code": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/rev/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E/node/normalize?expand=code",
+          "observations": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/observations?nodeId=normalize",
+          "tests": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/journeys"
+         },
+         "untrusted": [
+          "purpose"
+         ],
+         "health": {
+          "lastRunAt": "2026-09-20T18:25:02Z",
+          "errorRate24h": 0.0,
+          "p95Ms": 1
+         }
+        }
+       ],
+       "edges": [
+        {
+         "connectorId": "c-3",
+         "from": {
+          "nodeId": "form",
+          "field": "value"
+         },
+         "to": {
+          "nodeId": "normalize",
+          "field": "value"
+         }
+        },
+        {
+         "connectorId": "c-4",
+         "from": {
+          "nodeId": "normalize",
+          "field": "out"
+         },
+         "to": {
+          "nodeId": "validate",
+          "field": "value"
+         }
+        }
+       ],
+       "truncated": {
+        "byDepth": false,
+        "byCount": false,
+        "byBytes": false
+       },
+       "cost": {
+        "nodes": 2,
+        "bytes": 2210,
+        "ms": 12
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "title": "resources/read diff rev11..rev12",
+   "request": {
+    "jsonrpc": "2.0",
+    "id": 5,
+    "method": "resources/read",
+    "params": {
+     "uri": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/diff/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2D/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+     "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": {
+       "name": "pio-agent",
+       "version": "0.3.0"
+      },
+      "io.modelcontextprotocol/clientCapabilities": {
+       "extensions": {
+        "io.modelcontextprotocol/tasks": {}
+       }
+      }
+     }
+    }
+   },
+   "response": {
+    "jsonrpc": "2.0",
+    "id": 5,
+    "result": {
+     "resultType": "complete",
+     "contents": [
+      {
+       "uri": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/diff/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2D/rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+       "mimeType": "application/json",
+       "text": "{\"fromRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2D\",\"toRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"namespaces\":[\"code\"],\"layoutOnly\":false,\"privilegeDelta\":[],\"changes\":[{\"kind\":\"code.changed\",\"nodeId\":\"normalize\",\"hunks\":[{\"oldStart\":1,\"oldLines\":1,\"newStart\":1,\"newLines\":2,\"text\":\"-edges.out = { ...value, email: String(value.email).trim().toLowerCase() };\\n+var e = String(value.email).trim().toLowerCase();\\n+edges.out = { ...value, email: e.replace(/\\\\.$/, '') };\"}]}]}"
+      }
+     ],
+     "ttlMs": 5000,
+     "cacheScope": "private"
+    }
+   }
+  },
+  {
+   "title": "proposal.create",
+   "request": {
+    "jsonrpc": "2.0",
+    "id": 6,
+    "method": "tools/call",
+    "params": {
+     "name": "proposal.create",
+     "arguments": {
+      "schemaVersion": 1,
+      "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+      "baseRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+      "ops": [
+       {
+        "op": "set-node-code",
+        "nodeId": "normalize",
+        "template": "set",
+        "text": "edges.out = { ...value, email: String(value.email).trim().toLowerCase() };\n"
+       }
+      ],
+      "description": "Stop stripping a trailing dot from emails",
+      "rationale": "rev12 (diff rev11..rev12) added e.replace(/\\.$/, ''), which turns 'a.b@example.com.' style inputs AND valid addresses ending in a dot-domain into values that fail validate's pattern; the journey account-settings-change has failed on every run since rev12.",
+      "idempotencyKey": "01J8ZK5K0B1C2D3E4F5G6H7J8K"
+     },
+     "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": {
+       "name": "pio-agent",
+       "version": "0.3.0"
+      },
+      "io.modelcontextprotocol/clientCapabilities": {
+       "extensions": {
+        "io.modelcontextprotocol/tasks": {}
+       }
+      }
+     }
+    }
+   },
+   "response": {
+    "jsonrpc": "2.0",
+    "id": 6,
+    "result": {
+     "resultType": "complete",
+     "content": [
+      {
+       "type": "text",
+       "text": "{\"envelope\":{\"schemaVersion\":\"1\",\"requestId\":\"01J8ZK5M0B1C2D3E4F5G6H7J8K\",\"principal\":{\"sub\":\"agent:a1\",\"kind\":\"agent\",\"tenant\":\"t1\",\"delegatedBy\":\"auth0|u1\"},\"graphId\":\"7ba47581-fb4e-4ee3-a200-80fcb6d83fe6\",\"correlationId\":\"01J8ZK5A0B1C2D3E4F5G6H7J8K\",\"policyVersion\":\"p12\",\"serverTime\":\"2026-09-20T18:31:00Z\",\"truncated\":false,\"baseRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"resultRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\"},\"result\":{\"proposalId\":\"01J8ZK5N0B1C2D3E4F5G6H7J8K\",\"proposalDigest\":\"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"state\":\"validated\",\"validation\":{\"ok\":true,\"errors\":[]},\"impact\":{\"consumers\":[],\"downstream\":[\"validate\"],\"privilegeDelta\":[],\"testsToRun\":[\"contract:validate\",\"journey:account-settings-change\"],\"oracleChanged\":false},\"requiredDecisions\":[\"approve\"],\"diffSummary\":{\"fromRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"toRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"namespaces\":[\"code\"],\"layoutOnly\":false,\"privilegeDelta\":[],\"changes\":[{\"kind\":\"code.changed\",\"nodeId\":\"normalize\",\"hunks\":[{\"oldStart\":1,\"oldLines\":2,\"newStart\":1,\"newLines\":1,\"text\":\"-var e = String(value.email).trim().toLowerCase();\\n-edges.out = { ...value, email: e.replace(/\\\\.$/, '') };\\n+edges.out = { ...value, email: String(value.email).trim().toLowerCase() };\"}]}]}}}"
+      }
+     ],
+     "structuredContent": {
+      "envelope": {
+       "schemaVersion": "1",
+       "requestId": "01J8ZK5M0B1C2D3E4F5G6H7J8K",
+       "principal": {
+        "sub": "agent:a1",
+        "kind": "agent",
+        "tenant": "t1",
+        "delegatedBy": "auth0|u1"
+       },
+       "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+       "correlationId": "01J8ZK5A0B1C2D3E4F5G6H7J8K",
+       "policyVersion": "p12",
+       "serverTime": "2026-09-20T18:31:00Z",
+       "truncated": false,
+       "baseRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+       "resultRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E"
+      },
+      "result": {
+       "proposalId": "01J8ZK5N0B1C2D3E4F5G6H7J8K",
+       "proposalDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "state": "validated",
+       "validation": {
+        "ok": true,
+        "errors": []
+       },
+       "impact": {
+        "consumers": [],
+        "downstream": [
+         "validate"
+        ],
+        "privilegeDelta": [],
+        "testsToRun": [
+         "contract:validate",
+         "journey:account-settings-change"
+        ],
+        "oracleChanged": false
+       },
+       "requiredDecisions": [
+        "approve"
+       ],
+       "diffSummary": {
+        "fromRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+        "toRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+        "namespaces": [
+         "code"
+        ],
+        "layoutOnly": false,
+        "privilegeDelta": [],
+        "changes": [
+         {
+          "kind": "code.changed",
+          "nodeId": "normalize",
+          "hunks": [
+           {
+            "oldStart": 1,
+            "oldLines": 2,
+            "newStart": 1,
+            "newLines": 1,
+            "text": "-var e = String(value.email).trim().toLowerCase();\n-edges.out = { ...value, email: e.replace(/\\.$/, '') };\n+edges.out = { ...value, email: String(value.email).trim().toLowerCase() };"
+           }
+          ]
+         }
+        ]
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "title": "tests.run (task)",
+   "request": {
+    "jsonrpc": "2.0",
+    "id": 7,
+    "method": "tools/call",
+    "params": {
+     "name": "tests.run",
+     "arguments": {
+      "schemaVersion": 1,
+      "target": {
+       "proposalId": "01J8ZK5N0B1C2D3E4F5G6H7J8K"
+      },
+      "selection": [
+       "journey:account-settings-change",
+       "contract"
+      ]
+     },
+     "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": {
+       "name": "pio-agent",
+       "version": "0.3.0"
+      },
+      "io.modelcontextprotocol/clientCapabilities": {
+       "extensions": {
+        "io.modelcontextprotocol/tasks": {}
+       }
+      }
+     }
+    }
+   },
+   "response": {
+    "jsonrpc": "2.0",
+    "id": 7,
+    "result": {
+     "resultType": "task",
+     "task": {
+      "taskId": "01J8ZK5P0B1C2D3E4F5G6H7J8K",
+      "status": "working",
+      "ttlMs": 86400000,
+      "pollIntervalMs": 2000
+     }
+    }
+   }
+  },
+  {
+   "title": "tasks/get",
+   "request": {
+    "jsonrpc": "2.0",
+    "id": 8,
+    "method": "tasks/get",
+    "params": {
+     "taskId": "01J8ZK5P0B1C2D3E4F5G6H7J8K",
+     "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": {
+       "name": "pio-agent",
+       "version": "0.3.0"
+      },
+      "io.modelcontextprotocol/clientCapabilities": {
+       "extensions": {
+        "io.modelcontextprotocol/tasks": {}
+       }
+      }
+     }
+    }
+   },
+   "response": {
+    "jsonrpc": "2.0",
+    "id": 8,
+    "result": {
+     "resultType": "complete",
+     "task": {
+      "taskId": "01J8ZK5P0B1C2D3E4F5G6H7J8K",
+      "status": "completed",
+      "ttlMs": 86400000,
+      "pollIntervalMs": 2000
+     },
+     "result": {
+      "resultType": "complete",
+      "content": [
+       {
+        "type": "text",
+        "text": "2 passed"
+       }
+      ],
+      "structuredContent": {
+       "envelope": {
+        "schemaVersion": "1",
+        "requestId": "01J8ZK5Q0B1C2D3E4F5G6H7J8K",
+        "principal": {
+         "sub": "agent:a1",
+         "kind": "agent",
+         "tenant": "t1",
+         "delegatedBy": "auth0|u1"
+        },
+        "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+        "correlationId": "01J8ZK5A0B1C2D3E4F5G6H7J8K",
+        "policyVersion": "p12",
+        "serverTime": "2026-09-20T18:31:00Z",
+        "truncated": false
+       },
+       "result": {
+        "results": [
+         {
+          "testId": "journey:account-settings-change",
+          "kind": "journey",
+          "status": "pass",
+          "durationMs": 840,
+          "observationsUri": "plastic://graph/7ba47581-fb4e-4ee3-a200-80fcb6d83fe6/observations?correlationId=01J8ZK5R0B1C2D3E4F5G6H7J8K"
+         },
+         {
+          "testId": "contract:validate",
+          "kind": "contract",
+          "status": "pass",
+          "durationMs": 35,
+          "seed": "1758400000"
+         }
+        ],
+        "revisionBound": {
+         "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+         "runtime": "ts-2.1.0"
+        },
+        "coverage": {
+         "nodesExercised": 4,
+         "nodesTotal": 14,
+         "portsValidated": 6
+        },
+        "summary": {
+         "pass": 2,
+         "fail": 0,
+         "error": 0,
+         "skipped": 0
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "title": "proposal.commit",
+   "request": {
+    "jsonrpc": "2.0",
+    "id": 9,
+    "method": "tools/call",
+    "params": {
+     "name": "proposal.commit",
+     "arguments": {
+      "schemaVersion": 1,
+      "proposalId": "01J8ZK5N0B1C2D3E4F5G6H7J8K",
+      "proposalDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "baseRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E"
+     },
+     "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": {
+       "name": "pio-agent",
+       "version": "0.3.0"
+      },
+      "io.modelcontextprotocol/clientCapabilities": {
+       "extensions": {
+        "io.modelcontextprotocol/tasks": {}
+       }
+      }
+     }
+    }
+   },
+   "response": {
+    "jsonrpc": "2.0",
+    "id": 9,
+    "result": {
+     "resultType": "complete",
+     "content": [
+      {
+       "type": "text",
+       "text": "{\"envelope\":{\"schemaVersion\":\"1\",\"requestId\":\"01J8ZK5S0B1C2D3E4F5G6H7J8K\",\"principal\":{\"sub\":\"agent:a1\",\"kind\":\"agent\",\"tenant\":\"t1\",\"delegatedBy\":\"auth0|u1\"},\"graphId\":\"7ba47581-fb4e-4ee3-a200-80fcb6d83fe6\",\"correlationId\":\"01J8ZK5A0B1C2D3E4F5G6H7J8K\",\"policyVersion\":\"p12\",\"serverTime\":\"2026-09-20T18:31:00Z\",\"truncated\":false,\"baseRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E\",\"resultRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2F\"},\"result\":{\"resultRevision\":\"rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2F\",\"mutationId\":\"01J8ZK5T0B1C2D3E4F5G6H7J8K\",\"state\":\"committed\"}}"
+      }
+     ],
+     "structuredContent": {
+      "envelope": {
+       "schemaVersion": "1",
+       "requestId": "01J8ZK5S0B1C2D3E4F5G6H7J8K",
+       "principal": {
+        "sub": "agent:a1",
+        "kind": "agent",
+        "tenant": "t1",
+        "delegatedBy": "auth0|u1"
+       },
+       "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+       "correlationId": "01J8ZK5A0B1C2D3E4F5G6H7J8K",
+       "policyVersion": "p12",
+       "serverTime": "2026-09-20T18:31:00Z",
+       "truncated": false,
+       "baseRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2E",
+       "resultRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2F"
+      },
+      "result": {
+       "resultRevision": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2F",
+       "mutationId": "01J8ZK5T0B1C2D3E4F5G6H7J8K",
+       "state": "committed"
+      }
+     }
+    }
+   }
+  },
+  {
+   "title": "revision.activate (task)",
+   "request": {
+    "jsonrpc": "2.0",
+    "id": 10,
+    "method": "tools/call",
+    "params": {
+     "name": "revision.activate",
+     "arguments": {
+      "schemaVersion": 1,
+      "graphId": "7ba47581-fb4e-4ee3-a200-80fcb6d83fe6",
+      "revisionId": "rev_01J8ZK3Q4W5X6Y7Z8A9B0C1D2F",
+      "strategy": "switch-new-work"
+     },
+     "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": {
+       "name": "pio-agent",
+       "version": "0.3.0"
+      },
+      "io.modelcontextprotocol/clientCapabilities": {
+       "extensions": {
+        "io.modelcontextprotocol/tasks": {}
+       }
+      }
+     }
+    }
+   },
+   "response": {
+    "jsonrpc": "2.0",
+    "id": 10,
+    "result": {
+     "resultType": "task",
+     "task": {
+      "taskId": "01J8ZK5V0B1C2D3E4F5G6H7J8K",
+      "status": "working",
+      "ttlMs": 86400000,
+      "pollIntervalMs": 2000
+     }
+    }
+   }
+  }
+ ]
+}
