@@ -14,6 +14,7 @@ import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-pre
 import SchedulerWorker from "./schedulerWorker?worker";
 import {useTheme} from 'vuetify';
 import {deref, newId} from "@plastic-io/graph-editor-vue3-utils";
+import {newUlid} from "@plastic-io/graph-editor-vue3-sync-status/ulid";
 import {deepEqual as crdtDeepEqual} from "@plastic-io/graph-crdt";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import AuthenticationProvider, {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
@@ -107,6 +108,12 @@ export const useStore = defineStore('orchestrator', {
       nodes: {},
     },
     graphComponents: {} as any,
+    /** Executions that ran in this browser, newest first (plan §4.5.3). */
+    browserExecutions: [] as any[],
+    executionReportQueue: [] as any[],
+    executionReportInFlight: false,
+    executionReportWarned: false,
+    executionReportsDropped: 0,
     graphStore: useGraphStore(),
     preferencesStore: usePreferencesStore(),
     orchestratorStore: useOrchestratorStore(),
@@ -500,6 +507,60 @@ export const useStore = defineStore('orchestrator', {
           e.setValue(item);
       }
     },
+    /**
+     * Keep a finished browser execution and hand it to the server (plan
+     * §4.5.3, PB-054).  Reports are queued and sent one at a time: a graph
+     * being poked in the editor can finish dozens of executions a second, and
+     * none of them is worth a request of its own.  When more arrive than the
+     * queue holds, the oldest are dropped and the loss is recorded where the
+     * gap is visible rather than hidden.
+     */
+    recordBrowserExecution(report: any) {
+      if (!report || !report.record) {
+        return;
+      }
+      this.browserExecutions.unshift(report.record);
+      this.browserExecutions.splice(200);
+      if (!report.observations || !report.observations.length) {
+        return;
+      }
+      const provider: any = this.orchestratorStore.syncProviders.find((p: any) => typeof p.reportExecution === "function");
+      if (!provider || !this.graphStore.crdtSession) {
+        return;
+      }
+      if (this.executionReportQueue.length >= 50) {
+        this.executionReportQueue.shift();
+        this.executionReportsDropped += 1;
+      }
+      this.executionReportQueue.push(report);
+      this.drainExecutionReports(provider);
+    },
+    async drainExecutionReports(provider: any) {
+      if (this.executionReportInFlight) {
+        return;
+      }
+      this.executionReportInFlight = true;
+      try {
+        while (this.executionReportQueue.length) {
+          const report = this.executionReportQueue.shift();
+          try {
+            await provider.reportExecution(report.record.graphId, report);
+          } catch (err) {
+            // Reporting is best effort: an execution that cannot be reported
+            // is still in browserExecutions, and losing it must never break
+            // the graph the user is running.
+            if (!this.executionReportWarned) {
+              console.warn("Browser executions are not reaching the server.", err);
+              this.executionReportWarned = true;
+            }
+            this.executionReportQueue.length = 0;
+            break;
+          }
+        }
+      } finally {
+        this.executionReportInFlight = false;
+      }
+    },
     async createScheduler() {
 
         this.scheduleWorker = new SchedulerWorker();
@@ -617,6 +678,14 @@ export const useStore = defineStore('orchestrator', {
             });
           };
         }
+        // Who the observations of this session belong to, and which version of
+        // the graph they ran (the server stamps the document at every cut).
+        const user: any = (useAuthenticationStore().identity || {}).user || {};
+        const owner = user.sub
+          ? {sub: String(user.sub), kind: "human", tenant: "personal:" + String(user.sub)}
+          : {sub: "local", kind: "human", tenant: "local"};
+        const stamp: any = this.graphStore.currentVersion ? this.graphStore.currentVersion() : null;
+        const activeRevision = (stamp && (stamp.id || stamp.revisionId)) || "live";
         const graph = deref(this.graphStore.graph);
         let globalNodes = [...graph.nodes] as any[];
         console.groupCollapsed('%cPlastic-IO: %cIntegrated Graph',
@@ -631,6 +700,8 @@ export const useStore = defineStore('orchestrator', {
           args: [
             {
               graph,
+              owner,
+              revisionId: activeRevision,
             },
           ],
         });
@@ -642,6 +713,12 @@ export const useStore = defineStore('orchestrator', {
               obj = obj[path[i]];
             }
             obj[path[path.length - 1]] = value;
+            return;
+          }
+          if (methodName === 'execution-finished') {
+            // An execution ended in this browser; keep it for the session and
+            // report it so the server's observation store covers both domains.
+            this.recordBrowserExecution(args);
             return;
           }
           if (methodName === 'error') {
@@ -690,8 +767,18 @@ export const useStore = defineStore('orchestrator', {
           const args = fromJSON(e.data.event);
           remoteEvent(methodName, args);
         }
+        const invoke = sendMessage('invoke');
         (this.scheduler.instance as any) = {
-          url: sendMessage('url'),
+          /**
+           * What a node template calls to run a node.  Every run gets its own
+           * execution id here, so the observations it produces can be found
+           * later by the id the editor already knows (plan §4.5.3).
+           */
+          url: (url: string, value?: any, field?: string, currentNode?: any) => {
+            const executionId = newUlid();
+            invoke({url, value, field, currentNode, executionId, revisionId: activeRevision});
+            return executionId;
+          },
         };
         let lastPushedShape: any = schedulerRelevantShape(this.graphStore.graph);
         let pushTimer: any = null;

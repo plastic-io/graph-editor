@@ -1,6 +1,16 @@
 import Scheduler from "@plastic-io/plastic-io";
 import {createDeepProxy, type Path} from "./proxy";
 import {toJSON} from 'flatted';
+import {BrowserExecutions} from "./browserExecutions";
+import {ObservationRecorder} from "../GraphCrdt/observe";
+
+/**
+ * What a browser execution may spend before the scheduler stops it (plan
+ * §4.6.6, PB-064).  The wall clock is generous because a graph may legitimately
+ * wait on a user, while the hop and depth ceilings are what actually stop a
+ * runaway loop from locking the worker.
+ */
+const DEFAULT_BUDGET = {wallMs: 120000, hops: 100000, fanOut: 10000, depth: 512, graceMs: 250};
 const messenger = (source: any) => {
   return (event: any) => {
     postMessage({
@@ -10,6 +20,9 @@ const messenger = (source: any) => {
   }
 };
 let scheduler: Scheduler;
+let executions: BrowserExecutions | null = null;
+/** The identity and revision the editor gave at init; a graph change keeps them. */
+let session: any = {};
 const loader = async (e: any): Promise<any> => {
   return e.setValue(scheduler.graph);
 };
@@ -36,6 +49,11 @@ const logger = {
 };
 const rpc = {
   init(e: any) {
+    session = {owner: e.owner || session.owner, revisionId: e.revisionId || session.revisionId, budget: e.budget || session.budget, defaultCapture: e.defaultCapture || session.defaultCapture};
+    e.owner = session.owner;
+    e.revisionId = session.revisionId;
+    e.budget = session.budget;
+    e.defaultCapture = session.defaultCapture;
 
     const nodes = {} as any;
     e.graph.nodes.forEach((node: any) => {
@@ -46,7 +64,35 @@ const rpc = {
     });
     workerObjProxy.nodes = nodes;
 
-    scheduler = new Scheduler(e.graph, e, workerObjProxy, logger);
+    // Observations and the capability host (plan §4.5.2/§4.5.3): one recorder
+    // per execution, and the only route node code has to the outside world.
+    executions = new BrowserExecutions({
+      graphId: e.graph.id,
+      revisionId: e.revisionId || "live",
+      owner: e.owner || {sub: "anonymous", kind: "human", tenant: "none"},
+      defaultCapture: e.defaultCapture,
+      onFinished: (report: any) => {
+        postMessage({
+          source: 'execution-finished',
+          event: toJSON(report),
+        });
+      },
+    });
+    executions.setGraph(e.graph);
+    const budget = {...DEFAULT_BUDGET, ...(e.budget || {}), ...((e.graph.properties && e.graph.properties.budget) || {})};
+
+    scheduler = new Scheduler(e.graph, e, workerObjProxy, logger, {
+      budget,
+      host: (info: any) => executions!.host(info),
+      contractMode: (e.graph.properties && e.graph.properties.contractMode === "reject") ? "reject" : "warn",
+    } as any);
+    ObservationRecorder.EVENTS.forEach((name: string) => {
+      scheduler.addEventListener(name, (event: any) => {
+        if (executions) {
+          executions.route(name, event);
+        }
+      });
+    });
     scheduler.addEventListener("load", loader);
     scheduler.addEventListener("beginconnector", messenger('beginconnector'));
     scheduler.addEventListener("endconnector", messenger('endconnector'));
@@ -84,6 +130,14 @@ onmessage = function(e: any) {
   }
   if (e.data.method === 'cancel') {
     return rpc.cancel.apply(null, e.data.args);
+  }
+  if (e.data.method === 'invoke') {
+    // An execution the editor started: it carries its own id so the editor can
+    // follow it, and the observations name the revision they ran.
+    const {url, value, field, currentNode, executionId, revisionId} = e.data.args[0] || {};
+    const handle = (scheduler as any).invoke(url, value, field, currentNode, {executionId, revisionId});
+    handle.done.catch(() => undefined);
+    return;
   }
   if (e.data.method === 'change') {
     // The old scheduler's executions are cancelled cooperatively (2.1); the

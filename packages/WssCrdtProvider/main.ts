@@ -591,6 +591,14 @@ export class WssCrdtProvider {
   commitProposal(graphId: string, proposalId: string): Promise<any> {
     return this.api(`${graphId}/proposals/${proposalId}/commit`, { method: "POST" });
   }
+  /**
+   * Report a browser execution and everything it observed (plan §4.5.3).  The
+   * server stamps the identity, the graph and the domain itself and caps the
+   * volume, so this is evidence offered rather than state written.
+   */
+  reportExecution(graphId: string, report: { record: any; observations: any[] }): Promise<any> {
+    return this.api(`${graphId}/executions`, { method: "POST", body: JSON.stringify(report) });
+  }
   auditRecords(graphId: string, limit = 50): Promise<any> {
     return this.api(`${graphId}/audit?limit=${limit}`);
   }

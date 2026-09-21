@@ -21,6 +21,11 @@
     "namespaces.ts",
     "diff.ts",
     "digest.ts",
-    "ops.ts"
+    "ops.ts",
+    "capabilities.ts",
+    "contracts.ts",
+    "observe.ts",
+    "host.ts",
+    "ulid.ts"
   ]
 }

@@ -57,6 +57,29 @@ export type { Namespace } from "./namespaces";
 export { semanticDiff, describeDiff } from "./diff";
 export { canonical, definitionView, layoutView, componentView } from "./digest";
 export { applyOps } from "./ops";
+export {
+  CAPABILITY_KINDS,
+  PRIVILEGED_KINDS,
+  CapabilityDenied,
+  parseCapability,
+  parseCapabilities,
+  scopeMatches,
+  effectiveCapabilities,
+  assertCapability,
+} from "./capabilities";
+export type { CapabilityKind, CapabilityRequirement, EffectiveCapabilities } from "./capabilities";
+export { assignable, schemaConflict } from "./contracts";
+export {
+  ObservationRecorder,
+  capturePayload,
+  describeValue,
+  fingerprint,
+  byteLength,
+} from "./observe";
+export type { Observation, ObservationKind, ObservationDomain, ExecutionRecord, RecorderOptions } from "./observe";
+export { buildHostMembers, EffectUnavailable } from "./host";
+export type { HostDeps, HostContext } from "./host";
+export { newUlid, monotonicUlid } from "./ulid";
 export type { MutationOp, OpError, ApplyResult } from "./ops";
 export type { DiffSummary, DiffOp, ConnectorRef, PrivilegeDelta } from "./diff";
 

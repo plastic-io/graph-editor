@@ -1,3 +1,5 @@
+
+import {assignable, schemaConflict} from "@plastic-io/graph-crdt";
 const shiftKeyCode = 16;
 const metaKeyCode = 91;
 const ctrlKeyCode = 17;
@@ -184,10 +186,23 @@ export default class MouseAction {
             const connector = edge.connectors.find((e: {id: string}) => e.id === this.graphStore.movingConnector.connector.id);
             const typeA = this.graphStore.movingConnector[io].field.type;
             const typeB = this.graphStore.hoveredPort.field.type;
-            const valid = typeA === typeB || (typeA === "Object" || typeB === "Object");
+            // The moved end decides direction: hovering an input means the
+            // connector's output feeds it, and the other way round.
+            const outPort = this.graphStore.hoveredPort.type === "input"
+                ? this.graphStore.movingConnector[io].field
+                : this.graphStore.hoveredPort.field;
+            const inPort = this.graphStore.hoveredPort.type === "input"
+                ? this.graphStore.hoveredPort.field
+                : this.graphStore.movingConnector[io].field;
+            const valid = assignable(outPort, inPort);
             const msg = "Cannot connect " + typeA + " to " + typeB;
             if (!valid) {
                 this.graphStore.connectorWarn = msg;
+            } else {
+                const conflict = schemaConflict(outPort, inPort);
+                this.graphStore.connectorWarn = conflict
+                    ? outPort.name + " → " + inPort.name + ": " + conflict
+                    : null;
             }
             if (!mouse.lmb && this.inputStore.mouse.lmb) {
                 if (valid) {
@@ -223,10 +238,25 @@ export default class MouseAction {
         const connector = this.graphStore.addingConnector.connector;
         const typeA = this.graphStore.addingConnector.field.type;
         const typeB = this.graphStore.hoveredPort.field.type;
-        const valid = typeA === typeB || (typeA === "Object" || typeB === "Object");
+        // Which port feeds which decides what may be connected (plan §4.3.5,
+        // PB-045).  Types that cannot meet stop the connection; schemas that
+        // disagree are said out loud and left to the person dragging, because
+        // a schema can be wrong in ways only they can judge.
+        const outPort = this.graphStore.hoveredPort.type === "input"
+            ? this.graphStore.addingConnector.field
+            : this.graphStore.hoveredPort.field;
+        const inPort = this.graphStore.hoveredPort.type === "input"
+            ? this.graphStore.hoveredPort.field
+            : this.graphStore.addingConnector.field;
+        const valid = assignable(outPort, inPort);
         const msg = "Cannot connect " + typeA + " to " + typeB;
         if (!valid) {
             this.graphStore.connectorWarn = msg;
+        } else {
+            const conflict = schemaConflict(outPort, inPort);
+            this.graphStore.connectorWarn = conflict
+                ? outPort.name + " → " + inPort.name + ": " + conflict
+                : null;
         }
         if (!mouse.lmb && this.inputStore.mouse.lmb) {
             if (valid) {
