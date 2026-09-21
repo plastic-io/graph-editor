@@ -59,7 +59,15 @@
  * array position.
  */
 
-export const SCHEMA_VERSION = 1;
+/**
+ * 2 since a graph can carry what this system asks of it: component pins
+ * (`properties.component`), where a node runs (`placement`), how it is
+ * contained (`containment`), what it may do (`capabilities`) and what it
+ * offers (`provides`).  A reader accepts 1 and 2; only a version beyond this
+ * is refused, because it would mean the document knows something the reader
+ * does not (plan §9.5).
+ */
+export const SCHEMA_VERSION = 2;
 
 /** Root key of the graph map inside the Y.Doc. */
 export const ROOT_KEY = "graph";
