@@ -26,6 +26,12 @@ export interface HostDeps {
     clients?: { openai?: (apiKey: string, options: any) => any };
     /** Named for the error a node sees when an effect cannot happen here. */
     domain?: "browser" | "server";
+    /**
+     * What the node believes the time is.  A test that says "five in a window,
+     * then refused" cannot wait out a real window, so it runs against a clock
+     * it controls; everything else gets the real one.
+     */
+    now?: () => number;
 }
 
 export interface HostContext {
@@ -107,6 +113,8 @@ export function buildHostMembers(ctx: HostContext, deps: HostDeps): Record<strin
                 },
             };
         },
+        /** The time, which a test may hold still. */
+        now: deps.now || (() => Date.now()),
         /** What this invocation may do, for nodes that adapt. */
         capabilities: {
             instance: ctx.effective.instance,
