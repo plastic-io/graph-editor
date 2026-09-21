@@ -1,4 +1,5 @@
 import {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
+import {useStore as useSyncStatusStore, newUlid} from "@plastic-io/graph-editor-vue3-sync-status";
 import * as Y from "yjs";
 import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from "y-protocols/awareness";
 import {
@@ -23,6 +24,7 @@ import { useStore as usePreferencesStore } from "@plastic-io/graph-editor-vue3-p
 
 /** Local edits are batched for this long before going out. */
 const FLUSH_INTERVAL = 150;
+const CLIENT_INFO = { name: "graph-editor", version: "2.0.0" };
 /** Anything larger than this, base64 encoded, goes over HTTP instead. */
 const MAX_FRAME = 28000;
 
@@ -183,38 +185,71 @@ export class WssCrdtProvider {
 
   private sendSync(payload: Uint8Array, description: string) {
     const encoded = toBase64(payload);
+    // Every mutation carries a client-minted id (plan §5.1) so the server can answer it,
+    // replay it idempotently, and so the sync status can show what happened to it.
+    const mutationId = newUlid();
+    useSyncStatusStore().track(mutationId, description);
     if (encoded.length > MAX_FRAME) {
-      this.postOverHttp(encoded, description);
+      this.postOverHttp(encoded, description, mutationId);
       return;
     }
     this.wss.send({
       action: "yjs",
       kind: "sync",
+      schemaVersion: 2,
       graphId: this.graphId,
       payload: encoded,
       description,
       format: UPDATE_FORMAT,
+      mutationId,
+      clientInfo: CLIENT_INFO,
     });
   }
 
-  private async postOverHttp(payload: string, description: string) {
+  private async postOverHttp(payload: string, description: string, mutationId: string) {
     if (!this.httpBase) {
       console.error("An update is too large for the socket and no HTTP endpoint is configured.");
       return;
     }
     try {
-      await fetch(`${this.httpBase}crdt/${this.graphId}/update`, {
+      const response = await fetch(`${this.httpBase}crdt/${this.graphId}/update`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...this.authHeaders() },
-        body: JSON.stringify({ payload, description, format: UPDATE_FORMAT }),
+        body: JSON.stringify({ payload, description, format: UPDATE_FORMAT, schemaVersion: 2, mutationId, clientInfo: CLIENT_INFO }),
       });
+      let result: any = null;
+      try { result = await response.json(); } catch (err) { /* no body */ }
+      this.onDecision(result && result.mutationId ? result : { mutationId, decision: response.ok ? "accepted" : "rejected", code: response.ok ? undefined : `HTTP_${response.status}`, reason: response.ok ? undefined : response.statusText });
     } catch (err) {
       console.error("Cannot post a large update.", err);
+      useSyncStatusStore().rejected(mutationId, "NETWORK", String(err));
     }
   }
 
+  /** The server's answer to one of our mutations: an ack or a reject frame (or the HTTP result). */
+  private onDecision(result: any) {
+    const status = useSyncStatusStore();
+    if (!result || !result.mutationId) {
+      return;
+    }
+    if (result.decision === "accepted") {
+      status.accepted(result.mutationId, result.updateId);
+      return;
+    }
+    console.error(`The graph server rejected change ${result.mutationId}: ${result.code} ${result.reason || ""}`);
+    status.rejected(result.mutationId, result.code || "REJECTED", result.reason || "");
+    // Recovery (rebuilding the local document from the server's state) is PB-024 stage B.
+  }
+
   private onMessage(response: any) {
-    if (!response || !response.payload || response.graphId !== this.graphId) {
+    if (!response || response.graphId !== this.graphId) {
+      return;
+    }
+    if (response.kind === "ack" || response.kind === "reject") {
+      this.onDecision(response);
+      return;
+    }
+    if (!response.payload) {
       return;
     }
     if (response.kind === "awareness") {

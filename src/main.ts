@@ -46,6 +46,7 @@ import NodePropertiesPanel from "@plastic-io/graph-editor-vue3-node-properties-p
 import ProviderSettings from "@plastic-io/graph-editor-vue3-provider-settings";
 import SharedMouse from "@plastic-io/graph-editor-vue3-shared-mouse";
 import SharedUsers from "@plastic-io/graph-editor-vue3-shared-users";
+import SyncStatus from "@plastic-io/graph-editor-vue3-sync-status";
 import SettingsPanel from "@plastic-io/graph-editor-vue3-settings-panel";
 import Workspace from "@plastic-io/graph-editor-vue3-workspace";
 import WorkspaceControlPanel from "@plastic-io/graph-editor-vue3-workspace-control-panel";
@@ -102,6 +103,7 @@ const plugins = [
   ProviderSettings,
   SharedMouse,
   SharedUsers,
+  SyncStatus,
   SettingsPanel,
   WorkspaceControlPanel,
   WssDocumentProvider,

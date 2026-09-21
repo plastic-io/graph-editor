@@ -1,0 +1,10 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-sync-status",
+  "license": "BSD-3-Clause",
+  "author": "TonyGermaneri@gmail.com",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Shows which local changes the graph server has accepted, is still deciding on, or has rejected.",
+  "main": "./main.ts",
+  "files": []
+}
