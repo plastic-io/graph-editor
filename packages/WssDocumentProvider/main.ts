@@ -3,7 +3,7 @@ import type {Router} from "vue-router";
 import type {Toc, TocItem, GraphDiff, NodeArtifact, GraphArtifact} from "@plastic-io/graph-editor-vue3-document-provider";
 import {useStore as useOrchistratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
-import {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
+import {useStore as useAuthenticationStore, authorizedFetch} from "@plastic-io/graph-editor-vue3-authentication-provider";
 import {authRequiredFor} from "@plastic-io/graph-editor-vue3-auth0-authentication-provider";
 import {deref, newId} from "@plastic-io/graph-editor-vue3-utils";
 import EditorModule from "@plastic-io/graph-editor-vue3-editor-module";
@@ -121,19 +121,22 @@ class WSSDataProvider {
     setToken(token: string) {
         this.token = token;
         this.httpDataProvider.setToken(token);
-        if (this.state !== "open" && !this.opening) {
+        // Open the socket the first time a token arrives; a token that arrives while a
+        // socket is connecting or open is simply kept for the next (re)connect.
+        if (!this.webSocket && !this.opening) {
             this.connect();
         }
     }
     send(e: any) {
-        if (this.state !== "open") {
+        if (this.state !== "open" || !this.webSocket || this.webSocket.readyState !== WebSocket.OPEN) {
             return this.messages.push(e);
         }
         const value = JSON.stringify(e);
         this.webSocket.send(value);
     }
     async connect() {
-        if (this.state === "open" || this.opening) {
+        // one socket at a time: never start another while one is connecting or open
+        if (this.opening || (this.webSocket && this.webSocket.readyState <= WebSocket.OPEN)) {
             return;
         }
         this.opening = true;
@@ -154,11 +157,15 @@ class WSSDataProvider {
             return;
         }
         this.state = "connecting";
-        this.webSocket = this.token
+        const socket = this.token
             ? new WebSocket(this.wssUrl, ["access_token", this.token])
             : new WebSocket(this.wssUrl);
+        this.webSocket = socket;
         this.opening = false;
-        this.webSocket.addEventListener("open", () => {
+        socket.addEventListener("open", () => {
+            if (this.webSocket !== socket) {
+                return;   // superseded by a newer socket
+            }
             this.state = "open";
             this.reconnectDelay = 1000;
             this.open();
@@ -169,8 +176,12 @@ class WSSDataProvider {
                 this.subscribe(channelId, null);
             });
         });
-        this.webSocket.addEventListener("close", () => {
+        socket.addEventListener("close", (ev: any) => {
+            if (this.webSocket !== socket) {
+                return;
+            }
             this.state = "closed";
+            console.warn(`Graph server socket closed (code ${ev && ev.code}); reconnecting in ${this.reconnectDelay} ms`);
             this.close();
             if (this.keepOpen) {
                 // back off so a rejected handshake (expired token, 401) does not spin
@@ -178,13 +189,13 @@ class WSSDataProvider {
                 this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000);
             }
         });
-        this.webSocket.addEventListener("message", (e) => {
+        socket.addEventListener("message", (e) => {
             const val = JSON.parse(e.data);
             this.messageHandler(val);
         });
     }
     async getToc() {
-      const response = await fetch(this.httpUrl + 'toc.json');
+      const response = await authorizedFetch(this.httpUrl + 'toc.json');
       const data = await response.json();
       return data;
     }

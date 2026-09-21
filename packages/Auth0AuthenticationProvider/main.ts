@@ -186,6 +186,12 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
       const options: any = {
           domain: this.domain,
           clientId: this.clientId,
+          // Keep the session across reloads: tokens in localStorage, renewed with refresh
+          // tokens when the API allows offline access, else silently in an iframe.  Without
+          // this every reload restarted the login (and, on localhost, Auth0's consent screen).
+          cacheLocation: 'localstorage',
+          useRefreshTokens: true,
+          useRefreshTokensFallback: true,
           authorizationParams: {
             redirect_uri: this.redirectUri,
             ...(this.audience ? { audience: this.audience } : {}),

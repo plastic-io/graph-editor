@@ -1,3 +1,4 @@
+import {authorizedFetch} from "@plastic-io/graph-editor-vue3-authentication-provider";
 import {markRaw} from "vue";
 import getName from "@plastic-io/graph-editor-names";
 import {template, set} from "@plastic-io/graph-editor-vue3-help-overlay";
@@ -53,7 +54,7 @@ export default {
         if (e["artifact-url"] && this.preferencesStore.preferences.graphHTTPServer) {
             try {
                 const artifactUrl = this.preferencesStore.preferences.graphHTTPServer + e["artifact-url"];
-                item = await fetch(artifactUrl);
+                item = await authorizedFetch(artifactUrl);
                 item = await item.json();
                 e.url = artifactUrl;
                 item.url = artifactUrl;

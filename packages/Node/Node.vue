@@ -68,6 +68,7 @@
     </div>
 </template>
 <script lang="ts">
+import {authorizedFetch} from "@plastic-io/graph-editor-vue3-authentication-provider";
 import compileTemplate from "@plastic-io/graph-editor-vue3-compile-template";
 
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
@@ -295,11 +296,11 @@ export default {
         },
         async downloadNode(artifact) {
             if (artifact && /api\.github\.com/.test(artifact)) {
-                const data = await fetch(artifact);
+                const data = await authorizedFetch(artifact);
                 const dataJson = await data.json();
                 return JSON.parse(atob(dataJson.content));
             }
-            const seralizedV = await fetch(artifact);
+            const seralizedV = await authorizedFetch(artifact);
             return await seralizedV.json();
         },
         async importRoot(vect) {
