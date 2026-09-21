@@ -10,6 +10,22 @@ import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-or
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 const STORE_KEY = 'auth0-redirect';
 const LOGIN_ATTEMPTED_KEY = 'auth0-login-attempted';
+/**
+ * The Auth0 API identifier the access token must be minted for: an explicit setting, or the
+ * HTTPS server URL without its trailing slash.  Local dev servers (http://) have no
+ * authorizer and no audience, so no token is requested for them.
+ */
+export function audienceFor(prefs: any): string {
+  const explicit = prefs && prefs.auth0 && prefs.auth0.audience;
+  if (explicit) {
+    return String(explicit).replace(/\/+$/, '');
+  }
+  if (!prefs || prefs.useLocalStorage) {
+    return '';
+  }
+  const server = String(prefs.graphHTTPServer || '');
+  return /^https:\/\//i.test(server) ? server.replace(/\/+$/, '') : '';
+}
 export default class Auth0 extends EditorModule {
   constructor(config: Record<string, any>, app: App<Element>, router: Router) {
     super();
@@ -74,6 +90,7 @@ export default class Auth0 extends EditorModule {
 export class Auth0AuthenticationProvider extends AuthenticationProvider {
     audience = '';
     serverMode = false;
+    authRequired = false;
     domain: string = '';
     clientId: string = '';
     redirectUri: string = '';
@@ -110,8 +127,11 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
         // which defaults to the HTTP server URL without its trailing slash.
         const prefs = this.preferencesStore.preferences as any;
         this.serverMode = !prefs.useLocalStorage;
-        this.audience = config.audience || (this.serverMode ? String(prefs.graphHTTPServer || '').replace(/\/+$/, '') : '');
-        if (this.serverMode) {
+        this.audience = audienceFor(prefs);
+        // Login is mandatory only when the server actually checks tokens (an HTTPS server
+        // with an API identifier); the local dev server on http://localhost has no authorizer.
+        this.authRequired = this.serverMode && !!this.audience;
+        if (this.authRequired) {
           try {
             const target = new URL(this.redirectUri).host;
             if (target !== self.location.host) {
@@ -166,13 +186,13 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
       const isAuthenticated = await this.client.isAuthenticated();
 
       if (!isAuthenticated) {
-        if (this.serverMode && !sessionStorage.getItem(LOGIN_ATTEMPTED_KEY)) {
+        if (this.authRequired && !sessionStorage.getItem(LOGIN_ATTEMPTED_KEY)) {
           // A server-backed editor cannot do anything without a token: every route on the
           // graph server requires one.  Send the user to log in and come back here (once
           // per tab; if that does not produce a session the login button is the way in).
           sessionStorage.setItem(LOGIN_ATTEMPTED_KEY, String(Date.now()));
           await this.login();
-        } else if (this.serverMode) {
+        } else if (this.authRequired) {
           console.warn('Not authenticated after a login attempt; use the login button in the top bar.');
         }
         return;
@@ -184,7 +204,7 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
         token = await this.client.getTokenSilently(this.tokenOptions());
       } catch (err: any) {
         console.error(`Cannot get an access token for audience "${this.audience}":`, err && (err.error_description || err.message), err);
-        if (this.serverMode && err && (err.error === 'login_required' || err.error === 'consent_required') && !sessionStorage.getItem(LOGIN_ATTEMPTED_KEY)) {
+        if (this.authRequired && err && (err.error === 'login_required' || err.error === 'consent_required') && !sessionStorage.getItem(LOGIN_ATTEMPTED_KEY)) {
           sessionStorage.setItem(LOGIN_ATTEMPTED_KEY, String(Date.now()));
           await this.login();
         }

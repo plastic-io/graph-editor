@@ -4,6 +4,7 @@ import type {Toc, TocItem, GraphDiff, NodeArtifact, GraphArtifact} from "@plasti
 import {useStore as useOrchistratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
+import {audienceFor} from "@plastic-io/graph-editor-vue3-auth0-authentication-provider";
 import {deref, newId} from "@plastic-io/graph-editor-vue3-utils";
 import EditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 const CHUNK_SIZE = 35000;
@@ -39,9 +40,14 @@ export default class WssDocumentProvider extends EditorModule {
       },
     };
     (orchistratorStore.dataProviders as any).artifact = wssDataProvider;
-    // Identity: the socket opens once the Auth0 provider has a token, and refreshes it
-    // through the provider before each reconnect.
+    // Identity: against an HTTPS server with an Auth0 API identifier the socket opens once
+    // the Auth0 provider has a token and refreshes it before each reconnect; against a local
+    // dev server (no authorizer) it opens straight away without one.
     const authenticationStore = useAuthenticationStore();
+    wssDataProvider.requireToken = !!audienceFor(preferencesStore.preferences);
+    if (!wssDataProvider.requireToken) {
+      wssDataProvider.connect();
+    }
     wssDataProvider.tokenProvider = async () => {
       const provider = orchistratorStore.authProvider as any;
       if (provider && typeof provider.getToken === "function") {
@@ -108,6 +114,8 @@ class WSSDataProvider {
         // queues.  The server requires the token at $connect, as a subprotocol.
     }
     tokenProvider: (() => Promise<string | undefined>) | null = null;
+    /** When the server checks tokens the socket waits for one; a local dev server needs none. */
+    requireToken = false;
     private opening = false;
     private reconnectDelay = 1000;
     setToken(token: string) {
@@ -141,12 +149,14 @@ class WSSDataProvider {
                 console.warn("Cannot refresh the access token before connecting", err);
             }
         }
-        if (!this.token) {
+        if (!this.token && this.requireToken) {
             this.opening = false;
             return;
         }
         this.state = "connecting";
-        this.webSocket = new WebSocket(this.wssUrl, ["access_token", this.token]);
+        this.webSocket = this.token
+            ? new WebSocket(this.wssUrl, ["access_token", this.token])
+            : new WebSocket(this.wssUrl);
         this.opening = false;
         this.webSocket.addEventListener("open", () => {
             this.state = "open";
