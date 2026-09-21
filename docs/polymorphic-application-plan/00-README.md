@@ -17,6 +17,10 @@ Produced 2026-09-20 from the inspected revisions listed in `02-discovery-record.
 | `08-testing-and-editor.md` | 8. testing layers, journeys, gates; editor screens, file mapping, walkthrough |
 | `09-implementation-plan.md` | 9. repo-by-repo changes, shared types, workstream graph, spikes, milestones, migration, rollout |
 | `10-backlog-and-decisions.md` | 10. prioritized backlog (PB-nnn), decision log (D-n), open questions (Q-n), final self-review |
+| `11-preparation-tasks.md` | preparation tasks with status and evidence logs (tasks 1–4 done, 5 prepared) |
+| `12-task5-setup.md` | the three credentialed setup steps, prepared to one command each |
+| `spikes/` | S-1 and S-4 reports, the isolated-vm Lambda harness, the staged-admission bench |
+| `patches/` | change for the scheduler repository (not checked out locally) |
 | `appendix/A1-discovery-graph-editor.md` | evidence ledger GE-01..65 with path:lines |
 | `appendix/A2-discovery-graph-server.md` | evidence ledger GS-01..43, deployment evidence, local reproduction of the CRDT poisoning |
 | `appendix/A3-discovery-runtimes.md` | evidence ledger RT-01..43, experiment transcripts, TS 2.0.1↔2.0.3 diff, Rust findings |
