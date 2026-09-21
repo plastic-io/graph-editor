@@ -37,7 +37,9 @@ export const useStore = defineStore("syncStatus", {
     track(mutationId: string, description: string) {
       this.mutations[mutationId] = { mutationId, description, state: "pending", at: Date.now() };
     },
-    accepted(mutationId: string, updateId?: string) {
+    // Actions are named mark* because Pinia exposes getters and actions on the
+    // same object: an action called `accepted` would be shadowed by the getter.
+    markAccepted(mutationId: string, updateId?: string) {
       const m = this.mutations[mutationId];
       if (m) {
         m.state = "accepted";
@@ -47,7 +49,7 @@ export const useStore = defineStore("syncStatus", {
       const done = Object.values(this.mutations).filter((x) => x.state === "accepted").sort((a, b) => b.at - a.at);
       done.slice(KEEP_ACCEPTED).forEach((x) => delete this.mutations[x.mutationId]);
     },
-    rejected(mutationId: string, code: string, reason: string) {
+    markRejected(mutationId: string, code: string, reason: string) {
       const m = this.mutations[mutationId] || { mutationId, description: "(unknown change)", at: Date.now(), state: "pending" as MutationState };
       m.state = "rejected";
       m.code = code;

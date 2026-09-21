@@ -1,5 +1,9 @@
 import {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
-import {useStore as useSyncStatusStore, newUlid} from "@plastic-io/graph-editor-vue3-sync-status";
+// Imported from the package's leaves rather than its entry point: the entry
+// registers a plugin and pulls in the orchestrator, which would make this a
+// circular import and leave these bindings undefined while connect() runs.
+import {useStore as useSyncStatusStore} from "@plastic-io/graph-editor-vue3-sync-status/store";
+import {newUlid} from "@plastic-io/graph-editor-vue3-sync-status/ulid";
 import * as Y from "yjs";
 import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from "y-protocols/awareness";
 import {
@@ -302,7 +306,7 @@ export class WssCrdtProvider {
       }
       if (item.attempts >= MAX_ATTEMPTS) {
         console.error(`No answer from the graph server for change "${item.description}" after ${item.attempts} attempts.`);
-        useSyncStatusStore().rejected(item.mutationId, "NO_ANSWER", "the graph server did not answer");
+        useSyncStatusStore().markRejected(item.mutationId, "NO_ANSWER", "the graph server did not answer");
         this.inFlight = null;
         this.pump();
         return;
@@ -351,9 +355,9 @@ export class WssCrdtProvider {
       // A late answer to a resend, or an answer to something sent while
       // leaving the graph: record it, nothing waits on it.
       if (result.decision === "accepted") {
-        status.accepted(result.mutationId, result.updateId);
+        status.markAccepted(result.mutationId, result.updateId);
       } else if (result.decision === "rejected") {
-        status.rejected(result.mutationId, result.code || "REJECTED", result.reason || "");
+        status.markRejected(result.mutationId, result.code || "REJECTED", result.reason || "");
       }
       return;
     }
@@ -363,12 +367,12 @@ export class WssCrdtProvider {
     }
     this.inFlight = null;
     if (result.decision === "accepted") {
-      status.accepted(result.mutationId, result.updateId);
+      status.markAccepted(result.mutationId, result.updateId);
       this.pump();
       return;
     }
     console.error(`The graph server rejected change "${current.description}": ${result.code} ${result.reason || ""}`);
-    status.rejected(result.mutationId, result.code || "REJECTED", result.reason || "");
+    status.markRejected(result.mutationId, result.code || "REJECTED", result.reason || "");
     this.recover(current, result);
   }
 
