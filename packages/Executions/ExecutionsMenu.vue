@@ -46,7 +46,7 @@
             <template v-slot:append>
               <v-btn icon="mdi-play-outline" size="x-small" variant="text" title="Run it now" :loading="runningJourney === j.id" @click.stop="runJourney(j)"/>
             </template>
-            <div v-if="lastRun[j.id] && lastRun[j.id].reason" class="text-error"><small>{{ lastRun[j.id].reason }}</small></div>
+            <div v-if="failureOf(j)" class="text-error"><small>{{ failureOf(j) }}</small></div>
           </v-list-item>
           <v-list-item v-if="!journeys.length" title="No journeys yet" subtitle="A journey says what this graph is for and proves it on a schedule"/>
         </v-list>
@@ -169,9 +169,15 @@ export default {
       // An execution that ends anywhere shows up here without asking again.
       this.listener = (e: any) => {
         if (e && e.eventType === "journey") {
-          // a journey result is worth saying even when this panel is closed
-          this.lastRun = {...this.lastRun, [e.journeyId]: e};
-          if (e.state !== "passed") {
+          // a journey result is worth saying even when this panel is closed,
+          // and a passing result takes the previous complaint away with it
+          if (e.state === "passed") {
+            const {[e.journeyId]: gone, ...rest} = this.lastRun;
+            void gone;
+            this.lastRun = rest;
+            this.message = "";
+          } else {
+            this.lastRun = {...this.lastRun, [e.journeyId]: e};
             this.message = `${e.intent || e.journeyId}: ${e.reason || e.state}`;
           }
           if (this.open) {
@@ -208,6 +214,7 @@ export default {
         if (typeof provider.listJourneys === "function") {
           const journeys = await provider.listJourneys(graphId);
           this.journeys = (journeys && journeys.journeys) || [];
+          this.forgetFixedFailures();
         }
         if (this.selected) {
           await this.load(this.selected);
@@ -240,6 +247,33 @@ export default {
         this.message = String((err && err.message) || err);
       }
     },
+    /**
+     * A failure that has since been fixed is not news.  What a journey said on
+     * an earlier run is dropped as soon as the journey itself reports passing,
+     * so the panel shows the state of the graph now rather than the worst thing
+     * it ever did.
+     */
+    forgetFixedFailures() {
+      const passing = new Set((this as any).journeys.filter((j: any) => j.lastResult === "passed").map((j: any) => j.id));
+      const remaining: Record<string, any> = {};
+      Object.keys(this.lastRun).forEach((id) => {
+        if (!passing.has(id)) {
+          remaining[id] = this.lastRun[id];
+        }
+      });
+      this.lastRun = remaining;
+      if (this.message && !Object.keys(remaining).length && (this as any).journeys.length) {
+        this.message = "";
+      }
+    },
+    /** What this journey is failing with now, if it is failing. */
+    failureOf(journey: any): string {
+      if (journey.lastResult === "passed" || !journey.lastResult) {
+        return "";
+      }
+      const run = this.lastRun[journey.id];
+      return (run && run.reason) || `last run ${journey.lastResult}`;
+    },
     async runJourney(journey: any) {
       const provider = this.provider();
       const graphId = (this as any).graph && (this as any).graph.id;
@@ -250,8 +284,13 @@ export default {
       try {
         const result = await provider.runJourney(graphId, journey.id);
         const run = (result && result.run) || result;
-        this.lastRun = {...this.lastRun, [journey.id]: run};
-        if (run && run.state && run.state !== "passed") {
+        if (run && run.state === "passed") {
+          const {[journey.id]: gone, ...rest} = this.lastRun;
+          void gone;
+          this.lastRun = rest;
+          this.message = "";
+        } else if (run && run.state) {
+          this.lastRun = {...this.lastRun, [journey.id]: run};
           this.message = `${journey.intent}: ${run.reason || run.state}`;
         }
         await this.refresh();
