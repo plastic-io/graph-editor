@@ -98,6 +98,18 @@ describe("semanticDiff", () => {
     expect(d.ops.map((o) => o.op)).toEqual(["remove-node", "disconnect"]);
   });
 
+  it("the counters the editor bumps on every commit are housekeeping, not definition", () => {
+    const graph = makeGraph({ nodes: [makeNode({ id: "n1" })] });
+    const d = diffAfter(graph, (g) => {
+      g.version = (g.version || 0) + 1;
+      g.properties.lastUpdate = 1800000000000;
+      g.nodes[0].properties.x = 99;
+      g.nodes[0].properties.presentation.x = 99;
+    });
+    expect(d.namespaces).toEqual(["housekeeping", "layout"]);
+    expect(d.ops.map((o) => o.op).sort()).toEqual(["set-node-props", "touch", "touch"]);
+  });
+
   it("server-owned namespaces are named so policy can refuse them", () => {
     const before = toJSON(fromJSON(copy(makeGraph())));
     const after = { ...before, observedStatus: { deployed: true } };

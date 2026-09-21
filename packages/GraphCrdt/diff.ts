@@ -32,7 +32,8 @@ export interface DiffOp {
     | "add-node" | "remove-node" | "set-node-code" | "set-node-props" | "set-node-fields"
     | "set-graph-props" | "set-graph-fields" | "connect" | "disconnect"
     | "set-component-pin" | "set-capabilities" | "set-placement" | "set-budget" | "set-iac-desired"
-    | "set-meta" | "set-observed" | "set-policy";
+    | "set-meta" | "set-observed" | "set-policy"
+    | "touch";
   namespace: Namespace;
   nodeId?: string;
   keys?: string[];
@@ -109,6 +110,7 @@ function groupByNamespace(keys: string[], classify: (k: string) => Namespace): M
 }
 
 const NAMESPACE_OP: Partial<Record<Namespace, DiffOp["op"]>> = {
+  housekeeping: "touch",
   capabilities: "set-capabilities",
   placement: "set-placement",
   budgets: "set-budget",

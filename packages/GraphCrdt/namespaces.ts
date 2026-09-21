@@ -21,7 +21,11 @@ export type Namespace =
   | "iac"
   | "meta"
   | "observed"
-  | "policy";
+  | "policy"
+  /** Counters the editor bumps on every commit (`version`, `lastUpdate`); they say nothing about what changed. */
+  | "housekeeping";
+
+const HOUSEKEEPING_KEYS = ["version", "lastUpdate"];
 
 /** Namespaces only the server itself may write (mirrors of observed state, policy, schema meta). */
 export const SERVER_OWNED_NAMESPACES: Namespace[] = ["meta", "observed", "policy"];
@@ -32,6 +36,7 @@ export const PRIVILEGE_NAMESPACES: Namespace[] = ["capabilities", "placement"];
 /** Keys at the root of the graph. */
 export function graphKeyNamespace(key: string): Namespace {
   if (key === "meta") return "meta";
+  if (HOUSEKEEPING_KEYS.includes(key)) return "housekeeping";
   if (key.startsWith("observed")) return "observed";
   if (key === "policy" || key === "acl") return "policy";
   return "definition";
@@ -39,6 +44,7 @@ export function graphKeyNamespace(key: string): Namespace {
 
 /** Keys of `graph.properties`. */
 export function graphPropertyNamespace(key: string): Namespace {
+  if (HOUSEKEEPING_KEYS.includes(key)) return "housekeeping";
   if (key === "template" || key === "scripts") return "code";
   if (key === "icon" || key === "height" || key === "width") return "layout";
   if (key.startsWith("observed")) return "observed";
@@ -64,6 +70,7 @@ export function nodePropertyNamespace(key: string): Namespace {
     case "iac":
       return "iac";
     default:
+      if (HOUSEKEEPING_KEYS.includes(key)) return "housekeeping";
       if (key.startsWith("appearsIn")) return "layout";
       if (key.startsWith("observed")) return "observed";
       return "definition";
@@ -72,6 +79,7 @@ export function nodePropertyNamespace(key: string): Namespace {
 
 /** Top-level keys of a node other than `properties`, `template` and `edges`. */
 export function nodeKeyNamespace(key: string): Namespace {
+  if (HOUSEKEEPING_KEYS.includes(key)) return "housekeeping";
   if (key.startsWith("observed")) return "observed";
   return "definition";
 }
