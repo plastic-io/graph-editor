@@ -615,6 +615,24 @@ export class WssCrdtProvider {
   execution(graphId: string, executionId: string): Promise<any> {
     return this.api(`${graphId}/executions/${executionId}`);
   }
+  /* --------------------------------------------------------------- journeys */
+
+  /** What this graph is for, and whether it still does it (plan §8.1.7). */
+  listJourneys(graphId: string): Promise<any> {
+    return this.api(`${graphId}/journeys`);
+  }
+  saveJourney(graphId: string, journey: any): Promise<any> {
+    return this.api(`${graphId}/journeys`, { method: "POST", body: JSON.stringify(journey) });
+  }
+  removeJourney(graphId: string, journeyId: string): Promise<any> {
+    return this.api(`${graphId}/journeys/${journeyId}`, { method: "DELETE" });
+  }
+  runJourney(graphId: string, journeyId: string): Promise<any> {
+    return this.api(`${graphId}/journeys/${journeyId}/run`, { method: "POST" });
+  }
+  journeyRuns(graphId: string, journeyId: string, limit = 20): Promise<any> {
+    return this.api(`${graphId}/journeys/${journeyId}/runs?limit=${limit}`);
+  }
   auditRecords(graphId: string, limit = 50): Promise<any> {
     return this.api(`${graphId}/audit?limit=${limit}`);
   }

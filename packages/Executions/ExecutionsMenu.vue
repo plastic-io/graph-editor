@@ -32,6 +32,24 @@
           </v-list-item>
           <v-list-item v-if="!executions.length && !busy" title="Nothing has run yet" subtitle="Executions started here, from the server, or by an agent all appear in this list"/>
         </v-list>
+        <v-divider class="my-2"/>
+        <div class="d-flex align-center mb-1">
+          <span class="text-subtitle-2">What this graph is for</span>
+          <v-spacer/>
+          <small v-if="journeys.length" :class="journeyHealthClass">{{ journeyHealth }}</small>
+        </div>
+        <v-list density="compact" max-height="25vh" style="overflow-y: auto">
+          <v-list-item v-for="j in journeys" :key="j.id" :title="j.intent" :subtitle="journeySubtitle(j)">
+            <template v-slot:prepend>
+              <v-icon :color="journeyColor(j)" :title="j.lastResult || 'not run yet'">{{ journeyIcon(j) }}</v-icon>
+            </template>
+            <template v-slot:append>
+              <v-btn icon="mdi-play-outline" size="x-small" variant="text" title="Run it now" :loading="runningJourney === j.id" @click.stop="runJourney(j)"/>
+            </template>
+            <div v-if="lastRun[j.id] && lastRun[j.id].reason" class="text-error"><small>{{ lastRun[j.id].reason }}</small></div>
+          </v-list-item>
+          <v-list-item v-if="!journeys.length" title="No journeys yet" subtitle="A journey says what this graph is for and proves it on a schedule"/>
+        </v-list>
         <template v-if="selected">
           <v-divider class="my-2"/>
           <div class="d-flex align-center mb-1">
@@ -78,6 +96,9 @@ export default {
       message: "",
       executions: [] as any[],
       observations: [] as any[],
+      journeys: [] as any[],
+      lastRun: {} as Record<string, any>,
+      runningJourney: "" as string,
       selected: "",
       listener: null as any,
       subscribedTo: "",
@@ -113,6 +134,20 @@ export default {
       const orchestrator = useOrchestratorStore() as any;
       return (orchestrator.executionReportQueue || []).length;
     },
+    journeyHealth(): string {
+      const journeys = (this as any).journeys;
+      const failing = journeys.filter((j: any) => j.lastResult && j.lastResult !== "passed");
+      if (!journeys.length) {
+        return "";
+      }
+      if (!failing.length) {
+        return journeys.every((j: any) => j.lastResult) ? "all passing" : "not all have run yet";
+      }
+      return `${failing.length} of ${journeys.length} failing`;
+    },
+    journeyHealthClass(): string {
+      return (this as any).journeyHealth.includes("failing") ? "text-error" : "text-success";
+    },
     crossDomain(): boolean {
       const domains = new Set((this as any).observations.map((o: any) => o.domain));
       return domains.size > 1;
@@ -133,6 +168,17 @@ export default {
       this.unsubscribe();
       // An execution that ends anywhere shows up here without asking again.
       this.listener = (e: any) => {
+        if (e && e.eventType === "journey") {
+          // a journey result is worth saying even when this panel is closed
+          this.lastRun = {...this.lastRun, [e.journeyId]: e};
+          if (e.state !== "passed") {
+            this.message = `${e.intent || e.journeyId}: ${e.reason || e.state}`;
+          }
+          if (this.open) {
+            this.refresh();
+          }
+          return;
+        }
         if (e && (e.eventType === "info" || e.eventType === "edge.deliver") && this.open) {
           this.refresh();
         }
@@ -159,6 +205,10 @@ export default {
       try {
         const result = await provider.listExecutions(graphId);
         this.executions = (result && result.executions) || [];
+        if (typeof provider.listJourneys === "function") {
+          const journeys = await provider.listJourneys(graphId);
+          this.journeys = (journeys && journeys.journeys) || [];
+        }
         if (this.selected) {
           await this.load(this.selected);
         }
@@ -189,6 +239,48 @@ export default {
       } catch (err: any) {
         this.message = String((err && err.message) || err);
       }
+    },
+    async runJourney(journey: any) {
+      const provider = this.provider();
+      const graphId = (this as any).graph && (this as any).graph.id;
+      if (!provider || !graphId || typeof provider.runJourney !== "function") {
+        return;
+      }
+      this.runningJourney = journey.id;
+      try {
+        const result = await provider.runJourney(graphId, journey.id);
+        const run = (result && result.run) || result;
+        this.lastRun = {...this.lastRun, [journey.id]: run};
+        if (run && run.state && run.state !== "passed") {
+          this.message = `${journey.intent}: ${run.reason || run.state}`;
+        }
+        await this.refresh();
+      } catch (err: any) {
+        this.message = String((err && err.message) || err);
+      } finally {
+        this.runningJourney = "";
+      }
+    },
+    journeySubtitle(journey: any): string {
+      const parts = [journey.lastResult ? `last ${journey.lastResult}` : "not run yet", journey.schedule, journey.effects];
+      if (journey.quarantined) {
+        parts.push("quarantined after repeated failures");
+      }
+      if (journey.lastRunAt) {
+        parts.push(new Date(journey.lastRunAt).toLocaleTimeString());
+      }
+      return parts.join(" · ");
+    },
+    journeyColor(journey: any): string {
+      if (journey.quarantined) return "warning";
+      if (!journey.lastResult) return "";
+      return journey.lastResult === "passed" ? "success" : "error";
+    },
+    journeyIcon(journey: any): string {
+      if (journey.lastResult === "unresolvable") return "mdi-help-circle-outline";
+      if (journey.lastResult === "failed") return "mdi-alert-circle-outline";
+      if (journey.lastResult === "passed") return "mdi-check-circle-outline";
+      return "mdi-flag-outline";
     },
     nameOf(nodeId: string): string {
       const graph: any = (this as any).graph;
