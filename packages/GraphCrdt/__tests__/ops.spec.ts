@@ -18,6 +18,8 @@ describe("applyOps", () => {
     expect(r.projection.nodes.map((n: any) => n.id)).toEqual(["a", "b"]);
     expect(r.projection.nodes[0].edges[0].connectors).toEqual([expect.objectContaining({ nodeId: "b", field: "in", graphId: "graph-1" })]);
     expect(r.projection.nodes[1].template.set).toBe("edges.out = value * 2;");
+    // a node with nothing to render is an error in the editor, so it gets the same empty component a hand-added node gets
+    expect(r.projection.nodes[1].template.vue).toBe("<template><div></div></template><script>export default {}</script>");
     expect(r.projection.nodes[1].properties.x).toBe(100);
     expect(r.touched.sort()).toEqual(["a", "b"]);
     expect(graph.nodes).toHaveLength(1);   // input untouched

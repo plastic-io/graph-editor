@@ -40,6 +40,9 @@ export interface ApplyResult {
   touched: string[];
 }
 
+/** What the editor gives a node someone adds by hand (`Graph/mutation.ts`). */
+const DEFAULT_VUE_TEMPLATE = "<template><div></div></template><script>export default {}</script>";
+
 const PROTECTED_NODE_PROPS = ["component", "capabilities", "placement", "containment", "budget", "budgets", "iac", "tests"];
 const PROTECTED_GRAPH_KEYS = ["id"];
 
@@ -92,7 +95,11 @@ export function applyOps(projection: any, ops: MutationOp[]): ApplyResult {
             x: layout.x || 0, y: layout.y || 0, z: layout.z || 0, presentation: { x: layout.x || 0, y: layout.y || 0, z: layout.z || 0 },
             ...(n.placement ? { placement: n.placement } : {}),
           },
-          template: { set: (n.template && n.template.set) || "", vue: (n.template && n.template.vue) || "" },
+          // A node always has something to render.  An empty `vue` template
+          // compiles to nothing and the editor shows the node as an error, so
+          // a node proposed by an agent gets the same empty component the
+          // editor gives a node someone adds by hand.
+          template: { set: (n.template && n.template.set) || "", vue: (n.template && n.template.vue) || DEFAULT_VUE_TEMPLATE },
         });
         touched.add(n.id);
         break;

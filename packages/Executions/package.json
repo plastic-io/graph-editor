@@ -1,0 +1,10 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-executions",
+  "license": "BSD-3-Clause",
+  "author": "TonyGermaneri@gmail.com",
+  "version": "1.0.0",
+  "private": false,
+  "description": "What this graph did: every execution, wherever it ran, and what each one observed.",
+  "main": "./main.ts",
+  "files": []
+}

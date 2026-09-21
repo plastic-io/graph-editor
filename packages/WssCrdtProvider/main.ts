@@ -607,6 +607,14 @@ export class WssCrdtProvider {
   deliverEdge(graphId: string, delivery: any): Promise<any> {
     return this.api(`${graphId}/deliveries`, { method: "POST", body: JSON.stringify(delivery) });
   }
+  /** What ran for this graph, newest first (plan §4.5.3). */
+  listExecutions(graphId: string, limit = 50): Promise<any> {
+    return this.api(`${graphId}/executions?limit=${limit}`);
+  }
+  /** One execution and everything observed for it, from whichever domain observed it. */
+  execution(graphId: string, executionId: string): Promise<any> {
+    return this.api(`${graphId}/executions/${executionId}`);
+  }
   auditRecords(graphId: string, limit = 50): Promise<any> {
     return this.api(`${graphId}/audit?limit=${limit}`);
   }
