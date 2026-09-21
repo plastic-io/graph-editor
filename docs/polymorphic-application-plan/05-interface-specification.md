@@ -29,6 +29,8 @@ type MutationOp =
 ```
 The ops are materialised on the server by `applyOps(projection, ops)` (pure function in `graph-crdt/ops.ts`) followed by `reconcile()` [FACT primitive], so an agent proposal has a lossless mapping to the same Y.Doc changes an editor would make (R-10.6).
 
+Implemented 2026-09-21 (PB-020/021): the WS and HTTP paths answer with `AdmissionResult` as above minus `approval-required` (M2), with `code` also allowing `STALE_BASE` (the update depends on structs the server never received) and `RATE_LIMITED` (+ `retryAfterMs`); `diffSummary` is the compact form of `graph-crdt/diff.ts` `DiffSummary` (counts, namespaces, privilege delta, first 50 ops). The diff's op vocabulary is the `MutationOp` list above plus summary-only ops `set-node-fields` / `set-graph-fields` (top-level keys such as `artifact`, `data`, `url`) and `set-meta` / `set-observed` / `set-policy` (server-owned namespaces, refused for clients).
+
 ## 5.2 Resources
 | URI template | Represents | MIME | Identity / revision | Pagination | Subscribe | Visibility / redaction | Size |
 |---|---|---|---|---|---|---|---|
