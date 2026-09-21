@@ -1,0 +1,1 @@
+{ "name": "s1-isolated-vm-lambda", "private": true, "version": "0.0.1", "dependencies": { "isolated-vm": "6.2.0" } }

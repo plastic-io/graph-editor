@@ -70,10 +70,10 @@ Parallelisable: W1‖W2 start immediately; W4‖W10‖W12‖W13 after W1; W7 nee
 ### Spikes (each ≤ 1 week, exit criteria explicit)
 | Spike | Question | Method | Artifact | Exit criterion | Decision enabled |
 |---|---|---|---|---|---|
-| S-1 | Does isolated-vm build/run in Lambda nodejs18.x with acceptable cold start, and survive isolate OOM? | build in the Lambda container image; run adversarial set | report + Dockerfile | `while(true)` stopped ≤ budget+100 ms; OOM at 128 MB does not kill the Worker; cold start ≤ +300 ms | D-4 (isolated-vm vs worker limits) |
+| S-1 | Does isolated-vm build/run in Lambda with acceptable cold start, and survive isolate OOM? | build in the Lambda container image; run adversarial set | **done 2026-09-20: `spikes/S-1-report.md`, `spikes/s1/`** | met: loops stopped ≤ 10 ms past budget; OOM at 128 MB contained, host survives; cold start not yet measured on real Lambda | D-4 confirmed; Q-5 → nodejs22.x + isolated-vm 6.2.0 |
 | S-2 | Best UX for rejected optimistic edits with Yjs | prototype `replaceDoc` + quarantined draft in the editor | demo + user notes | no data loss; ≤ 1 s recovery on a 500-node graph | reject-recovery design |
 | S-3 | Can `subscriptions/listen` run on a Lambda Function URL with response streaming behind Auth0? | prototype with SDK v2 server | measurements | 10-minute stream with keep-alive comments; reconnect works | D-3 |
-| S-4 | Cost of staging validation (load+clone+apply+diff) at 10k-update graphs | bench with the stress harness (`packages/Graph/__e2e__/harness.ts`) | numbers | p95 ≤ 250 ms with warm cache; else snapshot cadence change | admission perf plan |
+| S-4 | Cost of staging validation (load+clone+apply+diff) at large graphs | bench with the GraphCrdt fixtures | **done 2026-09-20: `spikes/S-4-report.md`, `spikes/s4-staging-cost.spec.ts`** | met without a cache: 4 ms (100 nodes) to 174/191 ms p50/p95 (2000 nodes, 2000-update tail) on the workstation | admission ships without a cache layer in M1 |
 | S-5 | EventBridge callback latency vs polling for CFN status | trivial stack in `pio-test-` env | numbers | median callback ≤ 15 s | orchestrator wait design |
 | S-6 | Rust viability: fan-out fix + v8 152 upgrade effort | 3-day timeboxed port | report | tests with order assertions pass | go/no-go for W17 |
 

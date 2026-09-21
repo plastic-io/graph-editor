@@ -29,6 +29,11 @@ Registry index entry: `{name,id,version,type:"publishedNode"|"toc",description,i
 - `rusty_v8` crate: max version **0.32.1 published 2021-10-27**; crate was renamed to `v8` (current max **152.2.0**, 2026-08-20). plastic-io-rust pins rusty_v8 0.32.1 → five-year-old V8, no security updates.
 - rusty_v8 0.32.1 `Isolate` has: `thread_safe_handle() -> IsolateHandle`, `terminate_execution()`, `cancel_terminate_execution()`, `is_execution_terminating()`, `set_oom_error_handler()`, `add_near_heap_limit_callback()`, `remove_near_heap_limit_callback()`, `low_memory_notification()`, `get_heap_statistics()`, `perform_microtask_checkpoint()`, `set_microtasks_policy()`, `set_slot/get_slot`, `set_promise_reject_callback()`, `set_host_import_module_dynamically_callback()`. ABSENT: `request_interrupt()`. `CreateParams::heap_limits(initial,max)`, `only_terminate_in_safe_scope(bool)`, `allow_atomics_wait(bool)`, `array_buffer_allocator`, `snapshot_blob` exist.
 
+## isolated-vm and Lambda runtimes (npm registry + ECR public, 2026-09-20)
+- isolated-vm engine requirements: 5.0.4 → Node ≥ 18 (last 5.x, 2025-03); 6.0.1–6.2.0 → Node ≥ 22 (6.2.0 = 2026-08-06); 7.0.0 → ≥ 26 (2026-05-31, withdrawn to) 7.0.1 → ≥ 24 (2026-08-05). Installs from source with node-gyp (`gcc-c++ make python3` on the Lambda image), ~30–40 s.
+- Lambda base images present: `public.ecr.aws/lambda/nodejs:{18,20,22,24}`. The server's nodejs18.x runtime is deprecated by Lambda; S-1 chose nodejs22.x.
+- Spike S-1 results in `spikes/S-1-report.md`.
+
 ## AWS quotas (docs.aws.amazon.com, fetched 2026-09-20)
 - API Gateway WebSocket: connection duration max 2 h; idle timeout 10 min; frame 32 KB; message payload 128 KB (apigateway-execution-service-websocket-limits-table.html; not increasable).
 - API Gateway REST: integration timeout 50 ms–29 s, raisable above 29 s only for Regional/private APIs via quota L-E5AE38E3; payload 10 MB; idle connection timeout 310 s (api-gateway-execution-service-limits-table.html).
