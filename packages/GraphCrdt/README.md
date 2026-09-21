@@ -16,6 +16,7 @@ never depend on Vue, Pinia, the DOM, or Node built-ins.
 | `protocol.ts` | the sync and presence wire format |
 | `namespaces.ts` | which part of a graph each key belongs to (layout, code, definition, privilege) |
 | `diff.ts` | the semantic difference between two projections, as the server's admission gate sees it |
+| `digest.ts` | canonical JSON and the definition/layout views a revision's digests are taken over |
 
 ## The update format
 

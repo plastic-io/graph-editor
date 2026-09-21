@@ -1,0 +1,10 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-versions",
+  "license": "BSD-3-Clause",
+  "author": "TonyGermaneri@gmail.com",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Named versions of a graph: save, preview, restore and activate the version the server runs.",
+  "main": "./main.ts",
+  "files": []
+}

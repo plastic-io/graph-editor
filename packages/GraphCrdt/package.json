@@ -19,6 +19,7 @@
     "protocol.ts",
     "updates.ts",
     "namespaces.ts",
-    "diff.ts"
+    "diff.ts",
+    "digest.ts"
   ]
 }

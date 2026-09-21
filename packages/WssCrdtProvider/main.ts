@@ -519,6 +519,53 @@ export class WssCrdtProvider {
     return data && data.payload ? [fromBase64(data.payload)] : [];
   }
 
+  /* ------------------------------------------------------ versions */
+
+  /** One authenticated JSON call to the CRDT routes; throws with the server's code on failure. */
+  private async api(path: string, init: RequestInit = {}): Promise<any> {
+    if (!this.httpBase) {
+      throw new Error("No graph server is configured.");
+    }
+    const response = await fetch(`${this.httpBase}crdt/${path}`, {
+      ...init,
+      headers: { "Content-Type": "application/json", ...this.authHeaders(), ...((init.headers as any) || {}) },
+    });
+    let body: any = null;
+    try { body = await response.json(); } catch (err) { /* no body */ }
+    if (!response.ok) {
+      const error: any = new Error((body && (body.error || body.reason)) || response.statusText);
+      error.status = response.status;
+      error.code = body && body.code;
+      throw error;
+    }
+    return body;
+  }
+
+  /** Every named version of the graph, with the head and the activated one. */
+  listRevisions(graphId: string): Promise<any> {
+    return this.api(`${graphId}/revisions`);
+  }
+
+  /** Name the graph as it stands now.  The server answers the existing head when nothing changed. */
+  cutRevision(graphId: string, label: string): Promise<any> {
+    return this.api(`${graphId}/revisions`, { method: "POST", body: JSON.stringify({ label }) });
+  }
+
+  /** A version's manifest and projection; `materialize` rebuilds it from the document's history and verifies the digest. */
+  revision(graphId: string, revisionId: string, materialize = false): Promise<any> {
+    return this.api(`${graphId}/revisions/${revisionId}${materialize ? "?materialize=1" : ""}`);
+  }
+
+  /** Make a version the one the server executes. */
+  activateRevision(graphId: string, revisionId: string): Promise<any> {
+    return this.api(`${graphId}/revisions/${revisionId}/activate`, { method: "POST" });
+  }
+
+  /** Bring the live graph back to a version, as an ordinary change everyone receives. */
+  restoreRevision(graphId: string, revisionId: string): Promise<any> {
+    return this.api(`${graphId}/revisions/${revisionId}/restore`, { method: "POST" });
+  }
+
   /** Ask the server to drop the document.  Object removal happens there. */
   async remove(graphId: string): Promise<void> {
     if (!this.connected) {

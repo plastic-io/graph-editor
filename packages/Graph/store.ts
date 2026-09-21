@@ -6,6 +6,7 @@ import clipboard from './clipboard';
 import viewport from './viewport';
 import mutation from './mutation';
 import rewind from './rewind';
+import versions from './versions';
 import live from './live';
 import presence from './presence';
 import text from './text';
@@ -21,6 +22,7 @@ export const useStore: any = defineStore('graph', {
     ...viewport,
     ...mutation,
     ...rewind,
+    ...versions,
     ...live,
     ...presence,
     ...text,
