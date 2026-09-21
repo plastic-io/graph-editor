@@ -83,6 +83,21 @@ export interface EdgeDelivery {
   initiator?: string;
 }
 
+/**
+ * Should this session run a delivery it just received (plan §4.8.2)?
+ *
+ * A node that only draws is rendered by every viewer, so every session runs
+ * it.  A node that does something outside the page must happen once, so only
+ * the session that started the execution runs it; if that session is gone,
+ * nobody here runs it and the delivery waits for it.
+ */
+export function shouldRunDelivery(delivery: { target?: string; initiator?: string }, sessionId: string): boolean {
+  if (delivery.target !== "initiator") {
+    return true;
+  }
+  return !!delivery.initiator && delivery.initiator === sessionId;
+}
+
 /** One delivery is one unit of work: the same key must never run twice. */
 export function deliveryKey(delivery: { executionId: string; connectorId?: string; nodeId: string; seq: number }): string {
   return `${delivery.connectorId || delivery.nodeId}-${delivery.seq}`;

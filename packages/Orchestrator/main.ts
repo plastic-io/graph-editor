@@ -15,7 +15,7 @@ import SchedulerWorker from "./schedulerWorker?worker";
 import {useTheme} from 'vuetify';
 import {deref, newId} from "@plastic-io/graph-editor-vue3-utils";
 import {newUlid} from "@plastic-io/graph-editor-vue3-sync-status/ulid";
-import {deepEqual as crdtDeepEqual} from "@plastic-io/graph-crdt";
+import {deepEqual as crdtDeepEqual, shouldRunDelivery} from "@plastic-io/graph-crdt";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import AuthenticationProvider, {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
 import * as mdi from "@mdi/js";
@@ -748,11 +748,9 @@ export const useStore = defineStore('orchestrator', {
             return;
           }
           if (methodName === 'edge.deliver') {
-            // the server reached a node placed here; a delivery addressed to
-            // the session that started the execution is not ours to run unless
-            // we are that session (plan §4.8.2)
-            const mine = args.target !== 'initiator' || !args.initiator || args.initiator === this.sessionId;
-            if (mine) {
+            // the server reached a node placed here; whether this session is
+            // the one to run it is the shared rule (plan §4.8.2)
+            if (shouldRunDelivery(args, this.sessionId)) {
               this.scheduleWorker.postMessage({method: 'deliver', args: [args]});
             }
             return;
