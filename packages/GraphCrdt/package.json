@@ -17,6 +17,8 @@
     "reconcile.ts",
     "text.ts",
     "protocol.ts",
-    "updates.ts"
+    "updates.ts",
+    "namespaces.ts",
+    "diff.ts"
   ]
 }

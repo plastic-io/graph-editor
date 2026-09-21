@@ -90,6 +90,33 @@ function setup(options: { legacyGraph?: any; provider?: MemoryProvider } = {}) {
 }
 
 describe("graph store on the CRDT engine", () => {
+  it("reloads the graph from the server after a rejected change, clearing the browser copy", async () => {
+    const { graph, orchestrator, provider } = setup();
+    const removed: string[] = [];
+    // stands in for the IndexedDB provider: the only one whose copy must be cleared
+    orchestrator.syncProviders.push({
+      name: "indexeddb",
+      historyPriority: 1,
+      async connect() {},
+      disconnect() {},
+      async remove(graphId: string) { removed.push(graphId); },
+    } as any);
+    await graph.open("reject-me");
+    const first = graph.crdtSession;
+    graph.createNewNode({ x: 1, y: 2 } as any);
+    graph.updateGraphFromSnapshot("Add node");
+    expect(graph.graph.nodes).toHaveLength(1);
+    // what the server holds: the graph as it stood before the refused change
+    provider.seed = provider.updates[0].update;
+    await graph.reloadFromServer("test: the server refused the change");
+    expect(removed).toEqual(["reject-me"]);
+    expect(graph.crdtSession).not.toBe(first);
+    expect(graph.graphLoaded).toBe(true);
+    expect(graph.graph.id).toBe("reject-me");
+    expect(graph.graph.nodes).toHaveLength(0);
+    expect(provider.disconnected).toBe(1);
+  });
+
   it("creates a new graph when nothing is stored", async () => {
     const { graph } = setup();
     await graph.open("brand-new");

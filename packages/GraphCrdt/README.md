@@ -14,6 +14,8 @@ never depend on Vue, Pinia, the DOM, or Node built-ins.
 | `text.ts` | character-level updates for collaborative text |
 | `updates.ts` | which Yjs update format this project speaks |
 | `protocol.ts` | the sync and presence wire format |
+| `namespaces.ts` | which part of a graph each key belongs to (layout, code, definition, privilege) |
+| `diff.ts` | the semantic difference between two projections, as the server's admission gate sees it |
 
 ## The update format
 

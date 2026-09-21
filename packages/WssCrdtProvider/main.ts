@@ -27,6 +27,19 @@ const FLUSH_INTERVAL = 150;
 const CLIENT_INFO = { name: "graph-editor", version: "2.0.0" };
 /** Anything larger than this, base64 encoded, goes over HTTP instead. */
 const MAX_FRAME = 28000;
+/** How long to wait for the server's answer before sending a mutation again. */
+const ACK_TIMEOUT = 20000;
+const MAX_ATTEMPTS = 5;
+
+/** One mutation on its way to the server. */
+interface Outbound {
+  mutationId: string;
+  description: string;
+  encoded: string;
+  frame: any;
+  attempts: number;
+  sentAt: number;
+}
 
 const USER_COLORS = [
   "#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4",
@@ -59,6 +72,11 @@ export class WssCrdtProvider {
   private queue: Uint8Array[] = [];
   private pendingDescription = "Change";
   private flushTimer: any = null;
+  private outbox: Outbound[] = [];
+  private inFlight: Outbound | null = null;
+  private ackTimer: any = null;
+  private detachOpen: (() => void) | null = null;
+  private recovering = false;
   private detach: (() => void) | null = null;
   private historyCache: any[] = [];
   private channelListener: ((response: any) => void) | null = null;
@@ -91,7 +109,24 @@ export class WssCrdtProvider {
 
     this.channelListener = (response: any) => this.onMessage(response);
     this.wss.subscribe(channelIdFor(graphId), this.channelListener);
-    this.sendSync(writeSyncStep1(encodeStateVector(session.doc)), "Sync");
+    this.sendRaw(writeSyncStep1(encodeStateVector(session.doc)), "Sync");
+    useSyncStatusStore().setConnected(true);
+    if (typeof this.wss.onOpen === "function") {
+      // After a reconnect: exchange state vectors again (anything missed while
+      // the socket was down flows both ways) and send the unanswered mutation
+      // again under the same id.
+      this.detachOpen = this.wss.onOpen(() => {
+        if (!this.session) {
+          return;
+        }
+        this.sendRaw(writeSyncStep1(encodeStateVector(this.session.doc)), "Sync");
+        if (this.inFlight) {
+          this.transmit(this.inFlight);
+        } else {
+          this.pump();
+        }
+      });
+    }
 
     this.detach = session.onUpdate((update: Uint8Array, origin: any) => {
       if (origin && origin.source === this.name) {
@@ -183,30 +218,101 @@ export class WssCrdtProvider {
     this.sendSync(writeUpdate(merged), description);
   }
 
-  private sendSync(payload: Uint8Array, description: string) {
-    const encoded = toBase64(payload);
-    // Every mutation carries a client-minted id (plan §5.1) so the server can answer it,
-    // replay it idempotently, and so the sync status can show what happened to it.
-    const mutationId = newUlid();
-    useSyncStatusStore().track(mutationId, description);
-    if (encoded.length > MAX_FRAME) {
-      this.postOverHttp(encoded, description, mutationId);
-      return;
-    }
+  /** A protocol message the server answers with sync frames, not with an ack (sync step 1). */
+  private sendRaw(payload: Uint8Array, description: string) {
     this.wss.send({
       action: "yjs",
       kind: "sync",
-      schemaVersion: 2,
       graphId: this.graphId,
-      payload: encoded,
+      payload: toBase64(payload),
       description,
       format: UPDATE_FORMAT,
-      mutationId,
-      clientInfo: CLIENT_INFO,
     });
   }
 
-  private async postOverHttp(payload: string, description: string, mutationId: string) {
+  /**
+   * Queue a mutation for the server.
+   *
+   * Every mutation carries a client-minted id (plan §5.1) so the server can
+   * answer it, replay it idempotently, and so the sync status can show what
+   * happened to it.  Only one mutation is in flight per graph: the server
+   * handles frames concurrently, and an update that arrived before the one it
+   * builds on would be refused as depending on unseen changes.  Everything
+   * edited while waiting is merged into the next one.
+   */
+  private sendSync(payload: Uint8Array, description: string) {
+    const encoded = toBase64(payload);
+    const mutationId = newUlid();
+    useSyncStatusStore().track(mutationId, description);
+    this.outbox.push({
+      mutationId,
+      description,
+      encoded,
+      attempts: 0,
+      sentAt: 0,
+      frame: {
+        action: "yjs",
+        kind: "sync",
+        schemaVersion: 2,
+        graphId: this.graphId,
+        payload: encoded,
+        description,
+        format: UPDATE_FORMAT,
+        mutationId,
+        clientInfo: CLIENT_INFO,
+      },
+    });
+    this.pump();
+  }
+
+  private pump() {
+    if (this.inFlight || this.outbox.length === 0 || !this.connected) {
+      return;
+    }
+    this.inFlight = this.outbox.shift() as Outbound;
+    this.transmit(this.inFlight);
+  }
+
+  private transmit(item: Outbound) {
+    item.attempts += 1;
+    item.sentAt = Date.now();
+    if (item.encoded.length > MAX_FRAME) {
+      this.postOverHttp(item);
+    } else {
+      this.wss.send(item.frame);
+    }
+    this.armAckTimer();
+  }
+
+  /**
+   * No answer means the frame or its answer was lost (a Lambda that failed, a
+   * socket that dropped).  The same mutation id is sent again: the server
+   * replays the original answer if it had accepted it, so a resend never
+   * stores a change twice.
+   */
+  private armAckTimer() {
+    if (this.ackTimer) {
+      clearTimeout(this.ackTimer);
+    }
+    this.ackTimer = setTimeout(() => {
+      this.ackTimer = null;
+      const item = this.inFlight;
+      if (!item) {
+        return;
+      }
+      if (item.attempts >= MAX_ATTEMPTS) {
+        console.error(`No answer from the graph server for change "${item.description}" after ${item.attempts} attempts.`);
+        useSyncStatusStore().rejected(item.mutationId, "NO_ANSWER", "the graph server did not answer");
+        this.inFlight = null;
+        this.pump();
+        return;
+      }
+      console.warn(`No answer yet for change "${item.description}"; sending it again (${item.attempts + 1}/${MAX_ATTEMPTS}).`);
+      this.transmit(item);
+    }, ACK_TIMEOUT);
+  }
+
+  private async postOverHttp(item: Outbound) {
     if (!this.httpBase) {
       console.error("An update is too large for the socket and no HTTP endpoint is configured.");
       return;
@@ -215,14 +321,22 @@ export class WssCrdtProvider {
       const response = await fetch(`${this.httpBase}crdt/${this.graphId}/update`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...this.authHeaders() },
-        body: JSON.stringify({ payload, description, format: UPDATE_FORMAT, schemaVersion: 2, mutationId, clientInfo: CLIENT_INFO }),
+        body: JSON.stringify({
+          payload: item.encoded, description: item.description, format: UPDATE_FORMAT,
+          schemaVersion: 2, mutationId: item.mutationId, clientInfo: CLIENT_INFO,
+        }),
       });
       let result: any = null;
       try { result = await response.json(); } catch (err) { /* no body */ }
-      this.onDecision(result && result.mutationId ? result : { mutationId, decision: response.ok ? "accepted" : "rejected", code: response.ok ? undefined : `HTTP_${response.status}`, reason: response.ok ? undefined : response.statusText });
+      this.onDecision(result && result.mutationId ? result : {
+        mutationId: item.mutationId,
+        decision: response.ok ? "accepted" : "rejected",
+        code: response.ok ? undefined : `HTTP_${response.status}`,
+        reason: response.ok ? undefined : response.statusText,
+      });
     } catch (err) {
-      console.error("Cannot post a large update.", err);
-      useSyncStatusStore().rejected(mutationId, "NETWORK", String(err));
+      // the ack timer will send it again
+      console.warn("Cannot post a large update; will retry.", err);
     }
   }
 
@@ -232,13 +346,60 @@ export class WssCrdtProvider {
     if (!result || !result.mutationId) {
       return;
     }
-    if (result.decision === "accepted") {
-      status.accepted(result.mutationId, result.updateId);
+    const current = this.inFlight;
+    if (!current || current.mutationId !== result.mutationId) {
+      // A late answer to a resend, or an answer to something sent while
+      // leaving the graph: record it, nothing waits on it.
+      if (result.decision === "accepted") {
+        status.accepted(result.mutationId, result.updateId);
+      } else if (result.decision === "rejected") {
+        status.rejected(result.mutationId, result.code || "REJECTED", result.reason || "");
+      }
       return;
     }
-    console.error(`The graph server rejected change ${result.mutationId}: ${result.code} ${result.reason || ""}`);
+    if (this.ackTimer) {
+      clearTimeout(this.ackTimer);
+      this.ackTimer = null;
+    }
+    this.inFlight = null;
+    if (result.decision === "accepted") {
+      status.accepted(result.mutationId, result.updateId);
+      this.pump();
+      return;
+    }
+    console.error(`The graph server rejected change "${current.description}": ${result.code} ${result.reason || ""}`);
     status.rejected(result.mutationId, result.code || "REJECTED", result.reason || "");
-    // Recovery (rebuilding the local document from the server's state) is PB-024 stage B.
+    this.recover(current, result);
+  }
+
+  /**
+   * Rejection handling (plan §4.4.4): the local document now holds a change
+   * the server refused, and every later local change builds on it, so the
+   * server would refuse those too.  Yjs cannot un-apply an update, so the graph
+   * is reloaded from the server.  Nothing is silently lost: the graph as it
+   * stood, and the names of the changes it contained, are kept as a draft the
+   * user can download from the sync status menu.
+   */
+  private recover(item: Outbound, result: any) {
+    if (this.recovering || !this.session) {
+      return;
+    }
+    this.recovering = true;
+    const status = useSyncStatusStore();
+    const dropped = this.outbox;
+    this.outbox = [];
+    status.dismiss(dropped.map((o) => o.mutationId));
+    status.setQuarantine({
+      at: Date.now(),
+      reason: `${result.code || "REJECTED"}: ${result.reason || ""}`,
+      descriptions: [item.description].concat(dropped.map((o) => o.description)),
+      graph: this.session.projection(),
+    });
+    const graphStore = useOrchestratorStore().graphStore;
+    if (graphStore && typeof graphStore.reloadFromServer === "function") {
+      graphStore.reloadFromServer(`change "${item.description}" was rejected: ${result.code} ${result.reason || ""}`);
+    }
+    // recovering stays true: disconnect() (called by the reload) resets the provider
   }
 
   private onMessage(response: any) {
@@ -373,6 +534,24 @@ export class WssCrdtProvider {
       this.detach();
       this.detach = null;
     }
+    if (this.detachOpen) {
+      this.detachOpen();
+      this.detachOpen = null;
+    }
+    if (this.ackTimer) {
+      clearTimeout(this.ackTimer);
+      this.ackTimer = null;
+    }
+    // Whatever is still unanswered goes out now, in order, without waiting:
+    // the graph is closing and nothing here can act on the answers.  Late
+    // answers are still recorded by the sync status through onDecision.
+    if (this.connected && !this.recovering) {
+      this.outbox.forEach((item) => this.wss.send(item.frame));
+    }
+    this.outbox = [];
+    this.inFlight = null;
+    this.recovering = false;
+    useSyncStatusStore().setConnected(false);
     if (this.channelListener && this.connected && this.graphId) {
       // Without this the server keeps sending this connection traffic for a
       // graph nobody here is looking at any more.

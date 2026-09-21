@@ -548,6 +548,17 @@ export default {
     },
   },
   watch: {
+    /** The document was swapped (a reload from the server): bind to the new text. */
+    ytext(next, previous) {
+      if (next === previous) {
+        return;
+      }
+      this.destroyBinding();
+      const editor = this.$refs.editor && this.$refs.editor.pinstance;
+      if (next && editor) {
+        this.bindToDocument(editor);
+      }
+    },
     dirty() {
       this.sendBroadcast({
         type: 'dirty',

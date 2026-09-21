@@ -13,11 +13,20 @@ export interface TrackedMutation {
 
 const KEEP_ACCEPTED = 20;
 
+/** Changes the server refused, kept so the user can copy them back by hand. */
+export interface Quarantine {
+  at: number;
+  reason: string;
+  descriptions: string[];
+  graph: any;
+}
+
 /** What the server has said about each local change (plan §4.4.4, PB-024 first half). */
 export const useStore = defineStore("syncStatus", {
   state: () => ({
     mutations: {} as Record<string, TrackedMutation>,
     connected: false,
+    quarantine: null as Quarantine | null,
   }),
   getters: {
     pending: (s) => Object.values(s.mutations).filter((m) => m.state === "pending"),
@@ -47,6 +56,12 @@ export const useStore = defineStore("syncStatus", {
     },
     dismissRejected() {
       Object.values(this.mutations).filter((m) => m.state === "rejected").forEach((m) => delete this.mutations[m.mutationId]);
+    },
+    dismiss(mutationIds: string[]) {
+      mutationIds.forEach((id) => delete this.mutations[id]);
+    },
+    setQuarantine(q: Quarantine | null) {
+      this.quarantine = q;
     },
     setConnected(connected: boolean) {
       this.connected = connected;

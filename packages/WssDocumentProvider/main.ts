@@ -118,6 +118,12 @@ class WSSDataProvider {
     requireToken = false;
     private opening = false;
     private reconnectDelay = 1000;
+    private openListeners = new Set<() => void>();
+    /** Called every time the socket (re)opens, after queued messages and subscriptions are replayed. */
+    onOpen(listener: () => void): () => void {
+        this.openListeners.add(listener);
+        return () => { this.openListeners.delete(listener); };
+    }
     setToken(token: string) {
         this.token = token;
         this.httpDataProvider.setToken(token);
@@ -174,6 +180,9 @@ class WSSDataProvider {
             }
             this.subscriptions.forEach((channelId) => {
                 this.subscribe(channelId, null);
+            });
+            this.openListeners.forEach((listener) => {
+                try { listener(); } catch (err) { console.error("A socket open listener failed", err); }
             });
         });
         socket.addEventListener("close", (ev: any) => {

@@ -483,6 +483,31 @@ export default {
         this.historyPosition = 0;
         this.graphLoaded = false;
     },
+    /**
+     * Drop the local copy of the open graph and load it again from the server.
+     * Used after the server rejects a change: the local document holds structs
+     * the server refused, and Yjs cannot take them back out.  The browser copy
+     * is cleared too, or it would resend the refused change on the next open.
+     */
+    async reloadFromServer(reason: string) {
+        const graphId = this.crdtSession ? this.crdtSession.graphId : null;
+        if (!graphId) {
+            return;
+        }
+        console.warn(`Reloading graph ${graphId} from the server: ${reason}`);
+        const orchestrator = useOrchestratorStore();
+        this.closeGraph();
+        for (const provider of orchestrator.syncProviders) {
+            if (provider.name === "indexeddb" && typeof provider.remove === "function") {
+                try {
+                    await provider.remove(graphId);
+                } catch (err) {
+                    console.error("Cannot clear the browser copy of the graph.", err);
+                }
+            }
+        }
+        await this.open(graphId);
+    },
     /** Read a pre-CRDT graph out of the legacy event store, if there is one. */
     async loadLegacyGraph(graphId: string) {
         const orchestrator = useOrchestratorStore();

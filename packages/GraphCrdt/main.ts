@@ -43,6 +43,19 @@ export {
   channelIdFor,
 } from "./protocol";
 export type { SyncMessage } from "./protocol";
+export {
+  SERVER_OWNED_NAMESPACES,
+  PRIVILEGE_NAMESPACES,
+  graphKeyNamespace,
+  graphPropertyNamespace,
+  nodePropertyNamespace,
+  nodeKeyNamespace,
+  isPrivilegedNode,
+  isInfrastructureCapability,
+} from "./namespaces";
+export type { Namespace } from "./namespaces";
+export { semanticDiff, describeDiff } from "./diff";
+export type { DiffSummary, DiffOp, ConnectorRef, PrivilegeDelta } from "./diff";
 
 /**
  * Marker used as the `origin` of every transaction produced by a local user
