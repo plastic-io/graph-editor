@@ -16,6 +16,8 @@ export type Namespace =
   | "code"
   | "capabilities"
   | "placement"
+  /** Where a node's code runs: inside a contained realm, or in the runtime's own. */
+  | "containment"
   | "budgets"
   | "tests"
   | "iac"
@@ -31,7 +33,7 @@ const HOUSEKEEPING_KEYS = ["version", "lastUpdate"];
 export const SERVER_OWNED_NAMESPACES: Namespace[] = ["meta", "observed", "policy"];
 
 /** Namespaces whose change widens what a node may do. */
-export const PRIVILEGE_NAMESPACES: Namespace[] = ["capabilities", "placement"];
+export const PRIVILEGE_NAMESPACES: Namespace[] = ["capabilities", "placement", "containment"];
 
 /** Keys at the root of the graph. */
 export function graphKeyNamespace(key: string): Namespace {
@@ -63,6 +65,8 @@ export function nodePropertyNamespace(key: string): Namespace {
       return "capabilities";
     case "placement":
       return "placement";
+    case "containment":
+      return "containment";
     case "budget": case "budgets":
       return "budgets";
     case "tests":

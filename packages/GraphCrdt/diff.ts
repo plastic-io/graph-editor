@@ -31,7 +31,7 @@ export interface DiffOp {
   op:
     | "add-node" | "remove-node" | "set-node-code" | "set-node-props" | "set-node-fields"
     | "set-graph-props" | "set-graph-fields" | "connect" | "disconnect"
-    | "set-component-pin" | "set-capabilities" | "set-placement" | "set-budget" | "set-iac-desired"
+    | "set-component-pin" | "set-capabilities" | "set-placement" | "set-containment" | "set-budget" | "set-iac-desired"
     | "set-meta" | "set-observed" | "set-policy"
     | "touch";
   namespace: Namespace;
@@ -44,6 +44,8 @@ export interface DiffOp {
 export interface PrivilegeDelta {
   /** Nodes whose placement became `server`. */
   placementToServer: string[];
+  /** Nodes that stopped being contained, so their code regains the runtime's own realm. */
+  containmentDropped: string[];
   /** Nodes that gained capabilities, with the names gained. */
   capabilitiesAdded: { nodeId: string; capabilities: string[] }[];
   /** Whether any capability gained reaches the cloud account (aws:*, iam*). */
@@ -113,6 +115,7 @@ const NAMESPACE_OP: Partial<Record<Namespace, DiffOp["op"]>> = {
   housekeeping: "touch",
   capabilities: "set-capabilities",
   placement: "set-placement",
+  containment: "set-containment",
   budgets: "set-budget",
   iac: "set-iac-desired",
   meta: "set-meta",
@@ -124,7 +127,7 @@ const NAMESPACE_OP: Partial<Record<Namespace, DiffOp["op"]>> = {
 export function semanticDiff(before: any | null, after: any | null): DiffSummary {
   const ops: DiffOp[] = [];
   const namespaces = new Set<Namespace>();
-  const delta: PrivilegeDelta = { placementToServer: [], capabilitiesAdded: [], infrastructure: false, privilegedEdges: [] };
+  const delta: PrivilegeDelta = { placementToServer: [], containmentDropped: [], capabilitiesAdded: [], infrastructure: false, privilegedEdges: [] };
   const summary: DiffSummary = {
     empty: true, seed: before === null && after !== null, namespaces: [], ops,
     nodesAdded: [], nodesRemoved: [], nodesChanged: [], graphKeysChanged: [],
@@ -166,6 +169,9 @@ export function semanticDiff(before: any | null, after: any | null): DiffSummary
     if (n.placement === "server" && p.placement !== "server") {
       delta.placementToServer.push(nodeId);
     }
+    if (p.containment === "isolate" && n.containment !== "isolate") {
+      delta.containmentDropped.push(nodeId);
+    }
     const had = new Set((Array.isArray(p.capabilities) ? p.capabilities : []).map(capabilityName));
     const gained = (Array.isArray(n.capabilities) ? n.capabilities : []).map(capabilityName).filter((c: string) => c && !had.has(c));
     if (gained.length) {
@@ -181,6 +187,7 @@ export function semanticDiff(before: any | null, after: any | null): DiffSummary
       // a new node brings its own privileges and wiring with it
       const props = node.properties || {};
       if (props.placement === "server") push({ op: "set-placement", namespace: "placement", nodeId: id });
+      if (props.containment) push({ op: "set-containment", namespace: "containment", nodeId: id });
       if (Array.isArray(props.capabilities) && props.capabilities.length) push({ op: "set-capabilities", namespace: "capabilities", nodeId: id });
       notePrivilege(id, null, node);
       connectorsOf(node).forEach(noteConnectorAdded);

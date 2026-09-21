@@ -20,6 +20,7 @@ export type MutationOp =
   | { op: "set-component-pin"; nodeId: string; pin: { publishedId: string; version: number; digest?: string } }
   | { op: "set-capabilities"; nodeId: string; granted: any[] }
   | { op: "set-placement"; nodeId: string; placement: string }
+  | { op: "set-containment"; nodeId: string; containment: "isolate" | "worker" }
   | { op: "set-budget"; nodeId?: string; budget: any }
   | { op: "set-iac-desired"; nodeId: string; desired: any };
 
@@ -39,7 +40,7 @@ export interface ApplyResult {
   touched: string[];
 }
 
-const PROTECTED_NODE_PROPS = ["component", "capabilities", "placement", "budget", "budgets", "iac", "tests"];
+const PROTECTED_NODE_PROPS = ["component", "capabilities", "placement", "containment", "budget", "budgets", "iac", "tests"];
 const PROTECTED_GRAPH_KEYS = ["id"];
 
 function clone<T>(v: T): T {
@@ -201,6 +202,18 @@ export function applyOps(projection: any, ops: MutationOp[]): ApplyResult {
         if (!n) { fail(index, "NOT_FOUND", `no node ${op.nodeId}`, op.nodeId); break; }
         n.properties = n.properties || {};
         n.properties.capabilities = clone(op.granted || []);
+        touched.add(op.nodeId);
+        break;
+      }
+      case "set-containment": {
+        const n = nodeById(op.nodeId);
+        if (!n) break;
+        if (op.containment !== "isolate" && op.containment !== "worker") {
+          errors.push({ code: "SCHEMA_INVALID", message: `containment is isolate or worker, not ${op.containment}`, index });
+          break;
+        }
+        n.properties = n.properties || {};
+        n.properties.containment = op.containment;
         touched.add(op.nodeId);
         break;
       }
