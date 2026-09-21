@@ -1,0 +1,10 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-proposals",
+  "license": "BSD-3-Clause",
+  "author": "TonyGermaneri@gmail.com",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Review what agents propose for a graph: preview the change, see what it touches, commit or reject; and see what agents did.",
+  "main": "./main.ts",
+  "files": []
+}

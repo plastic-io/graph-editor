@@ -48,6 +48,8 @@ import SharedMouse from "@plastic-io/graph-editor-vue3-shared-mouse";
 import SharedUsers from "@plastic-io/graph-editor-vue3-shared-users";
 import SyncStatus from "@plastic-io/graph-editor-vue3-sync-status";
 import Versions from "@plastic-io/graph-editor-vue3-versions";
+import Proposals from "@plastic-io/graph-editor-vue3-proposals";
+import AgentSettings from "@plastic-io/graph-editor-vue3-agent-settings";
 import SettingsPanel from "@plastic-io/graph-editor-vue3-settings-panel";
 import Workspace from "@plastic-io/graph-editor-vue3-workspace";
 import WorkspaceControlPanel from "@plastic-io/graph-editor-vue3-workspace-control-panel";
@@ -106,6 +108,8 @@ const plugins = [
   SharedUsers,
   SyncStatus,
   Versions,
+  Proposals,
+  AgentSettings,
   SettingsPanel,
   WorkspaceControlPanel,
   WssDocumentProvider,

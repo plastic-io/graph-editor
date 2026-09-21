@@ -56,6 +56,8 @@ export {
 export type { Namespace } from "./namespaces";
 export { semanticDiff, describeDiff } from "./diff";
 export { canonical, definitionView, layoutView, componentView } from "./digest";
+export { applyOps } from "./ops";
+export type { MutationOp, OpError, ApplyResult } from "./ops";
 export type { DiffSummary, DiffOp, ConnectorRef, PrivilegeDelta } from "./diff";
 
 /**

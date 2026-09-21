@@ -522,11 +522,16 @@ export class WssCrdtProvider {
   /* ------------------------------------------------------ versions */
 
   /** One authenticated JSON call to the CRDT routes; throws with the server's code on failure. */
-  private async api(path: string, init: RequestInit = {}): Promise<any> {
+  private api(path: string, init: RequestInit = {}): Promise<any> {
+    return this.call(`crdt/${path}`, init);
+  }
+
+  /** One authenticated JSON call to any route of the graph server. */
+  async call(path: string, init: RequestInit = {}): Promise<any> {
     if (!this.httpBase) {
       throw new Error("No graph server is configured.");
     }
-    const response = await fetch(`${this.httpBase}crdt/${path}`, {
+    const response = await fetch(`${this.httpBase}${path}`, {
       ...init,
       headers: { "Content-Type": "application/json", ...this.authHeaders(), ...((init.headers as any) || {}) },
     });
@@ -564,6 +569,39 @@ export class WssCrdtProvider {
   /** Bring the live graph back to a version, as an ordinary change everyone receives. */
   restoreRevision(graphId: string, revisionId: string): Promise<any> {
     return this.api(`${graphId}/revisions/${revisionId}/restore`, { method: "POST" });
+  }
+
+  /* ------------------------------------------------------ proposals, agents */
+
+  listProposals(graphId: string): Promise<any> {
+    return this.api(`${graphId}/proposals`);
+  }
+  proposal(graphId: string, proposalId: string): Promise<any> {
+    return this.api(`${graphId}/proposals/${proposalId}`);
+  }
+  createProposal(graphId: string, body: any): Promise<any> {
+    return this.api(`${graphId}/proposals`, { method: "POST", body: JSON.stringify(body) });
+  }
+  validateProposal(graphId: string, proposalId: string, rebase = false): Promise<any> {
+    return this.api(`${graphId}/proposals/${proposalId}/validate${rebase ? "?rebase=1" : ""}`, { method: "POST" });
+  }
+  decideProposal(graphId: string, proposalId: string, decision: "approve" | "reject", proposalDigest?: string, rationale = ""): Promise<any> {
+    return this.api(`${graphId}/proposals/${proposalId}/decide`, { method: "POST", body: JSON.stringify({ decision, proposalDigest, rationale }) });
+  }
+  commitProposal(graphId: string, proposalId: string): Promise<any> {
+    return this.api(`${graphId}/proposals/${proposalId}/commit`, { method: "POST" });
+  }
+  auditRecords(graphId: string, limit = 50): Promise<any> {
+    return this.api(`${graphId}/audit?limit=${limit}`);
+  }
+  listDelegations(): Promise<any> {
+    return this.call("policy/agents");
+  }
+  putDelegation(agentSub: string, graphId: string, body: { scopes: string[]; expiresAt?: string | null; label?: string }): Promise<any> {
+    return this.call(`policy/agents/${encodeURIComponent(agentSub)}/${graphId === "*" ? "_all" : graphId}`, { method: "PUT", body: JSON.stringify(body) });
+  }
+  deleteDelegation(agentSub: string, graphId: string): Promise<any> {
+    return this.call(`policy/agents/${encodeURIComponent(agentSub)}/${graphId === "*" ? "_all" : graphId}`, { method: "DELETE" });
   }
 
   /* ------------------------------------------------------ publishing */

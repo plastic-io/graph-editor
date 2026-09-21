@@ -20,6 +20,7 @@
     "updates.ts",
     "namespaces.ts",
     "diff.ts",
-    "digest.ts"
+    "digest.ts",
+    "ops.ts"
   ]
 }
