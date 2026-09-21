@@ -56,7 +56,16 @@ const rpc = {
     scheduler.addEventListener("warning", messenger('warning'));
     scheduler.addEventListener("begin", messenger('begin'));
     scheduler.addEventListener("end", messenger('end'));
-  }
+    // 2.1 events: custom observations from host.emit, and cancellations
+    scheduler.addEventListener("observation", messenger('observation'));
+    scheduler.addEventListener("cancel", messenger('cancel'));
+  },
+  /** Stop every open execution (scheduler 2.1); older schedulers have nothing to stop. */
+  cancel(reason: string) {
+    if (scheduler && typeof (scheduler as any).cancelAll === 'function') {
+      return (scheduler as any).cancelAll(reason || 'cancelled');
+    }
+  },
 } as any;
 const panic = () => {
   const panic = () => {
@@ -73,8 +82,13 @@ onmessage = function(e: any) {
   if (e.data.method === 'init') {
     return rpc.init.apply(null, e.data.args);
   }
+  if (e.data.method === 'cancel') {
+    return rpc.cancel.apply(null, e.data.args);
+  }
   if (e.data.method === 'change') {
-    // HACK: probably needs some sort of GC here
+    // The old scheduler's executions are cancelled cooperatively (2.1); the
+    // panic listener stays as the stop for schedulers without cancelAll.
+    rpc.cancel('graph changed');
     panic();
     rpc.init({graph: e.data.args[0]});
     return;
