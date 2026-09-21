@@ -62,3 +62,50 @@ export function layoutView(projection: any): any {
     })),
   };
 }
+
+/**
+ * The identity of a published component (plan §4.3.2): what a consumer would
+ * notice if it changed.  A consumer embeds a copy of the artifact and then
+ * touches it in ways that mean nothing to the program: it drops `url` and
+ * `artifact`, gives the copy its own id, version and graphId, moves it around
+ * on screen, clears the connectors of an imported node (they belong to the
+ * consumer's graph), and fills in `visible` on ports that predate the flag.
+ * None of that is part of the view, so a faithful copy always matches the
+ * manifest's digest and a drifted one never does.
+ */
+const NODE_VOLATILE = ["id", "url", "version", "graphId", "artifact", "artifactlId", "publishedOn", "publishedBy", "userId", "loaded"];
+const GRAPH_VOLATILE = ["url", "version", "artifact", "publishedOn", "publishedBy", "userId"];
+
+function normalizePorts(ports: any): any {
+  if (!Array.isArray(ports)) return ports;
+  return ports.map((port: any) => (port && typeof port === "object" ? { ...port, visible: port.visible === undefined ? true : port.visible } : port));
+}
+
+function nodeView(node: any, withConnectors: boolean, withId: boolean): any {
+  const out: Record<string, any> = {};
+  Object.keys(node || {}).forEach((k) => {
+    if (NODE_VOLATILE.includes(k) || k === "properties" || k === "template" || k === "edges") return;
+    if (DEFINITION.includes(nodeKeyNamespace(k))) out[k] = node[k];
+  });
+  if (withId) out.id = node.id;
+  const properties = pick(node.properties, (k) => DEFINITION.includes(nodePropertyNamespace(k)));
+  properties.inputs = normalizePorts(properties.inputs);
+  properties.outputs = normalizePorts(properties.outputs);
+  out.properties = properties;
+  out.template = node.template;
+  out.edges = (Array.isArray(node.edges) ? node.edges : []).map((e: any) => (withConnectors ? { field: e.field, connectors: e.connectors } : { field: e.field }));
+  return out;
+}
+
+/** The part of a published artifact its digest is taken over. */
+export function componentView(kind: "graph" | "node", artifact: any): any {
+  if (!artifact) return null;
+  if (kind === "node") {
+    return nodeView(artifact, false, false);
+  }
+  return {
+    ...pick(artifact, (k) => k !== "nodes" && k !== "properties" && !GRAPH_VOLATILE.includes(k) && DEFINITION.includes(graphKeyNamespace(k))),
+    properties: pick(artifact.properties, (k) => DEFINITION.includes(graphPropertyNamespace(k))),
+    nodes: (artifact.nodes || []).map((node: any) => nodeView(node, true, true)),
+  };
+}

@@ -289,15 +289,42 @@ export const useStore = defineStore('orchestrator', {
         this.toc = {};
       }
     },
-    async publishGraph() {
+    async publishGraph(label = "") {
         this.infoMessage = 'Publishing';
         this.showInfo = true;
         const graph = this.graphStore.graph;
-        await this.dataProviders.publish!.set(graph.id, {
-            graph,
-            id: newId(),
-        });
-        this.infoMessage = 'Published ' + graph.properties.name;
+        try {
+            // Publishing names a revision (Versions menu); the version number is the revision's.
+            const result = typeof this.graphStore.publishVersion === 'function'
+                ? await this.graphStore.publishVersion({ label })
+                : null;
+            if (result && result.manifest) {
+                this.infoMessage = (result.created ? 'Published ' : 'Already published ') + graph.properties.name + ' v' + result.manifest.version;
+            } else {
+                await this.dataProviders.publish!.set(graph.id, { graph, id: newId() });
+                this.infoMessage = 'Published ' + graph.properties.name;
+            }
+        } catch (err: any) {
+            this.infoMessage = 'Cannot publish: ' + (err && err.message);
+        }
+        setTimeout(() => {
+          this.showInfo = false;
+        }, 3400);
+        this.getToc();
+    },
+    async publishNode(nodeId: string, label = "") {
+        this.infoMessage = 'Publishing node';
+        this.showInfo = true;
+        try {
+            const result = typeof this.graphStore.publishNodeVersion === 'function'
+                ? await this.graphStore.publishNodeVersion(nodeId, label)
+                : null;
+            this.infoMessage = result && result.manifest
+                ? (result.created ? 'Published ' : 'Already published ') + result.manifest.name + ' v' + result.manifest.version
+                : 'Cannot publish the node without a graph server.';
+        } catch (err: any) {
+            this.infoMessage = 'Cannot publish: ' + (err && err.message);
+        }
         setTimeout(() => {
           this.showInfo = false;
         }, 3400);
@@ -468,7 +495,8 @@ export const useStore = defineStore('orchestrator', {
           if (itemType === "graph" && itemId === this.graphStore.graph.id) {
               return e.setValue(this.graphStore.graph);
           }
-          const item = await this.dataProviders.publish!.get(artifactPrefix + itemId + "." + itemVersion);
+          // the artifact route is /artifacts/{id}/{version}
+          const item = await this.dataProviders.publish!.get(artifactPrefix + itemId + "/" + itemVersion);
           e.setValue(item);
       }
     },

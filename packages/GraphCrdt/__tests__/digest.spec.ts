@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { canonical, definitionView, layoutView } from "../digest";
-import { makeGraph, makeNode, copy } from "./fixtures";
+import { canonical, definitionView, layoutView, componentView } from "../digest";
+import { makeGraph, makeNode, makeConnector, copy } from "./fixtures";
 
 describe("revision digest views", () => {
   it("canonical JSON sorts keys at every level and drops undefined", () => {
@@ -23,5 +23,25 @@ describe("revision digest views", () => {
     edited.nodes[0].template.set = "edges.output = 2;";
     expect(canonical(definitionView(edited))).not.toBe(canonical(definitionView(graph)));
     expect(canonical(layoutView(edited))).toBe(canonical(layoutView(graph)));
+  });
+
+  it("a component's view survives what an importer does to its copy", () => {
+    const graph = makeGraph({ nodes: [makeNode({ id: "n1" })] });
+    const published = { ...copy(graph), url: "g", version: 7, publishedOn: 1, publishedBy: "x" };
+    const embedded = copy(published);
+    delete embedded.url; delete embedded.artifact; embedded.version = 0;
+    embedded.nodes[0].properties.x = 999;              // moved on screen
+    expect(canonical(componentView("graph", embedded))).toBe(canonical(componentView("graph", published)));
+    const drifted = copy(embedded);
+    drifted.nodes[0].template.set = "changed";
+    expect(canonical(componentView("graph", drifted))).not.toBe(canonical(componentView("graph", published)));
+
+    const node = makeNode({ id: "p1" });
+    (node.edges[0].connectors as any[]).push(makeConnector({ id: "c1" }));
+    delete (node.properties.inputs[0] as any).visible;
+    const imported = copy(node);
+    imported.id = "host-1"; imported.url = "elsewhere"; imported.loaded = true; imported.edges[0].connectors = [];
+    imported.properties.inputs[0].visible = true;
+    expect(canonical(componentView("node", imported))).toBe(canonical(componentView("node", node)));
   });
 });

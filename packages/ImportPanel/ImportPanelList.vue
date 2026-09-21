@@ -51,22 +51,23 @@ export default {
             "getToc",
             "download",
         ]),
-        dragStart(e, item) {
+        dragStart(e: any, item: any) {
             e.dataTransfer.setData("application/json+plastic-io", JSON.stringify(item));
             e.dataTransfer.dropEffect = "link";
         },
-        iconType(item) {
+        iconType(item: string) {
             return {
                 publishedVector: "mdi-network",
+                publishedNode: "mdi-network",
                 publishedGraph: "mdi-switch",
             }[item] || "mdi-graph";
         },
-        groupByPrefix(toc) {
-            const {id, ...arts } = toc;
-            const group = {};
-            Object.values(arts)
-                .filter(item => /published/.test(item.type))
-                .forEach((item) => {
+        groupByPrefix(toc: any) {
+            const {id, ...arts } = toc || {};
+            const group: Record<string, any[]> = {};
+            (Object.values(arts) as any[])
+                .filter((item: any) => /published/.test(item.type))
+                .forEach((item: any) => {
                     const [prefix, suffix] = item.id.split('.');
                     group[prefix] = group[prefix] || [];
                     group[prefix].push(item);

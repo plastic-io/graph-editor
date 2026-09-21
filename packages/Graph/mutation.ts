@@ -1,3 +1,4 @@
+import { externalFields, publishedIdOf, pinFor } from "./components";
 import {authorizedFetch} from "@plastic-io/graph-editor-vue3-authentication-provider";
 import {markRaw} from "vue";
 import getName from "@plastic-io/graph-editor-names";
@@ -51,13 +52,29 @@ export default {
     async addItem(e: any) {
         const artifactPrefix = "artifacts/";
         let item, er;
-        if (e["artifact-url"] && this.preferencesStore.preferences.graphHTTPServer) {
+        const server = this.preferencesStore.preferences.graphHTTPServer;
+        if (e["artifact-url"] && server) {
+            // A server artifact is a published component: fetch it with its manifest so
+            // the imported node carries the pin admission checks the copy against.
             try {
-                const artifactUrl = this.preferencesStore.preferences.graphHTTPServer + e["artifact-url"];
-                item = await authorizedFetch(artifactUrl);
-                item = await item.json();
-                e.url = artifactUrl;
-                item.url = artifactUrl;
+                const publishedId = publishedIdOf(e.id) || publishedIdOf(e["artifact-url"]);
+                const provider = this.versionsProvider();
+                if (provider && publishedId && typeof provider.component === "function") {
+                    const { manifest, artifact } = await provider.component(publishedId, e.version || "latest");
+                    item = artifact;
+                    e.manifest = manifest;
+                    e.publishedId = publishedId;
+                    if (manifest) {
+                        e.version = manifest.version;
+                    }
+                }
+                if (!item) {
+                    const artifactUrl = server + e["artifact-url"];
+                    item = await authorizedFetch(artifactUrl);
+                    item = await item.json();
+                    e.url = artifactUrl;
+                    item.url = artifactUrl;
+                }
             } catch (err) {
                 er = err;
             }
@@ -78,7 +95,8 @@ export default {
             }
         } else {
             try {
-                item = await this.orchestratorStore.dataProviders.publish.get(artifactPrefix + e.id + "." + e.version);
+                // the artifact route is /artifacts/{id}/{version}
+                item = await this.orchestratorStore.dataProviders.publish.get(artifactPrefix + publishedIdOf(e.id) + "/" + e.version);
             } catch (err) {
                 er = err;
             }
@@ -187,33 +205,9 @@ export default {
         };
         pos.x = Math.floor(pos.x / 10) * 10;
         pos.y = Math.floor(pos.y / 10) * 10;
-        const linkedGraphInputs: {[key: string]: any} = {};
-        const linkedGraphOutputs: {[key: string]: any} = {};
         const graph = e.item;
-        graph.nodes.forEach((v: any) => {
-            v.properties.inputs.forEach((i: any) => {
-                if (i.external) {
-                    linkedGraphInputs[i.name] = {
-                        id: v.id,
-                        field: i.name,
-                        type: i.type,
-                        visible: i.visible === undefined ? true : i.visible,
-                        external: false,
-                    } as any;
-                }
-            });
-            v.properties.outputs.forEach((i: any) => {
-                if (i.external) {
-                    linkedGraphOutputs[i.name] = {
-                        id: v.id,
-                        field: i.name,
-                        type: i.type,
-                        visible: i.visible === undefined ? true : i.visible,
-                        external: false,
-                    } as any;
-                }
-            });
-        });
+        const { inputs: linkedGraphInputs, outputs: linkedGraphOutputs } = externalFields(graph);
+        const publishedId = e.publishedId || publishedIdOf(e.id) || e.id;
         // create IOs (inputs, outputs/edges) on outter node to support IO of graphs's externals
         const id = newId();
         const node = {
@@ -221,12 +215,13 @@ export default {
             edges: [],
             version: this.graphSnapshot.version,
             graphId: this.graphSnapshot.id,
-            artifact: e.url || ("artifacts/" + e.id + "." + e.version),
+            artifact: e.url || ("artifacts/" + publishedId + "." + e.version),
             url: getName().replace(/ /g, ''),
             data: null,
             linkedGraph: {
-                id: e.id,
+                id: publishedId,
                 version: e.version,
+                revisionId: e.manifest && e.manifest.provenance && e.manifest.provenance.fromGraph ? e.manifest.provenance.fromGraph.revisionId : undefined,
                 data: {},
                 loaded: true,
                 graph,
@@ -244,6 +239,7 @@ export default {
                 description: e.description,
                 tags: [],
                 icon: "mdi-lan",
+                component: pinFor(e.manifest),
                 positionAbsolute: false,
                 appearsInPresentation: false,
                 appearsInExport: false,
@@ -331,13 +327,14 @@ export default {
                 i.visible = i.visible === undefined ? true : i.visible;
             });
         });
+        const publishedId = e.publishedId || publishedIdOf(e.id) || e.id;
         const node = {
             id: id,
             linkedNode: e.item,
             edges: e.item.edges,
             version: this.graphSnapshot.version,
             graphId: this.graphSnapshot.id,
-            artifact: e.url || ("artifacts/" + e.id + "." + e.version),
+            artifact: e.url || ("artifacts/" + publishedId + "." + e.version),
             url: e.url,
             data: e.item.data,
             properties: {
@@ -347,6 +344,7 @@ export default {
                 name: e.name,
                 description: e.description,
                 scripts: e.scripts || '',
+                component: pinFor(e.manifest),
                 tags: e.item.properties.tags,
                 icon: e.item.properties.icon,
                 positionAbsolute: false,

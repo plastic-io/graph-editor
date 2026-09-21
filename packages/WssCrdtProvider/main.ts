@@ -566,6 +566,37 @@ export class WssCrdtProvider {
     return this.api(`${graphId}/revisions/${revisionId}/restore`, { method: "POST" });
   }
 
+  /* ------------------------------------------------------ publishing */
+
+  /** Publish the graph (or one of its nodes) at a revision: the head, cut now if needed, or an older one by id. */
+  publishGraph(graphId: string, options: { label?: string; nodeId?: string; revisionId?: string } = {}): Promise<any> {
+    return this.api(`${graphId}/publish`, { method: "POST", body: JSON.stringify(options) });
+  }
+
+  /** Every published version of a component. */
+  async componentVersions(publishedId: string): Promise<any> {
+    if (!this.httpBase) {
+      throw new Error("No graph server is configured.");
+    }
+    const response = await fetch(`${this.httpBase}components/${publishedId}`, { headers: this.authHeaders() });
+    if (!response.ok) {
+      throw new Error(`Cannot list versions of ${publishedId}: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  /** One published version: its manifest and artifact (`version` may be "latest"). */
+  async component(publishedId: string, version: number | string): Promise<any> {
+    if (!this.httpBase) {
+      throw new Error("No graph server is configured.");
+    }
+    const response = await fetch(`${this.httpBase}components/${publishedId}/${version}`, { headers: this.authHeaders() });
+    if (!response.ok) {
+      throw new Error(`Cannot read ${publishedId}@${version}: ${response.status}`);
+    }
+    return response.json();
+  }
+
   /** Ask the server to drop the document.  Object removal happens there. */
   async remove(graphId: string): Promise<void> {
     if (!this.connected) {

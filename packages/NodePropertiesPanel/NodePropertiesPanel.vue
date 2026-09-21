@@ -8,12 +8,26 @@
                 <v-card class="ma-0 pa-0" flat>
                     <v-card-text class="ma-0 pa-0">
                     <v-alert
-                        v-if="node.artifact"
+                        v-if="node.artifact && !node.properties.component"
                         type="info"
                         prominent
                         class="ma-0"
                     >
                         This node is linked from another graph.
+                    </v-alert>
+                    <v-alert
+                        v-if="node.properties.component"
+                        type="info"
+                        variant="tonal"
+                        class="ma-0 mb-2"
+                    >
+                        Component {{ node.properties.component.publishedId }} v{{ node.properties.component.version }}
+                        <div v-if="newerVersion" class="mt-2">
+                            v{{ newerVersion.version }} is published{{ newerVersion.label ? ': ' + newerVersion.label : '' }}.
+                            <v-btn size="small" color="primary" class="ml-2" :loading="upgrading" @click="upgrade(newerVersion.version)" prepend-icon="mdi-arrow-up-bold">Upgrade</v-btn>
+                        </div>
+                        <div v-else-if="versionsChecked" class="mt-1"><small>This is the newest published version.</small></div>
+                        <div v-if="upgradeMessage" class="mt-1"><small>{{ upgradeMessage }}</small></div>
                     </v-alert>
                         <v-text-field
                             help-topic="nodeName"
@@ -115,16 +129,61 @@ export default {
         ...mapActions(useOrchestratorStore, [
           'getPluginsByType',
         ]),
+        ...mapActions(useGraphStore, [
+            'componentVersions',
+            'upgradeComponent',
+        ]),
+        ...mapActions(useOrchestratorStore, [
+            'publishNode',
+        ]),
         publish() {
             this.publishNode(this.node.id);
         },
+        async checkVersions() {
+            const pin = this.node && this.node.properties && this.node.properties.component;
+            this.newerVersion = null;
+            this.versionsChecked = false;
+            if (!pin) {
+                return;
+            }
+            try {
+                const { versions } = await this.componentVersions(pin.publishedId);
+                const newer = (versions || []).filter((v: any) => v.version > pin.version).sort((a: any, b: any) => b.version - a.version)[0];
+                this.newerVersion = newer || null;
+                this.versionsChecked = true;
+            } catch (err: any) {
+                this.upgradeMessage = 'Cannot check for newer versions: ' + (err && err.message);
+            }
+        },
+        async upgrade(version: number) {
+            this.upgrading = true;
+            this.upgradeMessage = '';
+            try {
+                const result = await this.upgradeComponent(this.node.id, version);
+                this.upgradeMessage = result && result.droppedEdges && result.droppedEdges.length
+                    ? `Upgraded to v${version}; connections dropped on removed outputs: ${result.droppedEdges.join(', ')}`
+                    : `Upgraded to v${version}.`;
+                await this.checkVersions();
+            } catch (err: any) {
+                this.upgradeMessage = 'Cannot upgrade: ' + (err && err.message);
+            } finally {
+                this.upgrading = false;
+            }
+        },
+    },
+    mounted() {
+        this.checkVersions();
     },
     data() {
         return {
-            node: null,
+            node: null as any,
             panel: null,
             updateTimer: 0,
             updateTimeout: 1000,
+            newerVersion: null as any,
+            versionsChecked: false,
+            upgrading: false,
+            upgradeMessage: '',
         };
     },
     watch: {

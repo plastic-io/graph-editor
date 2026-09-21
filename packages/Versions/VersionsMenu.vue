@@ -19,7 +19,7 @@
           Previewing a version. <a href="#" @click.prevent="leavePreview">Back to live</a>
         </v-alert>
         <v-list density="compact" max-height="45vh" style="overflow-y: auto">
-          <v-list-item v-for="r in revisionsNewestFirst" :key="r.revisionId" :title="'v' + r.seq + (r.label ? ' ' + r.label : '')" :subtitle="subtitleFor(r)">
+          <v-list-item v-for="r in revisionsNewestFirst" :key="r.revisionId" :title="'v' + r.seq + (r.label ? ' ' + r.label : '') + (isPublished(r) ? '  · published' : '')" :subtitle="subtitleFor(r)">
             <template v-slot:prepend>
               <v-icon :color="isActive(r) ? 'success' : undefined">{{ isActive(r) ? 'mdi-play-circle' : 'mdi-tag-outline' }}</v-icon>
             </template>
@@ -27,6 +27,7 @@
               <v-btn icon="mdi-eye-outline" size="x-small" variant="text" title="Preview" @click="preview(r)"/>
               <v-btn icon="mdi-restore" size="x-small" variant="text" title="Restore into the live graph" @click="restore(r)"/>
               <v-btn icon="mdi-rocket-launch-outline" size="x-small" variant="text" :disabled="isActive(r)" :title="isActive(r) ? 'This version is what runs' : 'Run this version'" @click="activate(r)"/>
+              <v-btn icon="mdi-share-variant" size="x-small" variant="text" :disabled="isPublished(r)" :title="isPublished(r) ? 'Published as a component' : 'Publish this version as a component'" @click="publish(r)"/>
             </template>
           </v-list-item>
           <v-list-item v-if="!revisions.length" title="No versions yet" subtitle="Save one to name the graph as it stands"/>
@@ -52,6 +53,7 @@ export default {
       head: null as any,
       active: null as any,
       current: null as any,
+      published: {} as Record<string, any>,
     };
   },
   watch: {
@@ -76,7 +78,24 @@ export default {
     },
   },
   methods: {
-    ...mapActions(useGraphStore, ["listVersions", "saveVersion", "previewVersion", "restoreVersion", "activateVersion", "exitRewind", "currentVersion"]),
+    ...mapActions(useGraphStore, ["listVersions", "saveVersion", "previewVersion", "restoreVersion", "activateVersion", "exitRewind", "currentVersion", "publishVersion"]),
+    isPublished(r: any): boolean {
+      return !!(this as any).published[String(r.seq)];
+    },
+    async publish(r: any) {
+      this.busy = true;
+      try {
+        const result = await (this as any).publishVersion({ revisionId: r.revisionId });
+        if (result && result.manifest) {
+          this.say(result.created ? `Published version ${r.seq} as a component.` : `Version ${r.seq} was already published.`, "success");
+        }
+        await this.refresh();
+      } catch (err: any) {
+        this.say(`Cannot publish: ${err.message}`, "error");
+      } finally {
+        this.busy = false;
+      }
+    },
     isActive(r: any): boolean {
       return !!((this as any).active && (this as any).active.revisionId === r.revisionId);
     },
@@ -92,6 +111,7 @@ export default {
         this.revisions = result.revisions || [];
         this.head = result.head || null;
         this.active = result.active || null;
+        this.published = result.published || {};
         this.current = (this as any).currentVersion();
       } catch (err: any) {
         this.say(`Cannot list versions: ${err.message}`, "error");
