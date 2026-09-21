@@ -9,6 +9,7 @@ import EditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-editor-module"
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 const STORE_KEY = 'auth0-redirect';
+const LOGIN_ATTEMPTED_KEY = 'auth0-login-attempted';
 export default class Auth0 extends EditorModule {
   constructor(config: Record<string, any>, app: App<Element>, router: Router) {
     super();
@@ -110,15 +111,31 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
         const prefs = this.preferencesStore.preferences as any;
         this.serverMode = !prefs.useLocalStorage;
         this.audience = config.audience || (this.serverMode ? String(prefs.graphHTTPServer || '').replace(/\/+$/, '') : '');
-        // init auth0 client
-        await this.init();
+        if (this.serverMode) {
+          try {
+            const target = new URL(this.redirectUri).host;
+            if (target !== self.location.host) {
+              console.warn(`Auth0 will return to ${target} but the editor is open on ${self.location.host}; the login transaction lives in this tab's sessionStorage and will not be found there.`);
+            }
+          } catch (err) { /* malformed redirect uri; Auth0 will report it */ }
+        }
+        // init auth0 client; a failure here must never abort navigation
+        try {
+          await this.init();
+        } catch (err) {
+          console.error('Auth0 initialisation failed; the editor continues without a session', err);
+        }
       }
       this.authenticationStore.init = setup;
     }
     async init() {
       // begin login/redirect flow
 
-      const isCallbackUrl = /auth-callback/.test(self.location.toString());
+      const params = new URLSearchParams(self.location.search);
+      const onCallbackRoute = /auth-callback/.test(self.location.toString());
+      // Only a URL carrying a fresh authorization response can be exchanged; a reload,
+      // bookmark or back-navigation onto the callback route has nothing to exchange.
+      const isCallbackUrl = onCallbackRoute && params.has('state') && (params.has('code') || params.has('error'));
 
       const options: any = {
           domain: this.domain,
@@ -133,23 +150,46 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
 
       // coming back from logging in
       if (isCallbackUrl) {
-        await this.client.handleRedirectCallback();
+        try {
+          await this.client.handleRedirectCallback();
+        } catch (err: any) {
+          console.error('Auth0 redirect callback failed:', err && (err.error_description || err.message), err);
+        }
         const rdr = localStorage.getItem(STORE_KEY);
-        this.router.push(rdr || '/');
+        localStorage.removeItem(STORE_KEY);
+        // Drop code/state from the address bar first, so a reload cannot replay the exchange.
+        await this.router.replace(rdr || '/');
+      } else if (onCallbackRoute) {
+        await this.router.replace('/');
       }
 
       const isAuthenticated = await this.client.isAuthenticated();
 
-      if (!isAuthenticated && !isCallbackUrl) {
-        if (this.serverMode) {
+      if (!isAuthenticated) {
+        if (this.serverMode && !sessionStorage.getItem(LOGIN_ATTEMPTED_KEY)) {
           // A server-backed editor cannot do anything without a token: every route on the
-          // graph server requires one.  Send the user to log in and come back here.
+          // graph server requires one.  Send the user to log in and come back here (once
+          // per tab; if that does not produce a session the login button is the way in).
+          sessionStorage.setItem(LOGIN_ATTEMPTED_KEY, String(Date.now()));
+          await this.login();
+        } else if (this.serverMode) {
+          console.warn('Not authenticated after a login attempt; use the login button in the top bar.');
+        }
+        return;
+      }
+      sessionStorage.removeItem(LOGIN_ATTEMPTED_KEY);
+
+      let token: string;
+      try {
+        token = await this.client.getTokenSilently(this.tokenOptions());
+      } catch (err: any) {
+        console.error(`Cannot get an access token for audience "${this.audience}":`, err && (err.error_description || err.message), err);
+        if (this.serverMode && err && (err.error === 'login_required' || err.error === 'consent_required') && !sessionStorage.getItem(LOGIN_ATTEMPTED_KEY)) {
+          sessionStorage.setItem(LOGIN_ATTEMPTED_KEY, String(Date.now()));
           await this.login();
         }
         return;
       }
-
-      const token = await this.client.getTokenSilently(this.tokenOptions());
 
       const user = await this.client.getUser();
 
