@@ -24,8 +24,8 @@
             </template>
             <template v-slot:append>
               <v-btn icon="mdi-eye-outline" size="x-small" variant="text" title="Preview" @click="preview(p)"/>
-              <v-btn v-if="isOpen(p)" icon="mdi-sync" size="x-small" variant="text" title="Re-validate against the graph as it is now" @click="validate(p)"/>
-              <v-btn v-if="isOpen(p)" icon="mdi-check-bold" size="x-small" variant="text" color="success" title="Commit through admission as you" :disabled="busy" @click="commit(p)"/>
+              <v-btn v-if="isOpen(p)" icon="mdi-sync" size="x-small" variant="text" :color="offerRebase === p.proposalId || p.state === 'stale' ? 'warning' : undefined" :title="p.state === 'stale' ? 'Re-apply these changes where the graph is now' : 'Re-validate against the graph as it is now'" @click="rebase(p)"/>
+              <v-btn v-if="isCommittable(p)" icon="mdi-check-bold" size="x-small" variant="text" color="success" title="Commit through admission as you" :disabled="busy" @click="commit(p)"/>
               <v-btn v-if="isOpen(p)" icon="mdi-close-thick" size="x-small" variant="text" color="error" title="Reject" :disabled="busy" @click="reject(p)"/>
             </template>
             <div class="proposal-detail">
@@ -34,6 +34,9 @@
               <div v-if="p.diffSummary"><small>{{ describe(p.diffSummary) }}</small></div>
               <div v-if="p.validation && !p.validation.ok"><small class="text-error">{{ p.validation.errors.map((e: any) => e.code + ': ' + e.message).join('; ') }}</small></div>
               <div v-if="p.warnings && p.warnings.length"><small class="text-warning">{{ p.warnings.join('; ') }}</small></div>
+              <div v-if="offerRebase === p.proposalId || p.state === 'stale'" class="mt-1">
+                <v-btn size="x-small" variant="tonal" color="warning" prepend-icon="mdi-sync" :disabled="busy" @click.stop="rebase(p)">Re-apply where the graph is now</v-btn>
+              </div>
             </div>
           </v-list-item>
           <v-list-item v-if="!proposals.length" title="No proposals" subtitle="Agents propose changes through the MCP server; they appear here for you to commit or reject"/>
@@ -69,6 +72,7 @@ export default {
       activity: [] as any[],
       showActivity: false,
       previewing: null as any,
+      offerRebase: "" as string,
       listener: null as any,
       subscribedTo: "",
     };
@@ -151,6 +155,10 @@ export default {
     isOpen(p: any): boolean {
       return p.state === "awaiting-review" || p.state === "validated" || p.state === "stale";
     },
+    /** A proposal whose own validation failed cannot be committed, whatever its state says. */
+    isCommittable(p: any): boolean {
+      return this.isOpen(p) && !(p.validation && p.validation.ok === false) && p.state !== "stale";
+    },
     who(principal: any): string {
       if (!principal) return "?";
       const sub = String(principal.sub).split("|").pop();
@@ -216,7 +224,43 @@ export default {
         this.say(r && r.proposal && r.proposal.state === "committed" ? `Committed "${p.description}" as you.` : `Commit answered ${r && r.result && r.result.decision}.`, "success");
         await this.refresh();
       } catch (err: any) {
-        this.say(`Cannot commit: ${err.message}`, "error");
+        // The graph moved while this proposal sat here.  That is not a dead
+        // end: its operations can be re-applied where the graph is now, and
+        // what that produces is worth looking at before committing, so the
+        // offer is made here rather than left as advice in an error.
+        if (/moved to|STALE_BASE/i.test(String(err.message))) {
+          this.offerRebase = p.proposalId;
+          this.say(`"${p.description}" was written against an older version of this graph.`, "warning");
+        } else {
+          this.say(`Cannot commit: ${err.message}`, "error");
+        }
+      } finally {
+        this.busy = false;
+      }
+    },
+    /** Re-apply a stale proposal's operations where the graph is now, and say what came of it. */
+    async rebase(p: any) {
+      this.busy = true;
+      this.offerRebase = "";
+      try {
+        const r = await (this as any).validateProposal(p, true);
+        const proposal = r && r.proposal;
+        await this.refresh();
+        if (!proposal) {
+          this.say("Re-checked.", "info");
+          return;
+        }
+        if (proposal.validation && !proposal.validation.ok) {
+          const first = proposal.validation.errors[0];
+          const already = /already exists/i.test(String(first && first.message));
+          this.say(already
+            ? `"${p.description}" cannot be re-applied: ${first.message}. This change may already be in the graph; reject it if so.`
+            : `"${p.description}" no longer applies: ${first ? first.code + ": " + first.message : "it conflicts with the graph as it is"}.`, "warning");
+          return;
+        }
+        this.say(`"${p.description}" now applies to this version. Look at what it changes, then commit it.`, "success");
+      } catch (err: any) {
+        this.say(`Cannot re-apply: ${err.message}`, "error");
       } finally {
         this.busy = false;
       }
