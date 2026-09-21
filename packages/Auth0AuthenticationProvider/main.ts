@@ -71,6 +71,8 @@ export default class Auth0 extends EditorModule {
 };
 
 export class Auth0AuthenticationProvider extends AuthenticationProvider {
+    audience = '';
+    serverMode = false;
     domain: string = '';
     clientId: string = '';
     redirectUri: string = '';
@@ -103,6 +105,11 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
           .replace(/:host/, self.location.host);
         this.domain = config.domain;
         this.clientId = config.clientId;
+        // The access token must be minted for the server's API identifier (Auth0 "API"),
+        // which defaults to the HTTP server URL without its trailing slash.
+        const prefs = this.preferencesStore.preferences as any;
+        this.serverMode = !prefs.useLocalStorage;
+        this.audience = config.audience || (this.serverMode ? String(prefs.graphHTTPServer || '').replace(/\/+$/, '') : '');
         // init auth0 client
         await this.init();
       }
@@ -113,10 +120,13 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
 
       const isCallbackUrl = /auth-callback/.test(self.location.toString());
 
-      const options = {
+      const options: any = {
           domain: this.domain,
           clientId: this.clientId,
-          redirect_uri: this.redirectUri,
+          authorizationParams: {
+            redirect_uri: this.redirectUri,
+            ...(this.audience ? { audience: this.audience } : {}),
+          },
       };
 
       this.client = await (createAuth0Client as any)(options);
@@ -131,11 +141,15 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
       const isAuthenticated = await this.client.isAuthenticated();
 
       if (!isAuthenticated && !isCallbackUrl) {
-        // user must authenticate
+        if (this.serverMode) {
+          // A server-backed editor cannot do anything without a token: every route on the
+          // graph server requires one.  Send the user to log in and come back here.
+          await this.login();
+        }
         return;
       }
 
-      const token = await this.client.getTokenSilently();
+      const token = await this.client.getTokenSilently(this.tokenOptions());
 
       const user = await this.client.getUser();
 
@@ -158,9 +172,16 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
             throw new Error("Auth0AuthProvider getUser:" + err);
         }
     }
+    tokenOptions() {
+        return this.audience ? { authorizationParams: { audience: this.audience } } : {};
+    }
     async getToken() {
         try {
-            return await this.client.getTokenSilently();
+            const token = await this.client.getTokenSilently(this.tokenOptions());
+            if (token && this.authenticationStore.identity.token !== token) {
+              this.authenticationStore.$patch({ identity: { ...this.authenticationStore.identity, token } });
+            }
+            return token;
         } catch (err) {
             throw new Error("Auth0AuthProvider getToken:" + err);
         }
@@ -174,6 +195,7 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
             return await this.client.loginWithRedirect({
               authorizationParams: {
                 redirect_uri: this.redirectUri,
+                ...(this.audience ? { audience: this.audience } : {}),
               }
             });
         } catch (err) {
@@ -184,7 +206,7 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
         try {
             return await this.client.logout({
               logoutParams: {
-                returnTo: 'http://localhost:8080/graph-editor/'
+                returnTo: self.location.origin + (this.router.options.history.base || '/'),
               }
             });
         } catch (err) {

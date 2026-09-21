@@ -1,3 +1,4 @@
+import {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
 import * as Y from "yjs";
 import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from "y-protocols/awareness";
 import {
@@ -117,6 +118,11 @@ export class WssCrdtProvider {
    * vector and receiving only the difference is the exchange Yjs documents, and
    * it means reopening a graph you were just editing transfers almost nothing.
    */
+  /** The graph server requires the Auth0 access token on every HTTP route. */
+  private authHeaders(): Record<string, string> {
+    const token = useAuthenticationStore().identity.token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
   private async loadInitialState(session: any) {
     if (!this.httpBase) {
       return;
@@ -125,6 +131,7 @@ export class WssCrdtProvider {
       const ours = toBase64(encodeStateVector(session.doc));
       const response = await fetch(
         `${this.httpBase}crdt/${this.graphId}/state?sv=${encodeURIComponent(ours)}`,
+        { headers: this.authHeaders() },
       );
       const data = await response.json();
       if (data && data.payload) {
@@ -198,7 +205,7 @@ export class WssCrdtProvider {
     try {
       await fetch(`${this.httpBase}crdt/${this.graphId}/update`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...this.authHeaders() },
         body: JSON.stringify({ payload, description, format: UPDATE_FORMAT }),
       });
     } catch (err) {
@@ -294,7 +301,7 @@ export class WssCrdtProvider {
     if (!this.httpBase) {
       return [];
     }
-    const response = await fetch(`${this.httpBase}crdt/${graphId}/history`);
+    const response = await fetch(`${this.httpBase}crdt/${graphId}/history`, { headers: this.authHeaders() });
     this.historyCache = await response.json();
     return this.historyCache;
   }
@@ -307,7 +314,7 @@ export class WssCrdtProvider {
     if (!id) {
       return [];
     }
-    const response = await fetch(`${this.httpBase}crdt/${graphId}/state/${id}`);
+    const response = await fetch(`${this.httpBase}crdt/${graphId}/state/${id}`, { headers: this.authHeaders() });
     const data = await response.json();
     return data && data.payload ? [fromBase64(data.payload)] : [];
   }

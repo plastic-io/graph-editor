@@ -2,6 +2,7 @@
   <div>
     <v-text-field label="domain" v-model="modelValue.auth0.domain"/>
     <v-text-field label="client_id" v-model="modelValue.auth0.clientId"/>
+    <v-text-field label="audience (optional; defaults to the HTTPS server URL)" v-model="modelValue.auth0.audience"/>
     <template v-if="identity">
       <v-text-field
           :model-value="identity.user.email"
@@ -48,7 +49,8 @@
     beforeMount() {
       this.modelValue.auth0 = this.modelValue.auth0 || {
         domain: '',
-        client_id: '',
+        clientId: '',
+        audience: '',
       }
     }
   }
