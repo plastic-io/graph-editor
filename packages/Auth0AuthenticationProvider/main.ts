@@ -11,20 +11,46 @@ import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-pre
 const STORE_KEY = 'auth0-redirect';
 const LOGIN_ATTEMPTED_KEY = 'auth0-login-attempted';
 /**
- * The Auth0 API identifier the access token must be minted for: an explicit setting, or the
- * HTTPS server URL without its trailing slash.  Local dev servers (http://) have no
- * authorizer and no audience, so no token is requested for them.
+ * Whether the configured server checks tokens: an explicit audience, or an HTTPS server.
+ * Local dev servers (http://) have no authorizer, so no login is required for them.
  */
-export function audienceFor(prefs: any): string {
+export function authRequiredFor(prefs: any): boolean {
+  if (!prefs || prefs.useLocalStorage) {
+    return false;
+  }
+  if (prefs.auth0 && prefs.auth0.audience) {
+    return true;
+  }
+  return /^https:\/\//i.test(String(prefs.graphHTTPServer || ''));
+}
+
+/**
+ * The Auth0 API identifier the access token must be minted for.  Precedence: an explicit
+ * setting (Settings > Auth0 > audience); the `resource` the server publishes in its RFC 9728
+ * protected-resource metadata; finally the HTTPS server URL without its trailing slash.
+ */
+export async function resolveAudience(prefs: any): Promise<string> {
   const explicit = prefs && prefs.auth0 && prefs.auth0.audience;
   if (explicit) {
-    return String(explicit).replace(/\/+$/, '');
+    return String(explicit).trim();
   }
-  if (!prefs || prefs.useLocalStorage) {
+  if (!authRequiredFor(prefs)) {
     return '';
   }
-  const server = String(prefs.graphHTTPServer || '');
-  return /^https:\/\//i.test(server) ? server.replace(/\/+$/, '') : '';
+  const base = String(prefs.graphHTTPServer || '').replace(/\/+$/, '');
+  try {
+    const response = await fetch(`${base}/.well-known/oauth-protected-resource`);
+    if (response.ok) {
+      const metadata = await response.json();
+      if (metadata && typeof metadata.resource === 'string' && metadata.resource) {
+        return metadata.resource;
+      }
+    }
+    console.warn('The server did not publish protected-resource metadata; using its URL as the audience.');
+  } catch (err) {
+    console.warn('Cannot read the server\'s protected-resource metadata; using its URL as the audience.', err);
+  }
+  return base;
 }
 export default class Auth0 extends EditorModule {
   constructor(config: Record<string, any>, app: App<Element>, router: Router) {
@@ -127,10 +153,10 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
         // which defaults to the HTTP server URL without its trailing slash.
         const prefs = this.preferencesStore.preferences as any;
         this.serverMode = !prefs.useLocalStorage;
-        this.audience = audienceFor(prefs);
         // Login is mandatory only when the server actually checks tokens (an HTTPS server
-        // with an API identifier); the local dev server on http://localhost has no authorizer.
-        this.authRequired = this.serverMode && !!this.audience;
+        // or an explicit audience); the local dev server on http://localhost has no authorizer.
+        this.authRequired = authRequiredFor(prefs);
+        this.audience = await resolveAudience(prefs);
         if (this.authRequired) {
           try {
             const target = new URL(this.redirectUri).host;

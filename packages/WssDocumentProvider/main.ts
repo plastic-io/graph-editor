@@ -4,7 +4,7 @@ import type {Toc, TocItem, GraphDiff, NodeArtifact, GraphArtifact} from "@plasti
 import {useStore as useOrchistratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
-import {audienceFor} from "@plastic-io/graph-editor-vue3-auth0-authentication-provider";
+import {authRequiredFor} from "@plastic-io/graph-editor-vue3-auth0-authentication-provider";
 import {deref, newId} from "@plastic-io/graph-editor-vue3-utils";
 import EditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 const CHUNK_SIZE = 35000;
@@ -44,7 +44,7 @@ export default class WssDocumentProvider extends EditorModule {
     // the Auth0 provider has a token and refreshes it before each reconnect; against a local
     // dev server (no authorizer) it opens straight away without one.
     const authenticationStore = useAuthenticationStore();
-    wssDataProvider.requireToken = !!audienceFor(preferencesStore.preferences);
+    wssDataProvider.requireToken = authRequiredFor(preferencesStore.preferences);
     if (!wssDataProvider.requireToken) {
       wssDataProvider.connect();
     }
