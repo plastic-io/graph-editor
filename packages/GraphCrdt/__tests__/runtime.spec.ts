@@ -141,3 +141,36 @@ describe("monotonic ids", () => {
     expect(ids[0]).toHaveLength(26);
   });
 });
+
+describe("placement", () => {
+  it("reads what a node says, and what its needs imply when it says nothing", async () => {
+    const { placementOf, runsHere, deliveryTarget, wireValue, deliveryKey } = await import("../placement");
+    expect(placementOf({ properties: { placement: "browser" } })).toBe("browser");
+    expect(placementOf({ properties: {} })).toBe("portable");
+    expect(placementOf({ properties: { capabilities: ["secret:openai"] } })).toBe("server");
+    expect(placementOf({ properties: { capabilities: ["storage:kv:x/*"] } })).toBe("server");
+    expect(placementOf({ properties: { capabilities: ["browser:dom"] } })).toBe("browser");
+    expect(placementOf({ properties: { capabilities: ["net:https:api.example.com"] } })).toBe("portable");
+    // what a node says wins over what its capabilities imply
+    expect(placementOf({ properties: { placement: "browser", capabilities: ["secret:openai"] } })).toBe("browser");
+    expect(runsHere({ properties: { placement: "server" } }, "browser")).toBe(false);
+    expect(runsHere({ properties: { placement: "portable" } }, "browser")).toBe(true);
+    expect(runsHere({ properties: {} }, "server")).toBe(true);
+    // a node that only draws is rendered by every viewer; one with an effect happens once
+    expect(deliveryTarget({ properties: { capabilities: ["browser:dom"] } })).toBe("all-viewers");
+    expect(deliveryTarget({ properties: { capabilities: ["browser:dom", "net:https:api.example.com"] } })).toBe("initiator");
+    expect(deliveryTarget({ properties: { deliveryTarget: "initiator" } })).toBe("initiator");
+    expect(deliveryKey({ executionId: "e", connectorId: "c1", nodeId: "n", seq: 3 })).toBe("c1-3");
+    expect(deliveryKey({ executionId: "e", nodeId: "n", seq: 3 })).toBe("n-3");
+  });
+
+  it("refuses to send what cannot cross a boundary", async () => {
+    const { wireValue } = await import("../placement");
+    expect(wireValue({ a: 1 })).toEqual({ ok: true, value: { a: 1 }, bytes: 7 });
+    expect(wireValue(undefined)).toEqual({ ok: true, value: null, bytes: 4 });
+    expect(wireValue(() => 1)).toMatchObject({ ok: false });
+    const cyclic: any = {}; cyclic.self = cyclic;
+    expect(wireValue(cyclic)).toMatchObject({ ok: false, reason: expect.stringMatching(/cannot cross/) });
+    expect(wireValue("x".repeat(100), 50)).toMatchObject({ ok: false, reason: expect.stringMatching(/more than the 50/) });
+  });
+});

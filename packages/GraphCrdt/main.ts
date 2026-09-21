@@ -80,6 +80,8 @@ export type { Observation, ObservationKind, ObservationDomain, ExecutionRecord, 
 export { buildHostMembers, EffectUnavailable } from "./host";
 export type { HostDeps, HostContext } from "./host";
 export { newUlid, monotonicUlid } from "./ulid";
+export { placementOf, runsHere, deliveryTarget, deliveryKey, wireValue } from "./placement";
+export type { Placement, Domain, EdgeDelivery } from "./placement";
 export type { MutationOp, OpError, ApplyResult } from "./ops";
 export type { DiffSummary, DiffOp, ConnectorRef, PrivilegeDelta } from "./diff";
 

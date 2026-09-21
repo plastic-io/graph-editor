@@ -13,6 +13,7 @@
 import { ObservationRecorder, type Observation, type ExecutionRecord } from "../GraphCrdt/observe";
 import { buildHostMembers } from "../GraphCrdt/host";
 import { effectiveCapabilities } from "../GraphCrdt/capabilities";
+import { runsHere, wireValue, type EdgeDelivery } from "../GraphCrdt/placement";
 
 export interface BrowserExecutionOptions {
   graphId: string;
@@ -26,6 +27,12 @@ export interface BrowserExecutionOptions {
   maxObservations?: number;
   /** Called once an execution ends, with everything it produced. */
   onFinished: (report: { record: ExecutionRecord; observations: Observation[] }) => void;
+  /**
+   * Ask the server to run a node placed there, and answer with what it wrote
+   * to its output edges (plan §4.8.2).  Without this, a server-placed node
+   * reached from the browser is an error rather than a hand-off.
+   */
+  deliverToServer?: (delivery: EdgeDelivery) => Promise<{ outputs: { field: string; value: any }[]; error?: string }>;
 }
 
 interface Tracked {
@@ -37,6 +44,8 @@ interface Tracked {
 
 export class BrowserExecutions {
   private tracked = new Map<string, Tracked>();
+  private delivered = new Set<string>();
+  private deliverySeq = 0;
   private graph: any = null;
   private options: BrowserExecutionOptions;
 
@@ -150,5 +159,72 @@ export class BrowserExecutions {
   /** Executions still open, for the watchdog. */
   get open(): string[] {
     return [...this.tracked.keys()];
+  }
+
+  /**
+   * A node this domain does not run (plan §4.8.2).  The browser hands the
+   * value to the server, waits for what that node wrote, and writes those
+   * values to the node's edges here, so routing continues as if the node had
+   * run locally.  The hop is observed either way, marked with where it went.
+   */
+  async handOff(nodeInterface: any, execution: any): Promise<void> {
+    const node = nodeInterface.node;
+    const executionId = (execution && execution.executionId) || "unknown";
+    const tracked = this.tracked.get(executionId);
+    const recorder = tracked ? tracked.recorder : null;
+    this.deliverySeq += 1;
+    const wire: any = wireValue(nodeInterface.value);
+    if (!wire.ok) {
+      if (recorder) {
+        recorder.record({ kind: "exec.error", nodeId: node.id, edgeField: nodeInterface.field, payload: { message: wire.reason, code: "UNSENDABLE_VALUE" } });
+      }
+      throw new Error(wire.reason);
+    }
+    const delivery: EdgeDelivery = {
+      schemaVersion: 1,
+      executionId,
+      correlationId: executionId,
+      revisionId: this.options.revisionId,
+      graphId: this.options.graphId,
+      nodeId: node.id,
+      field: nodeInterface.field,
+      value: wire.value,
+      seq: this.deliverySeq,
+      instancePath: [],
+    };
+    if (recorder) {
+      recorder.record({ kind: "route", nodeId: node.id, edgeField: nodeInterface.field, payload: { deferred: "server", seq: delivery.seq, bytes: wire.bytes } });
+    }
+    if (!this.options.deliverToServer) {
+      throw new Error(`node ${node.id} runs on the server, and this session has no way to reach it`);
+    }
+    const answer = await this.options.deliverToServer(delivery);
+    if (answer.error) {
+      if (recorder) {
+        recorder.record({ kind: "exec.error", nodeId: node.id, payload: { message: answer.error, domain: "server" } });
+      }
+      throw new Error(answer.error);
+    }
+    (answer.outputs || []).forEach(({ field, value }) => {
+      nodeInterface.edges[field] = value;
+    });
+  }
+
+  /** Has this delivery already been seen?  A reconnect replays what was parked. */
+  seen(delivery: { executionId: string; connectorId?: string; nodeId: string; seq: number }): boolean {
+    const key = `${delivery.executionId}/${delivery.connectorId || delivery.nodeId}-${delivery.seq}`;
+    if (this.delivered.has(key)) {
+      return true;
+    }
+    this.delivered.add(key);
+    if (this.delivered.size > 2000) {
+      this.delivered.delete(this.delivered.values().next().value as string);
+    }
+    return false;
+  }
+
+  /** Does this domain run the node, or hand it over? */
+  runsHere(node: any): boolean {
+    return runsHere(node, "browser");
   }
 }

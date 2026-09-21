@@ -57,6 +57,13 @@ const schedulerRelevantShape = (graph: any) => {
                 inputs: (node.properties || {}).inputs,
                 outputs: (node.properties || {}).outputs,
                 scripts: (node.properties || {}).scripts,
+                // where the node runs, what it may do and how it is contained
+                // all change the running program, so a change to any of them
+                // has to reach the worker (plan §4.8.1)
+                placement: (node.properties || {}).placement,
+                capabilities: (node.properties || {}).capabilities,
+                containment: (node.properties || {}).containment,
+                deliveryTarget: (node.properties || {}).deliveryTarget,
             },
         })),
     };
@@ -110,6 +117,8 @@ export const useStore = defineStore('orchestrator', {
     graphComponents: {} as any,
     /** Executions that ran in this browser, newest first (plan §4.5.3). */
     browserExecutions: [] as any[],
+    /** This tab, for deliveries addressed to the session that started an execution. */
+    sessionId: newUlid(),
     executionReportQueue: [] as any[],
     executionReportInFlight: false,
     executionReportWarned: false,
@@ -544,7 +553,7 @@ export const useStore = defineStore('orchestrator', {
         while (this.executionReportQueue.length) {
           const report = this.executionReportQueue.shift();
           try {
-            await provider.reportExecution(report.record.graphId, report);
+            await provider.reportExecution(report.record.graphId, { ...report, sessionId: this.sessionId });
           } catch (err) {
             // Reporting is best effort: an execution that cannot be reported
             // is still in browserExecutions, and losing it must never break
@@ -560,6 +569,24 @@ export const useStore = defineStore('orchestrator', {
       } finally {
         this.executionReportInFlight = false;
       }
+    },
+    /**
+     * Carry one delivery between the worker and the server, and hand the
+     * answer back to the execution that is waiting for it.
+     */
+    async carryDelivery({id, delivery}: any) {
+      const provider: any = this.orchestratorStore.syncProviders.find((p: any) => typeof p.deliverEdge === "function");
+      let answer: any = {outputs: []};
+      try {
+        if (!provider) {
+          throw new Error("this session has no server connection to run a server-placed node");
+        }
+        const result = await provider.deliverEdge(delivery.graphId, delivery);
+        answer = result && result.error ? {outputs: [], error: result.error} : {outputs: (result && result.outputs) || []};
+      } catch (err: any) {
+        answer = {outputs: [], error: String((err && err.message) || err)};
+      }
+      this.scheduleWorker.postMessage({method: 'delivery-response', args: [{id, answer}]});
     },
     async createScheduler() {
 
@@ -713,6 +740,21 @@ export const useStore = defineStore('orchestrator', {
               obj = obj[path[i]];
             }
             obj[path[path.length - 1]] = value;
+            return;
+          }
+          if (methodName === 'delivery-request') {
+            // the worker reached a node placed on the server
+            this.carryDelivery(args);
+            return;
+          }
+          if (methodName === 'edge.deliver') {
+            // the server reached a node placed here; a delivery addressed to
+            // the session that started the execution is not ours to run unless
+            // we are that session (plan §4.8.2)
+            const mine = args.target !== 'initiator' || !args.initiator || args.initiator === this.sessionId;
+            if (mine) {
+              this.scheduleWorker.postMessage({method: 'deliver', args: [args]});
+            }
             return;
           }
           if (methodName === 'execution-finished') {

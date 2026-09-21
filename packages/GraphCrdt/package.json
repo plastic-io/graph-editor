@@ -26,6 +26,7 @@
     "contracts.ts",
     "observe.ts",
     "host.ts",
-    "ulid.ts"
+    "ulid.ts",
+    "placement.ts"
   ]
 }

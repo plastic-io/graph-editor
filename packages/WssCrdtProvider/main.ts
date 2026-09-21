@@ -599,6 +599,14 @@ export class WssCrdtProvider {
   reportExecution(graphId: string, report: { record: any; observations: any[] }): Promise<any> {
     return this.api(`${graphId}/executions`, { method: "POST", body: JSON.stringify(report) });
   }
+  /**
+   * Ask the server to run a node placed there for an execution this browser
+   * owns (plan §4.8.2).  The same delivery asked twice answers with the first
+   * result rather than running the node again.
+   */
+  deliverEdge(graphId: string, delivery: any): Promise<any> {
+    return this.api(`${graphId}/deliveries`, { method: "POST", body: JSON.stringify(delivery) });
+  }
   auditRecords(graphId: string, limit = 50): Promise<any> {
     return this.api(`${graphId}/audit?limit=${limit}`);
   }

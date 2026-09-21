@@ -23,6 +23,9 @@ let scheduler: Scheduler;
 let executions: BrowserExecutions | null = null;
 /** The identity and revision the editor gave at init; a graph change keeps them. */
 let session: any = {};
+/** Answers to deliveries this worker asked the main thread to carry. */
+const pendingDeliveries = new Map<number, (answer: any) => void>();
+let deliveryRequestId = 0;
 const loader = async (e: any): Promise<any> => {
   return e.setValue(scheduler.graph);
 };
@@ -79,11 +82,26 @@ const rpc = {
       },
     });
     executions.setGraph(e.graph);
+    executions.update({
+      // A node placed on the server is run there, through the main thread's
+      // connection, and its output values come back to be routed here.
+      deliverToServer: (delivery: any) => new Promise((resolve) => {
+        deliveryRequestId += 1;
+        const id = deliveryRequestId;
+        pendingDeliveries.set(id, resolve);
+        postMessage({source: 'delivery-request', event: toJSON({id, delivery})});
+      }),
+    });
     const budget = {...DEFAULT_BUDGET, ...(e.budget || {}), ...((e.graph.properties && e.graph.properties.budget) || {})};
 
     scheduler = new Scheduler(e.graph, e, workerObjProxy, logger, {
       budget,
       host: (info: any) => executions!.host(info),
+      executeNode: ({nodeInterface, execution, runInProcess}: any) => {
+        return executions!.runsHere(nodeInterface.node)
+          ? runInProcess()
+          : executions!.handOff(nodeInterface, execution);
+      },
       contractMode: (e.graph.properties && e.graph.properties.contractMode === "reject") ? "reject" : "warn",
     } as any);
     ObservationRecorder.EVENTS.forEach((name: string) => {
@@ -130,6 +148,34 @@ onmessage = function(e: any) {
   }
   if (e.data.method === 'cancel') {
     return rpc.cancel.apply(null, e.data.args);
+  }
+  if (e.data.method === 'delivery-response') {
+    const {id, answer} = e.data.args[0] || {};
+    const resolve = pendingDeliveries.get(id);
+    if (resolve) {
+      pendingDeliveries.delete(id);
+      resolve(answer);
+    }
+    return;
+  }
+  if (e.data.method === 'deliver') {
+    // A node of this graph is placed here and an execution elsewhere reached
+    // it (plan §4.8.2).  The same delivery may arrive twice after a reconnect,
+    // so each one runs at most once.
+    const delivery = e.data.args[0] || {};
+    if (!scheduler || !executions || executions.seen(delivery)) {
+      return;
+    }
+    const node = (scheduler.graph.nodes || []).find((n: any) => n.id === delivery.nodeId);
+    if (!node) {
+      return;
+    }
+    const handle = (scheduler as any).invoke(node.url, delivery.value, delivery.field, undefined, {
+      executionId: delivery.executionId,
+      revisionId: delivery.revisionId,
+    });
+    handle.done.catch(() => undefined);
+    return;
   }
   if (e.data.method === 'invoke') {
     // An execution the editor started: it carries its own id so the editor can
