@@ -19,6 +19,7 @@ Produced 2026-09-20 from the inspected revisions listed in `02-discovery-record.
 | `10-backlog-and-decisions.md` | 10. prioritized backlog (PB-nnn), decision log (D-n), open questions (Q-n), final self-review |
 | `11-preparation-tasks.md` | preparation tasks with status and evidence logs (tasks 1–4 done, 5 prepared) |
 | `12-task5-setup.md` | the three credentialed setup steps, prepared to one command each |
+| `13-m1-log.md` | running log of M1 work items with evidence |
 | `spikes/` | S-1 and S-4 reports, the isolated-vm Lambda harness, the staged-admission bench |
 | `patches/` | change for the scheduler repository (not checked out locally) |
 | `appendix/A1-discovery-graph-editor.md` | evidence ledger GE-01..65 with path:lines |
