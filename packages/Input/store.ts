@@ -12,7 +12,7 @@ export const useStore = defineStore('input', {
     keys: {} as Record<string, boolean>,
     orchistratorStore: useOrchestratorStore(),
     graphStore: useGraphStore(),
-    inputStore: useInputStore(),
+    inputStore: useInputStore() as any,
     graphSnapshotStore: useGraphSnapshotStore(),
     mouse: {
       lmb: false,
@@ -26,14 +26,14 @@ export const useStore = defineStore('input', {
       "0": "lmb",
       "2": "rmb",
       "1": "mmb"
-    },
+    } as Record<string, string>,
   }),
   actions: {
-    keyup(e: UIEvent) {
+    keyup(e: KeyboardEvent) {
         this.keys[e.keyCode] = false;
         keys(this, e);
     },
-    keydown(e: UIEvent) {
+    keydown(e: KeyboardEvent) {
         this.keys[e.keyCode] = true;
         keys(this, e);
     },
@@ -86,7 +86,7 @@ export const useStore = defineStore('input', {
 
     },
     dblclick(e: MouseEvent) {
-        if (!/graph-canvas-container/.test(e.target.className)) {
+        if (!/graph-canvas-container/.test((e.target as any)?.className)) {
             return;
         }
         this.graphStore.createNewNode({
@@ -103,7 +103,7 @@ export const useStore = defineStore('input', {
         if (!this.graphStore.isGraphTarget(e)) {
             return;
         }
-        if (/graph-map-view-port|graph-map/.test(e.target.className)) {
+        if (/graph-map-view-port|graph-map/.test((e.target as any)?.className)) {
             isMap = true;
         }
         const translating = {

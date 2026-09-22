@@ -27,7 +27,7 @@ interface UIEvent {
     srcElement: Element;
     preventDefault: Function;
 }
-export const keys = (store: any, e: UIEvent) => {
+export const keys = (store: any, e: KeyboardEvent) => {
     const keys = store.keys;
     const ctrl = e.ctrlKey || e.metaKey;
     const shift = e.shiftKey;
@@ -63,7 +63,7 @@ export const keys = (store: any, e: UIEvent) => {
         // keyboard shortcuts are disabled in presentation/locked mode
         return;
     }
-    if (/input|textarea|button|select|checkbox|radio|file|reset/i.test(e.srcElement.tagName)) {
+    if (/input|textarea|button|select|checkbox|radio|file|reset/i.test((e.srcElement as any)?.tagName || "")) {
         // keyboard shortcuts are disabled when the user is in a form element of any sort
         return;
     }

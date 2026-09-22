@@ -4,7 +4,7 @@
             v-if="!presentation"
             :style="editorStyle"
             :nodeId="node.id"
-            :hovered="localHoveredNode"/>
+            :hovered="!!localHoveredNode"/>
         <div
             v-if="loaded"
             ref="node"
@@ -116,7 +116,7 @@ export default {
     watch: {
         compiledTemplate: {
             handler: function () {
-                this.compiledTemplate.errors.forEach((err) => {
+                this.compiledTemplate.errors.forEach((err: any) => {
                     this.raiseError(this.localNode.id, err, 'vue');
                 });
                 this.renderVersion = this.renderVersion + 1;
@@ -158,7 +158,7 @@ export default {
             deep: true,
         },
         'node.template.vue'() {
-            const changes = !deepEqual(this.localNodeSnapshot.template.vue, this.node.template.vue);
+            const changes = !deepEqual(this.localNodeSnapshot.template.vue, (this.node.template as any).vue);
             this.localNode = this.node;
             this.localNodeSnapshot = JSON.parse(JSON.stringify(this.node));
             if (!changes) {
@@ -185,6 +185,8 @@ export default {
                     return h('div');
                 },
             }),
+            // what the node's template compiled to: a component, whatever it
+            // failed with, and the styles it brought
             compiledTemplate: markRaw({
                 component: {
                     render() {
@@ -192,32 +194,32 @@ export default {
                     },
                 },
                 errors: [],
-            }),
+            }) as any,
             showVueEditor: false,
             showSetEditor: false,
-            longLoadingTimer: null,
+            longLoadingTimer: null as any,
             longLoading: false,
             loaded: false,
             errorMessage: "",
             // whether this node's template failed to compile; the card shows the
             // errors instead of the node when it did
             broken: null as any,
-            localHoveredNode: null,
+            localHoveredNode: null as any,
             localSelectedNodes: [],
-            nodeEvents: {},
-            nodeProps: {},
+            nodeEvents: {} as Record<string, any>,
+            nodeProps: {} as Record<string, any>,
             dragged: null,
-            recompileTimer: null,
+            recompileTimer: null as any,
             localNode: null as any,
-            localNodeSnapshot: null,
-            localNodeDataSnapshot: null,
+            localNodeSnapshot: null as any,
+            localNodeDataSnapshot: null as any,
             template: null,
             stateVersion: 0,
             renderVersion: 0,
             contextId: null,
-            artifactNodes: {},
-            styles: [],
-            gaphReferences: {},
+            artifactNodes: {} as Record<string, any>,
+            styles: [] as any[],
+            gaphReferences: {} as Record<string, any>,
         };
     },
     async mounted() {
@@ -274,7 +276,7 @@ export default {
             console.log("setLinkedNode", e);
         },
         bindNodeEvents(vect: any) {
-            const events = {};
+            const events: Record<string, any> = {};
             vect.properties.outputs.forEach((output: any) => {
                 events[output.name] = (val: any) => {
                     this.scheduler.instance.url(this.node.url, val, output.name, this.hostNode);
@@ -283,7 +285,7 @@ export default {
             this.nodeEvents = events;
         },
         bindNodeProps(vect: any) {
-            const props = {};
+            const props: Record<string, any> = {};
             vect.properties.inputs.forEach((input: any) => {
                 props[input.name] = undefined;
             });
@@ -331,8 +333,8 @@ export default {
             this.loaded = true;
             this.redrawConnectorVersion += 1;
         },
-        async importNode(v: any, artifactKey: any) {
-            v.artifact = this.node.artifact;
+        async importNode(v: any, artifactKey?: any) {
+            v.artifact = (this.node as any).artifact;
             v.url = this.node.url;
             v.artifactlId = v.id;
             v.id = this.node.id;
@@ -374,7 +376,7 @@ export default {
             return this.localNode.linkedGraph ? this.localNode.linkedGraph.graph : this.graph;
         },
         nodeComponentName() {
-            const name = this.artifactKey(this.node.artifact) || this.node.id;
+            const name = this.artifactKey((this.node as any).artifact) || this.node.id;
             return name;
         },
         visible: function () {
@@ -400,7 +402,7 @@ export default {
                 zIndex: 1000,
             }
         },
-        nodeStyle: function () {
+        nodeStyle: function (): any {
             const hovered = this.hoveredNode && this.hoveredNode.id === this.localNode.id;
             const selected = !!this.selectedNodes.find((v: any) => v.id === this.localNode.id);
             const hoveredAndSelected = hovered && selected;

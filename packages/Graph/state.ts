@@ -28,7 +28,7 @@ export default () => {
         locked: null,
         groupNodes: [],
         movingNodes: [],
-        inputStore: useInputStore(),
+        inputStore: useInputStore() as any,
         orchestratorStore: useOrchestratorStore(),
         preferencesStore: usePreferencesStore(),
         graphSnapshotStore: useGraphSnapshotStore(),

@@ -102,9 +102,9 @@
         showSettingsChangedDialog: false,
         showDeleteDialog: false,
         newGraphUrl: '',
-        deletingGraph: {},
-        lastDeleted: null,
-        lastDeletedEntries: null,
+        deletingGraph: {} as Record<string, any>,
+        lastDeleted: null as any,
+        lastDeletedEntries: null as any,
         showUndoDelete: false,
         tocRefreshTimer: 0,
         newGraphRules: [

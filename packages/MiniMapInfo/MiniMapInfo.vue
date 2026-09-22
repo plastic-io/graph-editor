@@ -1,7 +1,7 @@
 <template>
     <div class="map-view no-select no-graph-target" :style="mapStyle" @wheel.stop @click.stop v-if="graphSnapshot">
         <v-card elevation="7">
-            <div class="map-system-bar no-graph-target" :style="{backgroundColor: $vuetify.theme.current.colors['on-surface-variant']}"  @mousedown.stop="startTranslate">
+            <div class="map-system-bar no-graph-target" :style="{backgroundColor: ($vuetify.theme.current as any).colors['on-surface-variant']}"  @mousedown.stop="startTranslate">
                 <v-icon title="Reset Minimap Settings" size="small" @click="resetLocation">
                     mdi-map
                 </v-icon>
@@ -63,12 +63,14 @@ export default {
               h: 150,
               w: 250,
             },
+            // where a drag started, and how far the map was from the pointer
+            // when it did; the resize handlers add w, h, mx and my
             translating: {
               x: 0,
-              y: 0
-            },
-            min: {},
-            max: {},
+              y: 0,
+            } as Record<string, any>,
+            min: {} as Record<string, any>,
+            max: {} as Record<string, any>,
             scale: 1,
             mapPosOffset: {
                 x: 0,
@@ -120,7 +122,7 @@ export default {
         },
         endTranslate() {
           this.updatePrefStore();
-          document.body.style = "";
+          document.body.setAttribute("style", "");
           this.stopScaleLooping = true;
           window.removeEventListener('mousemove', this.translate);
           window.removeEventListener('mouseup', this.endTranslate);
@@ -148,7 +150,7 @@ export default {
         },
         endResize() {
           this.updatePrefStore();
-          document.body.style = "";
+          document.body.setAttribute("style", "");
           this.stopScaleLooping = true;
           window.removeEventListener('mousemove', this.resizing);
           window.removeEventListener('mouseup', this.endResize);
@@ -170,7 +172,7 @@ export default {
             my: e.clientY,
           };
           this.updateScaleLoop();
-          document.body.style = "cursor: nesw-resize";
+          document.body.setAttribute("style", "cursor: nesw-resize");
           window.addEventListener('mousemove', this.resizing);
           window.addEventListener('mouseup', this.endResize);
         },
@@ -182,7 +184,7 @@ export default {
             my: e.clientY,
           };
           this.updateScaleLoop();
-          document.body.style = "cursor: grabbing";
+          document.body.setAttribute("style", "cursor: grabbing");
           window.addEventListener('mousemove', this.translate);
           window.addEventListener('mouseup', this.endTranslate);
         },
@@ -267,9 +269,9 @@ export default {
         },
         viewMapStyle() {
             return {
-                background: this.$vuetify.theme.current.colors.primary,
+                background: (this.$vuetify.theme.current as any).colors.primary,
                 opacity: 0.4,
-                outline: `solid 0.5px ${this.$vuetify.theme.current.colors.accent}EE`,
+                outline: `solid 0.5px ${(this.$vuetify.theme.current as any).colors.accent}EE`,
                 left: ((-this.view.x / this.scale) / this.view.k) + this.mapPosOffset.x + "px",
                 top: ((-this.view.y / this.scale) / this.view.k) + this.mapPosOffset.y + "px",
                 height: (window.innerHeight / this.scale) / this.view.k + "px",
@@ -285,8 +287,8 @@ export default {
                 const rect = el.getBoundingClientRect();
                 return {
                     opacity: 1,
-                    background: this.$vuetify.theme.current.colors.accent,
-                    outline: `solid 0.5px ${this.$vuetify.theme.current.colors.secondary}EE`,
+                    background: (this.$vuetify.theme.current as any).colors.accent,
+                    outline: `solid 0.5px ${(this.$vuetify.theme.current as any).colors.secondary}EE`,
                     left: (vect.properties.x / this.scale) + this.mapPosOffset.x + "px",
                     top: (vect.properties.y / this.scale) + this.mapPosOffset.y + "px",
                     height: (rect.height / this.scale) / this.view.k + "px",

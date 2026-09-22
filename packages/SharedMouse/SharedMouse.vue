@@ -29,14 +29,14 @@ export default {
     ...mapState(useGraphStore, ["view", "presentation"]),
     ...mapState(useOrchestratorStore, ["graphUserMouse"]),
     ...mapState(usePreferencesStore, ["preferences"]),
-    visible() {
+    visible(): boolean {
       return !this.presentation
         && this.preferences
         && this.preferences.showRemoteMouseMovements
         && this.cursors.length > 0;
     },
-    cursors() {
-      const pointers = this.graphUserMouse || {};
+    cursors(): any[] {
+      const pointers: Record<string, any> = this.graphUserMouse || {};
       return Object.keys(pointers).map((key) => {
         const pointer = pointers[key];
         const user = pointer.user || {};

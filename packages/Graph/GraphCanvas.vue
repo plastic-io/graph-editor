@@ -52,7 +52,7 @@
                 templateType="vue"
                 language="html"
                 :graphId="graphSnapshot.id"
-                :errors="errors.filter(e => e.type === 'graph')"
+                :errors="errors.filter((e: any) => e.type === 'graph')"
                 :value="graphTemplateValue"
                 :ytext="graphTemplateText()"
                 :awareness="collaborationAwareness()"
@@ -82,14 +82,16 @@ export default {
   name: 'graph-canvas',
   data: () => {
     return {
-      compiledTemplate: null,
-      errors: [],
-      styles: [],
+      compiledTemplate: null as any,
+      errors: [] as any[],
+      styles: [] as any[],
       innerHeight: 0,
       innerWidth: 0,
       positionLocationSaveTimeout: 750,
-      positionTimeout: 0,
+      positionTimeout: 0 as any,
       graphUpdateVersion: 0,
+      // the graph template editor reports its unsaved state here
+      setIsDirty: false,
     }
   },
   watch: {
@@ -196,7 +198,7 @@ export default {
         context.restore();
     },
     updateGrid() {
-        const canvas = this.$refs.grid;
+        const canvas = this.$refs.grid as any;
         if (!canvas) { return; }
         canvas.height = window.innerHeight;
         canvas.width = window.innerWidth;
@@ -209,7 +211,7 @@ export default {
         this.compiledTemplate = markRaw(comp);
         this.errors = comp.errors;
         this.styles = this.compiledTemplate.styles;
-        this.errors.forEach((err) => {
+        this.errors.forEach((err: any) => {
             useOrchestratorStore().raiseError(this.graphSnapshot.id, err, 'vue');
         });
     },
@@ -281,7 +283,7 @@ export default {
         return this.graphSnapshot.properties.template;
     },
     connectors: function () {
-        let connectors = [];
+        let connectors: any[] = [];
         this.graphSnapshot.nodes.forEach((node: any) => {
             node.edges.forEach((edge: any) => {
                 edge.connectors.filter((c: any) => !!c).forEach((connector: any) => {
@@ -324,7 +326,7 @@ export default {
         return b;
     },
     graphCanvasClasses: function () {
-        const classes = [];
+        const classes: string[] = [];
         if (!this.presentation) {
             classes.push("graph-canvas-container");
         }
