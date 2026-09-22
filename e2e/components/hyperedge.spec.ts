@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { graphId, openGraph, pointAtDevServer, SERVER, stateOf } from "../hybrid/harness";
-import { buildComponent, buildHost, importedNode, observed, publish, runHere, runThere } from "./harness";
+import { buildComponent, buildHost, executionErrors, importedNode, observed, pageErrors, publish, runHere, runThere } from "./harness";
 
 /**
  * A published graph, imported, with a hyperedge, calling itself.
@@ -41,6 +41,8 @@ test.describe("a published graph, imported by reference", () => {
     const summary = await runThere(hostId, "start", countdown);
     expect(summary.state).toBe("completed");
     expect(summary.errors).toBe(0);
+    // nothing was recorded as having gone wrong, by name, before anything else
+    expect(await executionErrors(hostId, summary.executionId)).toEqual([]);
 
     const visits = await observed(hostId, summary.executionId, "visit");
     // the hyperedge reached both imports, and each is its own set of nodes
@@ -77,7 +79,10 @@ test.describe("a published graph, imported by reference", () => {
     const kept = await observed(hostId, executionId, "visit");
     expect(kept.filter((v: any) => v.path).map((v: any) => v.path).sort()).toEqual(CALLED);
 
-    // a node that draws nothing draws nothing, and says nothing about it
+    // and nothing anywhere said it went wrong: not the execution, not the
+    // page the errors are piped to, not a node's template
+    expect(await executionErrors(hostId, executionId)).toEqual([]);
+    expect(await pageErrors(page)).toEqual([]);
     expect(await page.locator("text=Cannot read properties of null").count()).toBe(0);
     expect(await page.locator("text=At least one <template> or <script> is required").count()).toBe(0);
 
@@ -96,11 +101,12 @@ test.describe("a published graph, imported the way the editor imports one", () =
    * the tests build.
    */
   test("answers exactly as the same component imported by reference does", async ({ browser }) => {
-    const { context, hostId } = await scene(browser, { embed: true });
+    const { page, context, hostId } = await scene(browser, { embed: true });
 
     const summary = await runThere(hostId, "start", countdown);
     expect(summary.state).toBe("completed");
     expect(summary.errors).toBe(0);
+    expect(await executionErrors(hostId, summary.executionId)).toEqual([]);
 
     const visits = await observed(hostId, summary.executionId, "visit");
     expect(visits.filter((v: any) => !v.path).map((v: any) => v.node).sort()).toEqual(FLATTENED);
@@ -108,6 +114,7 @@ test.describe("a published graph, imported the way the editor imports one", () =
     expect(visits.filter((v: any) => v.path).every((v: any) => v.mine === 1)).toBe(true);
     const done = await observed(hostId, summary.executionId, "done");
     expect(done).toHaveLength(2);
+    expect(await pageErrors(page)).toEqual([]);
 
     await context.close();
   });

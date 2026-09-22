@@ -247,3 +247,37 @@ export async function observed(graph: string, executionId: string, kind: string)
     .filter((o: any) => o.kind === "custom" && o.payload && o.payload.kind === kind)
     .map((o: any) => (o.payload.data && o.payload.data.value !== undefined ? o.payload.data.value : o.payload.data));
 }
+
+/* ------------------------------------------------------------------ *
+ * what went wrong, from the places the editor and the server keep it
+ * ------------------------------------------------------------------ */
+
+/**
+ * Everything this page was told went wrong.  The scheduler's `error` events
+ * reach the editor through the worker and land here, beside the warnings the
+ * server sends on the graph's notify channel and anything a node's template
+ * failed at — so a test that ignores this map is a test that does not know
+ * whether the graph ran cleanly.
+ */
+export async function pageErrors(page: Page): Promise<string[]> {
+  return await page.evaluate(() => {
+    const app: any = document.querySelector("#app");
+    const store: any = app.__vue_app__.config.globalProperties.$pinia.state.value.orchestrator;
+    const out: string[] = [];
+    Object.keys(store.errors || {}).forEach((nodeId) => {
+      (store.errors[nodeId] || []).forEach((entry: any) => {
+        const error = entry.error || {};
+        out.push(`${nodeId}: ${error.message || JSON.stringify(error)}${entry.type ? ` (${entry.type})` : ""}`);
+      });
+    });
+    return out;
+  });
+}
+
+/** What one execution recorded as having gone wrong, whichever domain ran it. */
+export async function executionErrors(graph: string, executionId: string): Promise<string[]> {
+  const detail = await (await fetch(`${SERVER}/crdt/${graph}/executions/${executionId}`)).json();
+  return (detail.observations || [])
+    .filter((o: any) => o.kind === "exec.error" || o.kind === "contract.violation" || o.kind === "component.unresolved")
+    .map((o: any) => `${o.kind}${o.nodeId ? " " + o.nodeId : ""}: ${JSON.stringify(o.payload)}`);
+}

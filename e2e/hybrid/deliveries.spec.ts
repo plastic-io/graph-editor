@@ -3,6 +3,7 @@ import {
   buildHybridGraph, delivery, executionId, graphId, openGraph, park, parkedRecord,
   pending, pointAtDevServer, resume, sessionOf, stateOf, sweep,
 } from "./harness";
+import { pageErrors } from "../components/harness";
 
 /**
  * Two people watching the same graph (plan §8.1.5, PB-104).
@@ -53,6 +54,10 @@ test.describe("a hop handed to the browsers", () => {
     expect(await resume(pageB, id)).toBe(0);
     expect((await stateOf(pageA)).drawn).toBe(1);
 
+    // and neither page was told anything went wrong
+    expect(await pageErrors(pageA)).toEqual([]);
+    expect(await pageErrors(pageB)).toEqual([]);
+
     await first.close();
     await second.close();
   });
@@ -94,6 +99,9 @@ test.describe("a hop handed to the browsers", () => {
     expect(record.state).toBe("claimed");
     expect(record.runs).toHaveLength(1);
     expect(record.runs[0].session).toBe(initiator);
+
+    expect(await pageErrors(pageA)).toEqual([]);
+    expect(await pageErrors(pageB)).toEqual([]);
 
     await first.close();
     await second.close();
