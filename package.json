@@ -24,7 +24,7 @@
   "dependencies": {
     "@auth0/auth0-spa-js": "^2.0.1",
     "@mdi/js": "^7.1.96",
-    "@plastic-io/plastic-io": "^2.3.0",
+    "@plastic-io/plastic-io": "^2.3.1",
     "bezier-js": "^6.1.0",
     "deep-diff": "^1.0.2",
     "file-saver": "^2.0.5",

@@ -436,7 +436,32 @@ export const useStore = defineStore('orchestrator', {
      */
     async flattenForScheduler(source: any): Promise<any> {
       const {graph, warnings, instances} = await flattenLinkedGraphs(source, {
-        resolve: (node: any) => (node.linkedGraph && node.linkedGraph.graph) || null,
+        /**
+         * The copy the import carries, and — when it carries none — the
+         * published component itself.  The server has always been able to
+         * resolve a link by fetching it, so a browser that could not flattened
+         * a *different* arrangement from the one the server ran: the same
+         * import was nodes there and a call here.
+         */
+        resolve: async (node: any) => {
+          const linked = node && node.linkedGraph;
+          if (!linked) {
+            return null;
+          }
+          if (linked.graph) {
+            return linked.graph;
+          }
+          if (!linked.id) {
+            return null;
+          }
+          const version = linked.version === undefined ? node.version : linked.version;
+          let found: any = null;
+          await this.load({
+            url: `artifacts/graph/${linked.id}.${version}`,
+            setValue: (value: any) => { found = value; },
+          }).catch(() => undefined);
+          return found;
+        },
         // What flattening cannot resolve — a graph that contains itself — stays
         // a link, and the scheduler makes a call of it when a value arrives:
         // one instance per turn, each with its own state (plastic-io 2.3).
@@ -453,20 +478,35 @@ export const useStore = defineStore('orchestrator', {
       }
       return graph;
     },
+    /**
+     * A graph or node the scheduler asks for by path, at the moment a value
+     * reaches the node that links it (plastic-io 2.3).  The open graph answers
+     * for itself — that is a graph that contains itself.  Anything else is a
+     * published component, which comes from the server's artifact route; only
+     * where there is no server (local-only) does the document provider answer,
+     * which is the one that keeps artifacts under that key.
+     */
     async load(e: any): Promise<any> {
       const artifactPrefix = "artifacts/";
-      if ("setValue" in e) {
-          const pathParts = e.url.split("/");
-          const itemId = pathParts[2].split(".")[0];
-          const itemVersion = pathParts[2].split(".")[1];
-          const itemType = pathParts[1];
-          if (itemType === "graph" && itemId === this.graphStore.graph.id) {
-              return e.setValue(this.graphStore.graph);
-          }
-          // the artifact route is /artifacts/{id}/{version}
-          const item = await this.dataProviders.publish!.get(artifactPrefix + itemId + "/" + itemVersion);
-          e.setValue(item);
+      if (!("setValue" in e)) {
+        return;
       }
+      const pathParts = String(e.url || "").split("/");
+      const itemId = (pathParts[2] || "").split(".")[0];
+      const itemVersion = (pathParts[2] || "").split(".")[1];
+      const itemType = pathParts[1];
+      if (itemType === "graph" && this.graphStore.graph && itemId === this.graphStore.graph.id) {
+        return e.setValue(this.graphStore.graph);
+      }
+      const path = artifactPrefix + itemId + "/" + itemVersion;
+      const server: any = this.syncProviders.find((p: any) => typeof p.call === "function");
+      if (server) {
+        // GET /artifacts/{id}/{version}, with this session's token on it
+        const item = await server.call(path);
+        return e.setValue(item);
+      }
+      const item = await this.dataProviders.publish!.get(path);
+      e.setValue(item);
     },
     /**
      * Keep a finished browser execution and hand it to the server (plan
@@ -734,6 +774,21 @@ export const useStore = defineStore('orchestrator', {
             if (shouldRunDelivery(args, this.sessionId)) {
               this.takeDelivery(args);
             }
+            return;
+          }
+          if (methodName === 'load-request') {
+            // A node reached a graph the worker does not have: a component
+            // published somewhere, which only this side can fetch.  `load`
+            // already knew how; nothing had ever asked it.
+            const {id, url} = args || {};
+            let answer: any = null;
+            this.load({url, setValue: (value: any) => { answer = value; }})
+              .catch((err: any) => {
+                console.warn("linked_graph: cannot load " + url, err);
+              })
+              .then(() => {
+                this.scheduleWorker.postMessage({method: 'load-response', args: [{id, graph: answer}]});
+              });
             return;
           }
           if (methodName === 'execution-finished') {

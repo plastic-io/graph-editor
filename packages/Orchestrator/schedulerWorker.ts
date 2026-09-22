@@ -26,8 +26,40 @@ let session: any = {};
 /** Answers to deliveries this worker asked the main thread to carry. */
 const pendingDeliveries = new Map<number, (answer: any) => void>();
 let deliveryRequestId = 0;
+/** Linked graphs this worker has asked the main thread to find. */
+const pendingLoads = new Map<number, (answer: any) => void>();
+let loadRequestId = 0;
+/** How long a linked graph may take to arrive before the link is unresolved. */
+const LOAD_TIMEOUT_MS = 10000;
+/**
+ * A graph a node links to, found at the moment it is reached.
+ *
+ * The graph this worker is running answers for itself — that is a graph that
+ * contains itself, and the document is already here.  Anything else is a
+ * component published somewhere, which only the main thread can fetch (it has
+ * the providers, the token and the server's address), so the worker asks and
+ * waits.  Answering every request with the running graph, as this did, meant a
+ * node linking an imported component silently ran the *host* graph instead.
+ */
 const loader = async (e: any): Promise<any> => {
-  return e.setValue(scheduler.graph);
+  const url = String((e && e.url) || "");
+  const here = scheduler && scheduler.graph ? scheduler.graph : null;
+  if (here && (url.indexOf("/" + here.id + ".") !== -1 || url.indexOf("/" + here.url + ".") !== -1)) {
+    return e.setValue(here);
+  }
+  const id = (loadRequestId += 1);
+  const answer = await new Promise<any>((resolve) => {
+    pendingLoads.set(id, resolve);
+    postMessage({ source: 'load-request', event: toJSON({ id, url }) });
+    setTimeout(() => {
+      if (pendingLoads.delete(id)) {
+        resolve(null);
+      }
+    }, LOAD_TIMEOUT_MS);
+  });
+  if (answer) {
+    e.setValue(answer);
+  }
 };
 
 const sendUpdateToMain = (path: Path, value: any): void => {
@@ -154,6 +186,15 @@ onmessage = function(e: any) {
   }
   if (e.data.method === 'cancel') {
     return rpc.cancel.apply(null, e.data.args);
+  }
+  if (e.data.method === 'load-response') {
+    const { id, graph } = e.data.args[0] || {};
+    const resolve = pendingLoads.get(id);
+    if (resolve) {
+      pendingLoads.delete(id);
+      resolve(graph || null);
+    }
+    return;
   }
   if (e.data.method === 'delivery-response') {
     const {id, answer} = e.data.args[0] || {};

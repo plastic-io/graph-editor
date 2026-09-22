@@ -580,13 +580,22 @@ export default {
         .split(',')
         .filter((script: any) => script); // Filter out empty strings
       // Extracting node-level scripts
+      const seen = new Set<any>();
       const getGraphScripts = (graph: Graph, arr: string[]) => {
+        // A graph may contain itself, so a walk that does not remember where it
+        // has been does not end.
+        if (!graph || !Array.isArray(graph.nodes) || seen.has(graph)) {
+            return;
+        }
+        seen.add(graph);
         graph.nodes.forEach((node) => {
             if (node.properties.scripts) {
                 arr.push(...node.properties.scripts.replace('\n', ',').split(','));
             }
-            if (node.linkedGraph) {
-                // recursively fetch all scripts in embedded graphs
+            // Only a link that carries its graph has scripts to find here; one
+            // that is a reference is loaded when a value reaches it, and asking
+            // it for nodes threw on the way into the editor.
+            if (node.linkedGraph && node.linkedGraph.graph) {
                 getGraphScripts(node.linkedGraph.graph, arr);
             }
         });
