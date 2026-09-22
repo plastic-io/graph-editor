@@ -1,6 +1,8 @@
 // NOTE: This code file is in an experimental state
 
 import { defineStore } from 'pinia';
+import type {App} from "vue";
+import type Scheduler from "@plastic-io/plastic-io";
 import type {Graph, Node} from "@plastic-io/plastic-io";
 import {fromJSON} from 'flatted';
 import RegistrySettingsPanel from "./RegistrySettings.vue";
@@ -125,7 +127,6 @@ export const useStore = defineStore('orchestrator', {
     executionReportsDropped: 0,
     graphStore: useGraphStore(),
     preferencesStore: usePreferencesStore(),
-    orchestratorStore: useOrchestratorStore(),
     token: null,
     bgColor: '000',
     selectedPanel: '',
@@ -187,7 +188,7 @@ export const useStore = defineStore('orchestrator', {
         "cli",
     ],
     graphReferences: {},
-    registry: {},
+    registry: {} as Record<string, any>,
     artifacts: {},
     remoteEvents: [],
     remoteSnapshot: {},
@@ -219,7 +220,6 @@ export const useStore = defineStore('orchestrator', {
         instance: null as Scheduler | null,
     },
     locked: false,
-    historyPosition: 0,
     nodeZCounter: 0,
     errorConnectors: [],
     watchConnectors: [],
@@ -241,7 +241,7 @@ export const useStore = defineStore('orchestrator', {
         method: 'panic',
         args: [],
       });
-      this.dataProviders.graph!.send({
+      (this.dataProviders.graph as any).send({
         action: 'panic',
         graphId: this.graphStore.graph.id,
       });
@@ -533,7 +533,7 @@ export const useStore = defineStore('orchestrator', {
       if (!report.observations || !report.observations.length) {
         return;
       }
-      const provider: any = this.orchestratorStore.syncProviders.find((p: any) => typeof p.reportExecution === "function");
+      const provider: any = this.syncProviders.find((p: any) => typeof p.reportExecution === "function");
       if (!provider || !this.graphStore.crdtSession) {
         return;
       }
@@ -575,7 +575,7 @@ export const useStore = defineStore('orchestrator', {
      * answer back to the execution that is waiting for it.
      */
     async carryDelivery({id, delivery}: any) {
-      const provider: any = this.orchestratorStore.syncProviders.find((p: any) => typeof p.deliverEdge === "function");
+      const provider: any = this.syncProviders.find((p: any) => typeof p.deliverEdge === "function");
       let answer: any = {outputs: []};
       try {
         if (!provider) {
@@ -795,7 +795,7 @@ export const useStore = defineStore('orchestrator', {
           }
         };
         // messages from server
-        this.orchestratorStore.dataProviders.graph.subscribe('graph-notify-' + this.graphStore.graph.id, async (e: any) => {
+        this.dataProviders.graph!.subscribe('graph-notify-' + this.graphStore.graph.id, async (e: any) => {
             if (e.eventType === 'log' && e.level === 'error') {
               e.eventType = 'error';
             }
@@ -854,6 +854,10 @@ export const useStore = defineStore('orchestrator', {
             });
           }, SCHEDULER_PUSH_DEBOUNCE);
         });
+    },
+    showInfoDialog(message: string) {
+      this.infoMessage = message;
+      this.showInfo = true;
     },
     clearInfo() {},
     setHoveredNode() {},

@@ -36,6 +36,7 @@
   </component>
 </template>
 <script lang="ts">
+import type {PropType} from "vue";
 import {mapWritableState, mapActions, mapState} from "pinia";
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
@@ -123,10 +124,10 @@ export default {
     templateType: String,
     language: String,
     nodeId: String,
-    value: String,
+    value: {type: String, default: ""},
     graphId: String,
     helpLink: String,
-    errors: Array,
+    errors: {type: Array as PropType<any[]>, default: () => []},
     /**
      * The Y.Text this editor edits.  When present the document itself is the
      * source of truth: typing is shared as it happens, so the local dirty
@@ -167,7 +168,10 @@ export default {
       top: 0,
       left: 0,
       resizeing: false,
+      // where the pointer was, and how big the dialog was, when a resize began
       startResize: {
+        screenX: 0,
+        screenY: 0,
         top: 0,
         left: 0,
         height: 0,
@@ -219,13 +223,13 @@ export default {
         language: this.language,
         theme: this.preferences.appearance.theme === 'dark' ? 'vs-dark' : 'vs',
       });
-      editor.onDidFocusEditorText((event) => {
+      editor.onDidFocusEditorText(() => {
         this.editorHasFocus = true;
       });
-      editor.onDidBlurEditorText((event) => {
+      editor.onDidBlurEditorText(() => {
         this.editorHasFocus = false;
       });
-      editor.getModel().onDidChangeContent((event) => {
+      editor.getModel()!.onDidChangeContent((event: any) => {
         this.update();
         if (this.updatingValue && this.cursorLocation) {
           (this.$refs.editor as any).pinstance.setPosition(this.cursorLocation);
@@ -271,10 +275,10 @@ export default {
       }
       try {
         this.binding = new MonacoBinding(
-          this.ytext,
-          editor.getModel(),
+          this.ytext as any,
+          editor.getModel()!,
           new Set([editor]),
-          this.awareness || null,
+          (this.awareness as any) || null,
         );
       } catch (err) {
         console.error('Cannot bind the code editor to the shared document; '
@@ -302,7 +306,11 @@ export default {
         this.win.close();
       }
     },
-    sendBroadcast({type, value}) {
+    sendBroadcast({type, value}: {type: string; value: any}) {
+      // watchers can fire before the editor mounts, and the channel with it
+      if (!this.broadcastChannel) {
+        return;
+      }
       const id = newId();
       this.messageIds.push(id);
       this.broadcastChannel.postMessage({
@@ -446,7 +454,7 @@ export default {
       }
       const model = (this.$refs.editor as any).pinstance.getModel();
       monaco.editor.setModelMarkers(model, 'owner', [...this.errors, ...this.externalErrors]
-        .map((item) => {
+        .map((item: any) => {
         const e = item.error;
         e.loc = e.loc || {start:{column: 0, line: 0}, end:{column: 0, line: 0}};
         return {
@@ -542,7 +550,7 @@ export default {
     broadcastErrors() {
       this.sendBroadcast({
         type: 'errors',
-        value: this.errors.map((err) => {
+        value: this.errors.map((err: any) => {
           return {
             ...err,
             error: {message: err.error.message},
@@ -603,8 +611,6 @@ export default {
     },
     editorContainerStyle() {
       return {
-        maxWidth: this.isPopout ? '100vw !important' : undefined,
-        width: this.isPopout ? '100vw !important' : undefined,
         zIndex: '3',
         position: 'absolute',
         background: this.cursor !== 'auto' ?
@@ -620,7 +626,6 @@ export default {
     editorStyle() {
       return {
         maxWidth: this.isPopout ? '100vw' : undefined,
-        width: this.isPopout ? '100vw' : undefined,
         top: this.isPopout ? "24px" : "30px",
         left: this.isPopout ? "0" : "5px",
         width: this.isPopout ? '100vw' : ((this.width - 10) + "px"),

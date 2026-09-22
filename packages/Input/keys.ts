@@ -38,7 +38,7 @@ export const keys = (store: any, e: KeyboardEvent) => {
         store.graphStore.startedMovingConnector = null;
         store.graphStore.movingConnector = null;
         store.graphStore.addingConnector = null;
-        store.inputStore.mouse.lmb = false;
+        store.mouse.lmb = false;
         store.graphStore.movingNodes.forEach((n: any) => {
             const ogNode = store.graphSnapshotStore.graph.nodes.find((no: any) => no.id = n.id);
             const node = store.graphStore.graphSnapshot.nodes.find((no: any) => no.id = n.id);

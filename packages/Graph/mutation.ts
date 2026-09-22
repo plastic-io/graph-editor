@@ -8,7 +8,7 @@ import {newId, deref, loadScripts} from "@plastic-io/graph-editor-vue3-utils";
 // was renamed, so that it can rewrite the connectors that referred to it.
 // Everything else compares with the shared deep equality helper.
 import {applyChange, observableDiff} from "deep-diff";
-import type {Graph} from "@plastic-io/plastic-io";
+import type {Graph, Edge} from "@plastic-io/plastic-io";
 import {deepEqual} from "@plastic-io/graph-crdt";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {GraphCrdtSession} from "./crdt";

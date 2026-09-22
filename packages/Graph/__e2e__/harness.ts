@@ -1,6 +1,6 @@
 import * as Y from "yjs";
 import { fromJSON, encodeState } from "@plastic-io/graph-crdt";
-import { GraphCrdtSession } from "../crdt";
+import type { GraphCrdtSession } from "../crdt";
 import patchInto from "../project";
 
 /** Wall-clock statistics for a run of timed operations. */

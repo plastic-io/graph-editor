@@ -72,6 +72,7 @@ export default {
         ...mapWritableState(useGraphStore, [
             'workspaceElement',
             'presentation',
+            'hoveredConnector',
         ]),
         ...mapWritableState(useOrchestratorStore, [
             'showConnectorView',
@@ -82,7 +83,6 @@ export default {
             'bgColor',
             'showHelp',
             'panelVisibility',
-            'hoveredConnector',
         ]),
         workspaceBackground() {
             if (this.presentation) {

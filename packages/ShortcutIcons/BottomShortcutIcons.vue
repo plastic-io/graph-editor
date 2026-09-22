@@ -159,12 +159,10 @@ export default {
         ]),
         ...mapWritableState(useOrchestratorStore, [
             'showConnectorView',
-            'translating',
             'locked',
         ]),
         ...mapState(useOrchestratorStore, [
             'notFound',
-            'rewindVisible',
             'showInfo',
             'infoMessage',
             'dataProviders',
@@ -172,9 +170,7 @@ export default {
             'pathPrefix',
             'showHelp',
             'panelVisibility',
-            'nodeMimeType',
             'showError',
-            'error',
         ]),
     },
     methods: {
@@ -196,6 +192,10 @@ export default {
         ...mapActions(useOrchestratorStore, [
             'clearInfo',
             'getPluginsByType',
+        ]),
+        // these are the graph's own operations; mapped from the orchestrator
+        // they were undefined, and every one of these buttons threw
+        ...mapActions(useGraphStore, [
             'undo',
             'redo',
             'duplicateSelection',

@@ -69,8 +69,8 @@ export default {
         return {
             search: "",
             selectedItem: null,
-            selectedRegistry: null,
-            tabs: null,
+            selectedRegistry: null as any,
+            tabs: null as any,
         };
     },
     watch: {
@@ -96,7 +96,7 @@ export default {
             return detailItems;
         },
         groupItems(items: any) {
-            const list = {};
+            const list: Record<string, any> = {};
             items.forEach((item: any) => {
                 if (!list[item.id]) {
                     list[item.id] = item;
@@ -114,11 +114,11 @@ export default {
             e.dataTransfer.dropEffect = "link";
         },
         iconType(item: any) {
-            return {
+            return ({
                 newNode: "mdi-shape-rectangle-plus",
                 publishedNode: "mdi-network",
                 publishedGraph: "mdi-switch",
-            }[item] || "";
+            } as Record<string, string>)[item] || "";
         },
     },
     computed: {
@@ -129,7 +129,7 @@ export default {
             'registry',
         ]),
         artifacts() {
-            return () => {
+            return (id: string) => {
                 return [];
             };
         },

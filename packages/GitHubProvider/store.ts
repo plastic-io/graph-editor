@@ -3,7 +3,7 @@ import { defineStore } from 'pinia';
 export const useStore = defineStore('github', {
     state: () => ({
       authenticationStore: useAuthenticationProviderStore(),
-      repos: {},
+      repos: {} as Record<string, any>,
     }),
     actions: {
       async getGetHubApiFile(url: string): Promise<any> {

@@ -6,7 +6,7 @@ export default {
     }) {
         const node = this.graphSnapshot.nodes.find((v: any) => v.id === e.nodeId);
         if (!node) {
-            return this.this.orchestratorStore.raiseError(new Error("Cannot find node to update."));
+            return this.orchestratorStore.raiseError(new Error("Cannot find node to update."));
         }
         const prop = node.properties.inputs.find((o: {name: string}) => o.name === e.name);
         node.properties.inputs.splice(node.properties.inputs.indexOf(prop), 1);

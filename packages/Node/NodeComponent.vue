@@ -1,5 +1,6 @@
 <script lang="ts">
-  import type { ref, markRaw, h, defineComponent, SetupContext, watch, onErrorCaptured, emit } from "vue";
+  import { h, defineComponent, onErrorCaptured } from "vue";
+  import type { SetupContext } from "vue";
   import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
   import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
   import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";

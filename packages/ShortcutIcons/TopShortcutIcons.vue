@@ -88,7 +88,6 @@ export default {
     computed: {
         ...mapWritableState(usePreferencesStore, ['preferences']),
         ...mapWritableState(useOrchestratorStore, [
-            'translating',
             'showHelp',
         ]),
         ...mapWritableState(useGraphStore, [
@@ -100,28 +99,20 @@ export default {
             'hoveredNode',
             'hoveredPort',
             'inRewindMode',
+            'historyPosition',
+            'primaryGroup',
+            'selectedConnectors',
         ]),
         ...mapState(useOrchestratorStore, [
             'notFound',
-            'rewindVisible',
             'showInfo',
             'infoMessage',
             'dataProviders',
             'pendingEvents',
-            'activityConnectors',
             'pathPrefix',
             'panelVisibility',
-            'nodeMimeType',
             'showError',
-            'error',
             'locked',
-            'historyPosition',
-            'primaryGroup',
-            'groupNodes',
-            'boundingRect',
-            'selectionRect',
-            'selectedConnectors',
-            'hoveredConnector',
         ]),
         pending: function() {
             return Object.keys(this.pendingEvents).length;

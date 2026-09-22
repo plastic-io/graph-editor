@@ -70,7 +70,7 @@
                         </v-btn>
                         <v-combobox
                             help-topic="graphTags"
-                            :items="domainTags"
+                            :items="tags"
                             persistent-hint
                             hint="Which domains this resource works in"
                             chips
@@ -164,7 +164,7 @@ export default {
             'graphSnapshot',
         ]),
         ...mapState(useOrchestratorStore, [
-            'domainTags',
+            'tags',
         ]),
         ioList() {
             return this.externalIO();

@@ -78,6 +78,7 @@ export class UserPreferences {
     defaultNewSetTemplate: string;
     defaultNewVueTemplate: string;
     registries: string;
+    repos: string;
     componentScripts: string;
     snapToGrid: boolean;
     remoteConfiguration: string;
@@ -113,6 +114,7 @@ export class UserPreferences {
         this.uiSize = {};
         this.remoteConfiguration = "https://unpkg.com/@plastic-io/registry/package.json";
         this.registries = '';
+        this.repos = '';
         this.componentScripts = '';
     }
 }

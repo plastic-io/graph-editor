@@ -99,11 +99,11 @@ export default {
         ...mapState(usePreferencesStore, ['preferences',]),
         ...mapState(useInputStore, ['mouse']),
         ...mapState(useOrchestratorStore, [
-          'historyPosition',
           'startTime',
           'redrawConnectorVersion',
         ]),
         ...mapState(useGraphStore, [
+          'historyPosition',
           'presentation',
           'hoveredPort',
           'addingConnector',

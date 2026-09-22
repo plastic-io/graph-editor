@@ -1,4 +1,4 @@
-import type {Vector, Graph} from "@plastic-io/plastic-io"; // eslint-disable-line
+import type {Graph} from "@plastic-io/plastic-io"; // eslint-disable-line
 export default class HTTPDataProvider {
     baseUrl: string;
     token = "";

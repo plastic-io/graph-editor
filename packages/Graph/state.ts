@@ -29,7 +29,7 @@ export default () => {
         groupNodes: [],
         movingNodes: [],
         inputStore: useInputStore() as any,
-        orchestratorStore: useOrchestratorStore(),
+        orchestratorStore: useOrchestratorStore() as any,
         preferencesStore: usePreferencesStore(),
         graphSnapshotStore: useGraphSnapshotStore(),
         graphSnapshot: null as any,

@@ -49,7 +49,6 @@ export default {
     methods: {
         ...mapActions(useOrchestratorStore, [
             "getToc",
-            "download",
         ]),
         dragStart(e: any, item: any) {
             e.dataTransfer.setData("application/json+plastic-io", JSON.stringify(item));
