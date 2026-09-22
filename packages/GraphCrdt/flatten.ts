@@ -80,9 +80,11 @@ export interface FlattenOptions {
      *
      * A runtime that instantiates a linked graph **when a value arrives at it**
      * (plastic-io 2.3 and later, and the Rust runtime) wants the opposite: pass
-     * `leaveForRuntime` and the node keeps its `linkedGraph`, so the call is
-     * made at the moment it happens, with its own state, as deep as the graph
-     * takes it.  That is how a recursive graph runs at all.
+     * `leaveForRuntime` and **every** linked node keeps its `linkedGraph`, so
+     * each call is made at the moment it happens, with its own state, as deep
+     * as the graph takes it.  That is how a recursive graph runs at all, and —
+     * since 2.4 gave both domains a way to address a node *inside* a call — how
+     * every import runs, so that one import means one thing (D-38).
      */
     leaveForRuntime?: boolean;
 }
@@ -134,31 +136,33 @@ export async function flattenLinkedGraphs(graph: any, options: FlattenOptions = 
                 }
                 continue;
             }
+            if (options.leaveForRuntime) {
+                /**
+                 * A runtime that can make a call of a link is given the link,
+                 * every time — not only when flattening fails (D-38).  Inlining
+                 * one it *could* resolve looked like a free optimisation and was
+                 * not: the inlined copy is nodes, not a call, so it has no
+                 * instance, no state of its own and no identity, and the same
+                 * import meant different things in the two domains depending on
+                 * which of them happened to be able to fetch the component.
+                 */
+                keepLink(nodes, here, node);
+                instances.push({ nodeId: here, graphId: innerId, instancePath: instancePath.concat([node.id]) });
+                continue;
+            }
             if (graphPath.length > maxDepth) {
                 warnings.push({
                     code: "LINKED_GRAPH_TOO_DEEP", nodeId: here, graphId: innerId, path: graphPath,
-                    message: options.leaveForRuntime
-                        ? `linked graphs are nested more than ${maxDepth} deep here; the rest is left for the runtime to call`
-                        : `linked graphs are nested more than ${maxDepth} deep here; the rest is left as it is`,
+                    message: `linked graphs are nested more than ${maxDepth} deep here; the rest is left as it is`,
                 });
-                if (options.leaveForRuntime) {
-                    keepLink(nodes, here, node);
-                }
                 continue;
             }
             const inner = await resolve(node, graphPath);
             if (!inner || !Array.isArray(inner.nodes)) {
                 warnings.push({
                     code: "LINKED_GRAPH_MISSING", nodeId: here, graphId: innerId, path: graphPath,
-                    message: options.leaveForRuntime
-                        ? `the graph ${innerId || "this node links to"} is not here to flatten; the runtime loads it when a value reaches this node`
-                        : `the graph ${innerId || "this node links to"} could not be loaded, so nothing it contains will run`,
+                    message: `the graph ${innerId || "this node links to"} could not be loaded, so nothing it contains will run`,
                 });
-                // A runtime that loads at the moment of the call may well find
-                // it: flattening resolves what it has, and hands over the rest.
-                if (options.leaveForRuntime) {
-                    keepLink(nodes, here, node);
-                }
                 continue;
             }
             const childPath = instancePath.concat([node.id]);

@@ -255,13 +255,26 @@ describe("what a runtime that can make calls is given", () => {
     expect(warnings[0].message).toContain("cannot be run inside itself");
   });
 
-  it("flattens everything it can either way, and only leaves what it cannot", async () => {
+  it("leaves every link, not only the ones flattening could not resolve", async () => {
+    // A copy inlined here is nodes, not a call: no instance, no state of its
+    // own, and a different arrangement from the domain that had to load it.
     const outer = graph("outer", [
       node("entry", { edges: [{ field: "out", connectors: [connector("host")] }] }),
       linkedNode("host", inner()),
     ]);
-    const { graph: flat, warnings } = await flattenLinkedGraphs(outer, { leaveForRuntime: true });
+    const { graph: flat, warnings, instances } = await flattenLinkedGraphs(outer, { leaveForRuntime: true });
     expect(warnings).toEqual([]);
+    expect(flat.nodes.map((n: any) => n.id).sort()).toEqual(["entry", "host"]);
+    expect(flat.nodes.find((n: any) => n.id === "host").linkedGraph).toBeTruthy();
+    expect(instances).toEqual([{ nodeId: "host", graphId: "inner", instancePath: ["host"] }]);
+  });
+
+  it("flattens the same graph for a runtime that cannot call, exactly as before", async () => {
+    const outer = graph("outer", [
+      node("entry", { edges: [{ field: "out", connectors: [connector("host")] }] }),
+      linkedNode("host", inner()),
+    ]);
+    const { graph: flat } = await flattenLinkedGraphs(outer);
     expect(flat.nodes.map((n: any) => n.id).sort()).toEqual(["entry", "host", "host/in-node", "host/out-node"]);
   });
 });
@@ -275,7 +288,8 @@ describe("a link this side cannot resolve", () => {
     };
     const { graph: flat, warnings } = await flattenLinkedGraphs(outer, { leaveForRuntime: true, resolve: () => null });
     expect(flat.nodes[0].linkedGraph).toMatchObject({ id: "elsewhere", version: 3 });
-    expect(warnings[0].message).toContain("the runtime loads it when a value reaches this node");
+    // nothing failed: the link was never flattening's to resolve
+    expect(warnings).toEqual([]);
   });
 
   it("is still dropped, with the reason, where nothing can call it", async () => {

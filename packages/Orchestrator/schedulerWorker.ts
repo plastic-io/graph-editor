@@ -213,14 +213,33 @@ onmessage = function(e: any) {
     if (!scheduler || !executions || executions.seen(delivery)) {
       return;
     }
+    const options = {
+      executionId: delivery.executionId,
+      revisionId: delivery.revisionId,
+    };
+    const path: string[] = Array.isArray(delivery.instancePath) ? delivery.instancePath : [];
+    if (path.length) {
+      /**
+       * The hop belongs to a call — the chain of hosts it was reached through
+       * — so it is answered *in* that call, with the data and the state that
+       * call has (D-38, plastic-io 2.4).  Entering it here makes it if this
+       * domain has not made it yet, which is what a hop arriving first means.
+       */
+      (scheduler as any).invokeIn(path, delivery.nodeId, delivery.value, delivery.field, options)
+        .then((handle: any) => handle.done.catch(() => undefined))
+        .catch((err: any) => messenger('error')({
+          nodeId: delivery.nodeId,
+          graphId: delivery.graphId,
+          field: delivery.field,
+          message: 'Cannot answer a hop inside ' + path.join('/') + ': ' + ((err && err.message) || err),
+        }));
+      return;
+    }
     const node = (scheduler.graph.nodes || []).find((n: any) => n.id === delivery.nodeId);
     if (!node) {
       return;
     }
-    const handle = (scheduler as any).invoke(node.url, delivery.value, delivery.field, undefined, {
-      executionId: delivery.executionId,
-      revisionId: delivery.revisionId,
-    });
+    const handle = (scheduler as any).invoke(node.url, delivery.value, delivery.field, undefined, options);
     handle.done.catch(() => undefined);
     return;
   }

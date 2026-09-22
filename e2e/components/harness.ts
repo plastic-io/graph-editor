@@ -124,7 +124,7 @@ const connector = (nodeId: string, field: string, graphId: string) =>
  * `tick` leaves `in` on **two** connectors at once; `call` carries this same
  * published graph, which is what makes running it recursion.
  */
-export async function buildComponent(page: Page, graphId: string) {
+export async function buildComponent(page: Page, graphId: string, options: { drawsInTheBrowser?: boolean } = {}) {
   const visit = `
     var path = instance ? instance.path.join("/") : "";
     var depth = instance ? instance.depth : 0;
@@ -140,8 +140,28 @@ export async function buildComponent(page: Page, graphId: string) {
       set: "edges.tick = {n: value.n, tag: value.tag};",
       inputs: [port("in", true)],                       // the published way in
       outputs: [port("tick")],
-      edges: [{ field: "tick", connectors: [connector("echo", "in", graphId), connector("down", "in", graphId)] }],
+      edges: [{
+        field: "tick",
+        connectors: options.drawsInTheBrowser
+          ? [connector("echo", "in", graphId), connector("down", "in", graphId), connector("draw", "in", graphId)]
+          : [connector("echo", "in", graphId), connector("down", "in", graphId)],
+      }],
     },
+    ...(options.drawsInTheBrowser ? [{
+      // a node inside the component that only the browser can run: the hop for
+      // it has to come back to the call it belongs to, not to a node that
+      // happens to share its id (D-38)
+      id: "draw",
+      set: `
+        var path = instance ? instance.path.join("/") : "";
+        state.drawn = (state.drawn || []).concat([{path: path, node: node.id, n: value.n}]);
+        host.emit("drawn", {path: path, n: value.n});
+      `,
+      inputs: [port("in")],
+      outputs: [],
+      edges: [],
+      properties: { placement: "browser" },
+    }] : []),
     {
       id: "echo",
       set: visit,
@@ -280,4 +300,12 @@ export async function executionErrors(graph: string, executionId: string): Promi
   return (detail.observations || [])
     .filter((o: any) => o.kind === "exec.error" || o.kind === "contract.violation" || o.kind === "component.unresolved")
     .map((o: any) => `${o.kind}${o.nodeId ? " " + o.nodeId : ""}: ${JSON.stringify(o.payload)}`);
+}
+
+/** Where a hop for this node went, and which call each one belonged to. */
+export async function routedTo(graph: string, executionId: string, nodeId: string): Promise<string[]> {
+  const detail = await (await fetch(`${SERVER}/crdt/${graph}/executions/${executionId}`)).json();
+  return (detail.observations || [])
+    .filter((o: any) => o.kind === "route" && o.nodeId === nodeId && o.payload && o.payload.deferred === "browser")
+    .map((o: any) => (o.instancePath || []).join("/"));
 }

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { graphId, openGraph, pointAtDevServer, SERVER, stateOf } from "../hybrid/harness";
-import { buildComponent, buildHost, executionErrors, importedNode, observed, pageErrors, publish, runHere, runThere } from "./harness";
+import { buildComponent, buildHost, executionErrors, importedNode, observed, pageErrors, publish, routedTo, runHere, runThere } from "./harness";
 
 /**
  * A published graph, imported, with a hyperedge, calling itself.
@@ -24,15 +24,15 @@ import { buildComponent, buildHost, executionErrors, importedNode, observed, pag
 const countdown = { n: 2, tag: "t" };
 
 /**
- * What each turn is, in order of depth.  The outermost use of the component is
- * **flattened** — the import is resolved before anything runs, so its nodes are
- * the host's, named by the host they came through.  The link inside it is the
- * component within itself, which flattening cannot resolve and will not guess
- * at, so every turn below is a **call**, named by the path it was reached
- * through.  Both domains have to say the same thing.
+ * Every turn, named by the path of hosts it was reached through.  All of them
+ * are calls: an import is a call the same way the component within itself is
+ * (D-38), so one import means one thing however deep it is and whichever domain
+ * runs it.  Both domains have to say exactly this.
  */
-const FLATTENED = ["left/echo", "right/echo"];
-const CALLED = ["left/call", "left/call/call", "right/call", "right/call/call"];
+const TURNS = [
+  "left", "left/call", "left/call/call",
+  "right", "right/call", "right/call/call",
+];
 
 test.describe("a published graph, imported by reference", () => {
   test("the server runs every turn, each its own, and what leaves by the published edge comes back", async ({ browser }) => {
@@ -45,13 +45,12 @@ test.describe("a published graph, imported by reference", () => {
     expect(await executionErrors(hostId, summary.executionId)).toEqual([]);
 
     const visits = await observed(hostId, summary.executionId, "visit");
-    // the hyperedge reached both imports, and each is its own set of nodes
-    expect(visits.filter((v: any) => !v.path).map((v: any) => v.node).sort()).toEqual(FLATTENED);
-    // and every turn below is a call of its own, with scratch of its own
-    expect(visits.filter((v: any) => v.path).map((v: any) => v.path).sort()).toEqual(CALLED);
-    expect(visits.filter((v: any) => v.path).every((v: any) => v.mine === 1)).toBe(true);
+    // the hyperedge reached both imports, and every turn is a call of its own
+    expect(visits.map((v: any) => v.path).sort()).toEqual([...TURNS].sort());
+    // each with scratch of its own, counting exactly the one visit it had
+    expect(visits.every((v: any) => v.mine === 1)).toBe(true);
     // the countdown is the graph's business, and it stopped itself
-    expect(visits.filter((v: any) => v.node === "left/echo").map((v: any) => v.n)).toEqual([2]);
+    expect(visits.filter((v: any) => v.path === "left").map((v: any) => v.n)).toEqual([2]);
     expect(visits.filter((v: any) => v.path === "left/call/call").map((v: any) => v.n)).toEqual([0]);
     // what left each import by its published output reached the host's one node
     // what left each import by its published output reached the host's one node
@@ -69,15 +68,14 @@ test.describe("a published graph, imported by reference", () => {
     await page.waitForTimeout(4000);
     const state = await stateOf(page);
     const visits = (state.visits || []) as any[];
-    expect(visits.filter((v: any) => !v.path).map((v: any) => v.node).sort()).toEqual(FLATTENED);
-    expect(visits.filter((v: any) => v.path).map((v: any) => v.path).sort()).toEqual(CALLED);
-    expect(visits.filter((v: any) => v.path).every((v: any) => v.mine === 1)).toBe(true);
+    expect(visits.map((v: any) => v.path).sort()).toEqual([...TURNS].sort());
+    expect(visits.every((v: any) => v.mine === 1)).toBe(true);
     expect((state.done || []).length).toBe(2);
 
     // and what this browser did is in the server's own store, where an
     // execution of either domain is looked up the same way (plan §4.5.3)
     const kept = await observed(hostId, executionId, "visit");
-    expect(kept.filter((v: any) => v.path).map((v: any) => v.path).sort()).toEqual(CALLED);
+    expect(kept.map((v: any) => v.path).sort()).toEqual([...TURNS].sort());
 
     // and nothing anywhere said it went wrong: not the execution, not the
     // page the errors are piped to, not a node's template
@@ -109,9 +107,8 @@ test.describe("a published graph, imported the way the editor imports one", () =
     expect(await executionErrors(hostId, summary.executionId)).toEqual([]);
 
     const visits = await observed(hostId, summary.executionId, "visit");
-    expect(visits.filter((v: any) => !v.path).map((v: any) => v.node).sort()).toEqual(FLATTENED);
-    expect(visits.filter((v: any) => v.path).map((v: any) => v.path).sort()).toEqual(CALLED);
-    expect(visits.filter((v: any) => v.path).every((v: any) => v.mine === 1)).toBe(true);
+    expect(visits.map((v: any) => v.path).sort()).toEqual([...TURNS].sort());
+    expect(visits.every((v: any) => v.mine === 1)).toBe(true);
     const done = await observed(hostId, summary.executionId, "done");
     expect(done).toHaveLength(2);
     expect(await pageErrors(page)).toEqual([]);
@@ -120,8 +117,42 @@ test.describe("a published graph, imported the way the editor imports one", () =
   });
 });
 
+test.describe("a node inside a call, placed in the other domain", () => {
+  /**
+   * The case that says whether calls can go all the way down.  A hop the server
+   * hands to the browsers is addressed by a node id, and inside a call that id
+   * is the component author's — `draw`, in both copies, at every depth.  Only
+   * the pair (path, id) says which one, so the hop carries the path and the
+   * browser enters that call to answer it.  While an import was flattened
+   * before anything ran, the flat id did this job and a call could not be
+   * reached from outside at all (D-38).
+   */
+  test("the hop comes back to the call it belongs to, and the browser answers it there", async ({ browser }) => {
+    const { page, context, hostId } = await scene(browser, { embed: false, drawsInTheBrowser: true });
+
+    const summary = await runThere(hostId, "start", countdown);
+    expect(summary.state).toBe("completed");
+    expect(summary.errors).toBe(0);
+
+    // the server ran what it could and handed `draw` to the browsers once per
+    // turn, each hop naming the call it belongs to — the same node id six times
+    expect(await routedTo(hostId, summary.executionId, "draw")).toHaveLength(6);
+    expect([...(await routedTo(hostId, summary.executionId, "draw"))].sort()).toEqual([...TURNS].sort());
+
+    // and this page, which is watching, ran each of them in the call it was
+    // addressed to rather than in whichever copy it found first
+    await page.waitForTimeout(4000);
+    const state = await stateOf(page);
+    expect((state.drawn || []).map((d: any) => d.path).sort()).toEqual([...TURNS].sort());
+    expect((state.drawn || []).every((d: any) => d.node === "draw")).toBe(true);
+    expect(await pageErrors(page)).toEqual([]);
+
+    await context.close();
+  });
+});
+
 /** A component published at version 1, and a host importing it twice. */
-async function scene(browser: any, options: { embed: boolean }) {
+async function scene(browser: any, options: { embed: boolean; drawsInTheBrowser?: boolean }) {
   const componentId = graphId();
   const hostId = graphId();
   const context = await browser.newContext();
@@ -129,7 +160,7 @@ async function scene(browser: any, options: { embed: boolean }) {
   const page = await context.newPage();
 
   await openGraph(page, componentId);
-  await buildComponent(page, componentId);
+  await buildComponent(page, componentId, { drawsInTheBrowser: options.drawsInTheBrowser });
   const manifest = await publish(componentId);
   if (manifest.version !== 1) {
     throw new Error(`expected the first publish to be version 1, got ${manifest.version}`);
