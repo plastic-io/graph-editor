@@ -17,7 +17,7 @@ import SchedulerWorker from "./schedulerWorker?worker";
 import {useTheme} from 'vuetify';
 import {deref, newId} from "@plastic-io/graph-editor-vue3-utils";
 import {newUlid} from "@plastic-io/graph-editor-vue3-sync-status/ulid";
-import {deepEqual as crdtDeepEqual, shouldRunDelivery, deliveryKey} from "@plastic-io/graph-crdt";
+import {deepEqual as crdtDeepEqual, shouldRunDelivery, deliveryKey, flattenLinkedGraphs} from "@plastic-io/graph-crdt";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import AuthenticationProvider, {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
 import * as mdi from "@mdi/js";
@@ -444,70 +444,24 @@ export const useStore = defineStore('orchestrator', {
       const {nodeId, message, type, field, graphId} = args;
       (this.debugs[nodeId] ??= []).push({ id: newId(), message, type, field, graphId });
     },
-    async loadAndIntegrateLinkedGraphsWithFields(graph: Graph, globalNodes: Node[], rootGraph: Graph): Promise<void> {
-      for (const node of graph.nodes) {
-        if (node.linkedGraph) {
-          let loadedGraph = node.linkedGraph.graph;
-          // this node has potential connected inputs
-          // needing to be proxied into the loaded graph
-          // check every node to see if any connectors
-          // connect to this node, if they do, then rewrite them to
-          // connect to the nodeId specified as inputField.id
-          globalNodes.forEach((globalNode) => {
-            globalNode.edges.forEach((edge) => {
-              edge.connectors.forEach((connector) => {
-                if (connector.nodeId === node.id) {
-                  // this should be connected to another node
-                  Object.keys(node.linkedGraph!.fields.inputs).forEach((inputFieldKey: string) => {
-                    const inputField = node.linkedGraph!.fields.inputs[inputFieldKey];
-                    console.log("linked_graph: input", {
-                      "Source graphId": node.graphId,
-                      "Source nodeId": node.id,
-                      "Target graphId": loadedGraph.id,
-                      "Target nodeId": inputField.id,
-                      "Field": inputFieldKey,
-                    });
-                    connector.graphId = rootGraph.id;
-                    connector.nodeId = inputField.id;
-                  })
-                }
-              })
-            });
-          });
-          // add linked graph nodes into global nodes
-          loadedGraph.nodes.forEach((node: any) => {
-            node.graphId = rootGraph.id;
-          })
-          globalNodes.push(...loadedGraph.nodes);
-          // Process outputs
-          Object.entries(node.linkedGraph.fields.outputs).forEach(([outputHostField, output]) => {
-            node.edges.forEach(edge => {
-              if (outputHostField !== edge.field) return;
-              edge.connectors.forEach(connector => {
-                // Find the corresponding node and add this connector
-                const innerNode = loadedGraph.nodes.find(n => n.id === output.id);
-                if (innerNode) {
-                  const innerEdge = innerNode.edges.find(e => e.field === output.field);
-                  if (innerEdge) {
-                    console.log("linked_graph: output", {
-                      "Source graphId": loadedGraph.id,
-                      "Source nodeId": innerNode.id,
-                      "Target graphId": node.graphId,
-                      "Target nodeId": node.id,
-                      "Field": output.field,
-                    });
-                    connector.graphId = rootGraph.id;
-                    innerEdge.connectors.push({...connector});
-                  }
-                }
-              });
-            });
-          });
-          await this.loadAndIntegrateLinkedGraphsWithFields(loadedGraph, globalNodes, rootGraph);
-          (node as any).loadedGraph = node.linkedGraph;
-          delete node.linkedGraph;
-        }
+    /**
+     * One flat graph for the scheduler (plan §4.2, PB-046).  The rules live in
+     * the shared package so the server flattens the same arrangement the same
+     * way; what a linked graph cannot do — contain itself, or be nested past
+     * the limit — is reported here where somebody is looking at it.
+     */
+    async flattenForScheduler(source: any): Promise<any> {
+      const {graph, warnings, instances} = await flattenLinkedGraphs(source, {
+        resolve: (node: any) => (node.linkedGraph && node.linkedGraph.graph) || null,
+      });
+      warnings.forEach((warning: any) => {
+        console.warn("linked_graph:", warning.message, warning);
+        this.raiseError(warning.nodeId, {message: warning.message}, "linked-graph", undefined, source.id);
+      });
+      if (instances.length) {
+        console.log("linked_graph: flattened", instances);
       }
+      return graph;
     },
     async load(e: any): Promise<any> {
       const artifactPrefix = "artifacts/";
@@ -763,15 +717,7 @@ export const useStore = defineStore('orchestrator', {
           : {sub: "local", kind: "human", tenant: "local"};
         const stamp: any = this.graphStore.currentVersion ? this.graphStore.currentVersion() : null;
         const activeRevision = (stamp && (stamp.id || stamp.revisionId)) || "live";
-        const graph = deref(this.graphStore.graph);
-        let globalNodes = [...graph.nodes] as any[];
-        console.groupCollapsed('%cPlastic-IO: %cIntegrated Graph',
-    "color: blue",
-    "color: lightblue");
-        await this.loadAndIntegrateLinkedGraphsWithFields(graph, globalNodes, graph);
-        console.log(graph);
-        console.groupEnd();
-        graph.nodes = globalNodes;
+        const graph = await this.flattenForScheduler(deref(this.graphStore.graph));
         this.scheduleWorker.postMessage({
           method: 'init',
           args: [
@@ -879,18 +825,10 @@ export const useStore = defineStore('orchestrator', {
             return;
           }
           lastPushedShape = shape;
-          const graph = deref(source);
-          const globalNodes = [...graph.nodes] as any[];
-          console.groupCollapsed('%cPlastic-IO: %cIntegrated Graph',
-              "color: blue",
-              "color: lightblue");
-          await this.loadAndIntegrateLinkedGraphsWithFields(graph, globalNodes, graph);
-          console.log(graph);
-          console.groupEnd();
-          graph.nodes = globalNodes;
+          const graph = await this.flattenForScheduler(deref(source));
           this.scheduleWorker.postMessage({
             method: 'change',
-            args: [deref(graph)],
+            args: [graph],
           });
         };
         useGraphSnapshotStore().$subscribe((mutation: any, state: any) => {

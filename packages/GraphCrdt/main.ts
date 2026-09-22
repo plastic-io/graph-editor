@@ -69,6 +69,8 @@ export {
 } from "./capabilities";
 export type { CapabilityKind, CapabilityRequirement, EffectiveCapabilities } from "./capabilities";
 export { assignable, schemaConflict } from "./contracts";
+export { flattenLinkedGraphs, qualify } from "./flatten";
+export type { FlattenResult, FlattenWarning, FlattenInstance, FlattenOptions } from "./flatten";
 export {
   ObservationRecorder,
   capturePayload,
