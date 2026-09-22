@@ -111,7 +111,7 @@ export default {
     graphSnapshot: {
         handler() {
             // force updates in rewind mode
-            if (this.inRewindMode) {
+            if (this.readOnly) {
                 this.graphUpdateVersion += 1;
             }
             this.updateBoundingRect();
@@ -266,7 +266,7 @@ export default {
         'el',
         'boundingRect',
         'presentation',
-        'inRewindMode',
+        'readOnly',
         'showGraphCodeEditor',
     ]),
     graphPresentationComponent() {

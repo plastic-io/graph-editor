@@ -13,4 +13,15 @@ export default (router: Router) => {
     name: "Workspace",
     component: Workspace,
   });
+  /**
+   * Inside a call (PB-115): the document you are in, and the chain of host
+   * nodes you are standing inside — the same path an instance is named by
+   * everywhere else, so a link to `…/inside/left/call` names exactly the call
+   * an observation or a hop would name.
+   */
+  router.addRoute('Workspace', {
+    path: "/:documentId/inside/:path+",
+    name: "Inside",
+    component: Workspace,
+  });
 }

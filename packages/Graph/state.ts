@@ -26,6 +26,8 @@ export default () => {
         startedAddingConnector: null,
         ltrPct: 0,
         locked: null,
+        /** The call being looked inside, or null when this is the document itself (PB-115). */
+        insideInstance: null as any,
         groupNodes: [],
         movingNodes: [],
         inputStore: useInputStore() as any,

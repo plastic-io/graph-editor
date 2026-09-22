@@ -101,8 +101,23 @@ export default class GraphManager extends GraphEditorModule {
         next();
         return;
       }
-      if (to.name === "Workspace") {
-        await graphOrchestratorStore.init(to.params.documentId);
+      if (to.name === "Workspace" || to.name === "Inside") {
+        if (!from || from.params.documentId !== to.params.documentId) {
+          await graphOrchestratorStore.init(to.params.documentId);
+        }
+        // Standing inside a call is a place you can link to and reload into,
+        // so the path in the address is what decides, not what was clicked.
+        const graphStore = useGraphStore();
+        const path = to.name === "Inside"
+          ? (Array.isArray(to.params.path) ? to.params.path : [to.params.path]).filter(Boolean)
+          : [];
+        const standing = graphStore.insideInstance ? graphStore.insideInstance.path.join("/") : "";
+        if (standing !== path.join("/")) {
+          graphStore.leaveInstance();
+          if (path.length) {
+            await graphStore.lookInside(path);
+          }
+        }
       }
       next();
     });

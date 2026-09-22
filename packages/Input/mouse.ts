@@ -36,7 +36,7 @@ export default class MouseAction {
     this.graphStore.updateGraphFromSnapshot(description);
   }
   mouse(mouse: any) {
-    if (this.graphStore.inRewindMode) {
+    if (this.graphStore.readOnly) {
         console.warn("No mouse based mutations during rewind mode");
         return;
     }

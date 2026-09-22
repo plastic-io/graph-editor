@@ -57,7 +57,7 @@ export const useStore = defineStore('input', {
         if (this.graphStore.presentation) {
             return;
         }
-        if (this.orchistratorStore.showHelp || this.graphStore.inRewindMode) {
+        if (this.orchistratorStore.showHelp || this.graphStore.readOnly) {
             return;
         }
         // do not track control panel inputs
@@ -94,7 +94,7 @@ export const useStore = defineStore('input', {
     },
     mousedown(e: MouseEvent) {
         let isMap = false;
-        if (!this.graphStore.graph || this.orchistratorStore.showHelp || this.graphStore.inRewindMode) {
+        if (!this.graphStore.graph || this.orchistratorStore.showHelp || this.graphStore.readOnly) {
             return;
         }
         // do not track control panel inputs

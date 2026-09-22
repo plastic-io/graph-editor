@@ -112,7 +112,7 @@ export default {
           'graphSnapshot',
           'view',
           'translating',
-          'inRewindMode',
+          'readOnly',
           'ltrPct',
           'selectedConnectors',
           'hoveredConnector',
@@ -385,7 +385,7 @@ export default {
         }
     },
     updated() {
-        if (!this.inRewindMode) {
+        if (!this.readOnly) {
             return this.redraw();
         }
         // in rewwind mode, nodes are a bit animated

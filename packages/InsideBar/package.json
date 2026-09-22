@@ -1,0 +1,10 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-inside-bar",
+  "license": "BSD-3-Clause",
+  "author": "TonyGermaneri@gmail.com",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Where you are standing when you are inside a call: the chain of hosts you came through, the way back out, and the component's own document.",
+  "main": "./main.ts",
+  "files": []
+}

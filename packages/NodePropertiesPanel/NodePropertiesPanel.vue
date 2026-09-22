@@ -29,6 +29,15 @@
                         <div v-else-if="versionsChecked" class="mt-1"><small>This is the newest published version.</small></div>
                         <div v-if="upgradeMessage" class="mt-1"><small>{{ upgradeMessage }}</small></div>
                     </v-alert>
+                    <v-btn
+                        v-if="node.linkedGraph"
+                        size="small"
+                        variant="tonal"
+                        class="ma-0 mb-2"
+                        prepend-icon="mdi-magnify-expand"
+                        :loading="looking"
+                        @click="lookInsideThis"
+                    >Look inside</v-btn>
                         <v-text-field
                             help-topic="nodeName"
                             label="Name"
@@ -122,6 +131,23 @@ export default {
         nodeId: String,
     },
     methods: {
+        /**
+         * Stand inside the call this node is (PB-115).  It is a place with an
+         * address — the chain of hosts it was reached through — so it is a
+         * route, which makes it linkable and survives a reload.
+         */
+        async lookInsideThis() {
+            // the editor lives under a base path the preferences hold
+            const pathPrefix = useOrchestratorStore().pathPrefix;
+            this.looking = true;
+            try {
+                const here = this.graphStore.insideInstance;
+                const path = (here ? here.path : []).concat([this.node.id]);
+                await this.$router.push(`${pathPrefix}${here ? here.hostDocumentId : this.graphStore.graph.id}/inside/${path.join("/")}`);
+            } finally {
+                this.looking = false;
+            }
+        },
         ...mapActions(useGraphStore, [
             'updateNodeProperties',
             'updateNodeUrl',
@@ -181,6 +207,8 @@ export default {
             versionsChecked: false,
             upgrading: false,
             upgradeMessage: '',
+            looking: false,
+            graphStore: useGraphStore() as any,
         };
     },
     watch: {

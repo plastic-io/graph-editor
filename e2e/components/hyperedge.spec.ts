@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { graphId, openGraph, pointAtDevServer, SERVER, stateOf } from "../hybrid/harness";
+import { EDITOR, graphId, openGraph, pointAtDevServer, SERVER, stateOf } from "../hybrid/harness";
 import { buildComponent, buildHost, executionErrors, importedNode, observed, pageErrors, publish, routedTo, runHere, runThere } from "./harness";
 
 /**
@@ -174,4 +174,78 @@ async function scene(browser: any, options: { embed: boolean; drawsInTheBrowser?
     importedNode("right", componentId, 1, artifact, manifest),
   ]);
   return { page, context, componentId, hostId, manifest };
+}
+
+test.describe("looking inside a call", () => {
+  /**
+   * A node carries a component, and since the runtime calls it rather than
+   * inlining it, what is inside that node is not part of this document at all
+   * — it is somebody else's graph, possibly not even here yet.  So you can
+   * stand inside it and look, at an address that names the call (PB-115), and
+   * you cannot edit it, because editing belongs to the component's own
+   * document.
+   */
+  test("drills into the call, says where you are, and refuses to be edited", async ({ browser }) => {
+    const { page, context, componentId, hostId } = await scene(browser, { embed: false });
+
+    // one step in: the host node `left` carries the component
+    await page.goto(`${EDITOR}/${hostId}/inside/left`);
+    await page.waitForFunction(() => {
+      const app: any = document.querySelector("#app");
+      const store = app && app.__vue_app__ && app.__vue_app__.config.globalProperties.$pinia.state.value.graph;
+      return !!(store && store.insideInstance);
+    }, undefined, { timeout: 30000 });
+    let inside = await standing(page);
+    expect(inside.path).toEqual(["left"]);
+    expect(inside.graphId).toBe(componentId);
+    expect(inside.nodes.sort()).toEqual(["call", "collect", "down", "echo", "in"]);
+    // the canvas is showing it, and nothing may change it
+    expect(inside.readOnly).toBe(true);
+    expect(await page.locator("text=read only").count()).toBeGreaterThan(0);
+
+    // and deeper: the component inside itself, reached through its own node
+    await page.goto(`${EDITOR}/${hostId}/inside/left/call`);
+    await page.waitForFunction(() => {
+      const app: any = document.querySelector("#app");
+      const store = app.__vue_app__.config.globalProperties.$pinia.state.value.graph;
+      return !!(store.insideInstance && store.insideInstance.path.length === 2);
+    }, undefined, { timeout: 30000 });
+    inside = await standing(page);
+    expect(inside.path).toEqual(["left", "call"]);
+    expect(inside.graphId).toBe(componentId);
+    expect(inside.trail).toEqual(["left", "call"]);
+
+    // stepping back out is the document again, and editable
+    await page.goto(`${EDITOR}/${hostId}`);
+    await page.waitForFunction(() => {
+      const app: any = document.querySelector("#app");
+      const store = app.__vue_app__.config.globalProperties.$pinia.state.value.graph;
+      return !!(store.graphSnapshot && !store.insideInstance);
+    }, undefined, { timeout: 30000 });
+    const out = await standing(page);
+    expect(out.inside).toBe(false);
+    expect(out.readOnly).toBe(false);
+    expect(out.nodes.sort()).toEqual(["done", "left", "right", "start"]);
+    expect(await pageErrors(page)).toEqual([]);
+
+    await context.close();
+  });
+});
+
+/** Where the editor thinks it is standing. */
+async function standing(page: any) {
+  return await page.evaluate(() => {
+    const app: any = document.querySelector("#app");
+    const pinia = app.__vue_app__.config.globalProperties.$pinia;
+    const store: any = pinia._s.get("graph");
+    const inside = pinia.state.value.graph.insideInstance;
+    return {
+      inside: !!inside,
+      readOnly: !!store.readOnly,
+      path: inside ? inside.path : [],
+      trail: inside ? inside.trail.map((t: any) => t.nodeId) : [],
+      graphId: inside ? inside.graphId : null,
+      nodes: (pinia.state.value.graph.graphSnapshot.nodes || []).map((n: any) => n.id),
+    };
+  });
 }
