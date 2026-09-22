@@ -325,6 +325,17 @@ export default {
             this.redrawConnectorVersion += 1;
         },
         async importGraph(g: any) {
+            /**
+             * A link the document does not carry: the graph is named, and the
+             * runtime loads it when a value reaches this node (plastic-io 2.3).
+             * There is nothing to draw for it here, and that is not an error —
+             * a recursive graph is written exactly this way, because a document
+             * cannot contain a copy of itself.
+             */
+            if (!g.linkedGraph.graph) {
+                this.loaded = true;
+                return;
+            }
             if (!g.linkedGraph.graph.properties.template) {
                 throw new Error('Linked Graph template is blank');
             }

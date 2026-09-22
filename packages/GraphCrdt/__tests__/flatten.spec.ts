@@ -265,3 +265,24 @@ describe("what a runtime that can make calls is given", () => {
     expect(flat.nodes.map((n: any) => n.id).sort()).toEqual(["entry", "host", "host/in-node", "host/out-node"]);
   });
 });
+
+describe("a link this side cannot resolve", () => {
+  it("is left for a runtime that loads at the moment of the call", async () => {
+    const outer = graph("outer", [node("host", {})]);
+    (outer.nodes[0] as any).linkedGraph = {
+      id: "elsewhere", version: 3,
+      fields: { inputs: { in: { id: "inner", field: "in" } }, outputs: {} },
+    };
+    const { graph: flat, warnings } = await flattenLinkedGraphs(outer, { leaveForRuntime: true, resolve: () => null });
+    expect(flat.nodes[0].linkedGraph).toMatchObject({ id: "elsewhere", version: 3 });
+    expect(warnings[0].message).toContain("the runtime loads it when a value reaches this node");
+  });
+
+  it("is still dropped, with the reason, where nothing can call it", async () => {
+    const outer = graph("outer", [node("host", {})]);
+    (outer.nodes[0] as any).linkedGraph = { id: "elsewhere", version: 3, fields: { inputs: {}, outputs: {} } };
+    const { graph: flat, warnings } = await flattenLinkedGraphs(outer, { resolve: () => null });
+    expect(flat.nodes[0].linkedGraph).toBeUndefined();
+    expect(warnings[0].message).toContain("nothing it contains will run");
+  });
+});

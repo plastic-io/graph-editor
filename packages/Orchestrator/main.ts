@@ -453,10 +453,16 @@ export const useStore = defineStore('orchestrator', {
     async flattenForScheduler(source: any): Promise<any> {
       const {graph, warnings, instances} = await flattenLinkedGraphs(source, {
         resolve: (node: any) => (node.linkedGraph && node.linkedGraph.graph) || null,
+        // What flattening cannot resolve — a graph that contains itself — stays
+        // a link, and the scheduler makes a call of it when a value arrives:
+        // one instance per turn, each with its own state (plastic-io 2.3).
+        leaveForRuntime: true,
       });
       warnings.forEach((warning: any) => {
         console.warn("linked_graph:", warning.message, warning);
-        this.raiseError(warning.nodeId, {message: warning.message}, "linked-graph", undefined, source.id);
+        if (warning.code !== "LINKED_GRAPH_CYCLE") {
+          this.raiseError(warning.nodeId, {message: warning.message}, "linked-graph", undefined, source.id);
+        }
       });
       if (instances.length) {
         console.log("linked_graph: flattened", instances);

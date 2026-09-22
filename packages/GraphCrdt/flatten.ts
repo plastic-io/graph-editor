@@ -150,8 +150,15 @@ export async function flattenLinkedGraphs(graph: any, options: FlattenOptions = 
             if (!inner || !Array.isArray(inner.nodes)) {
                 warnings.push({
                     code: "LINKED_GRAPH_MISSING", nodeId: here, graphId: innerId, path: graphPath,
-                    message: `the graph ${innerId || "this node links to"} could not be loaded, so nothing it contains will run`,
+                    message: options.leaveForRuntime
+                        ? `the graph ${innerId || "this node links to"} is not here to flatten; the runtime loads it when a value reaches this node`
+                        : `the graph ${innerId || "this node links to"} could not be loaded, so nothing it contains will run`,
                 });
+                // A runtime that loads at the moment of the call may well find
+                // it: flattening resolves what it has, and hands over the rest.
+                if (options.leaveForRuntime) {
+                    keepLink(nodes, here, node);
+                }
                 continue;
             }
             const childPath = instancePath.concat([node.id]);

@@ -103,6 +103,12 @@ const rpc = {
           : executions!.handOff(nodeInterface, execution);
       },
       contractMode: (e.graph.properties && e.graph.properties.contractMode === "reject") ? "reject" : "warn",
+      /**
+       * How deep a graph that contains itself may go before the scheduler
+       * calls it a runaway (plastic-io 2.3).  When it stops is the graph's
+       * business; this is the ceiling for one that does not.
+       */
+      linkedGraphDepth: (e.graph.properties && e.graph.properties.linkedGraphDepth) || 24,
     } as any);
     ObservationRecorder.EVENTS.forEach((name: string) => {
       scheduler.addEventListener(name, (event: any) => {
