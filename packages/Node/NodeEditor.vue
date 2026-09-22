@@ -8,7 +8,7 @@
           language="html"
           :nodeId="nodeId"
           :graphId="graphSnapshot.id"
-          :errors="errors.filter(e => e.type === 'vue')"
+          :errors="errors.filter((e: any) => e.type === 'vue')"
           :value="vueTemplateValue"
           :ytext="nodeTemplateText(nodeId, 'vue')"
           :awareness="collaborationAwareness()"
@@ -24,7 +24,7 @@
           language="typescript"
           :nodeId="nodeId"
           :graphId="graphSnapshot.id"
-          :errors="errors.filter(e => e.type === 'set')"
+          :errors="errors.filter((e: any) => e.type === 'set')"
           :value="setTemplateValue"
           :ytext="nodeTemplateText(nodeId, 'set')"
           :awareness="collaborationAwareness()"
@@ -118,7 +118,7 @@
         const zipBlob = await zip.generateAsync({ type: "blob" });
         saveAs(zipBlob, fileName + '.zip');
       },
-      saveTemplate(type, value) {
+      saveTemplate(type: any, value: any) {
         this.clearErrors(this.nodeId, type);
         this.updateNodeTemplate({
           nodeId: this.nodeId,
@@ -156,7 +156,7 @@
         if (!this.graphSnapshot) {
           return {template: {vue: '', set: ''}};
         }
-        return this.graphSnapshot.nodes.find(n => n.id === this.nodeId);
+        return this.graphSnapshot.nodes.find((n: any) => n.id === this.nodeId);
       },
       errors() {
         return this.nodeErrors[this.nodeId] || [];

@@ -25,7 +25,7 @@
 <script lang="ts">
 import {mapWritableState, mapActions, mapState} from "pinia";
 
-import {Node} from "@plastic-io/plastic-io";
+import type {Node} from "@plastic-io/plastic-io";
 
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
@@ -61,7 +61,7 @@ export default {
             };
         },
         edge() {
-            return this.node.edges.find((edge) => {
+            return this.node.edges.find((edge: any) => {
                 return edge.field === this.field.name;
             });
         },

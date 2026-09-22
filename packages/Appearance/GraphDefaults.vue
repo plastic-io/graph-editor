@@ -7,7 +7,7 @@
       </v-card-text>
   </v-card>
 </template>
-<script lang="typescript">
+<script lang="ts">
   export default {
     props: {
       modelValue: Object,

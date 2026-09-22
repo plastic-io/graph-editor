@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ref, markRaw, h, defineComponent, SetupContext, watch, onErrorCaptured, emit } from "vue";
+  import type { ref, markRaw, h, defineComponent, SetupContext, watch, onErrorCaptured, emit } from "vue";
   import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
   import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
   import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
@@ -23,8 +23,8 @@
       const graphStore = useGraphStore();
       const events = {};
       // bind outputs (events)
-      props.node.properties.outputs.forEach((output) => {
-        events['on' + output.name[0].toUpperCase() + output.name.substring(1)] = (val) => {
+      props.node.properties.outputs.forEach((output: any) => {
+        events['on' + output.name[0].toUpperCase() + output.name.substring(1)] = (val: any) => {
           try {
             val = JSON.parse(JSON.stringify(val));
           } catch (_) {}
@@ -39,7 +39,7 @@
           graphStore: useGraphStore(),
         },
         async transact(descripton: string, callback: any) {
-          const node = graphStore.graphSnapshot.nodes.find(n => n.id === props.node.id);
+          const node = graphStore.graphSnapshot.nodes.find((n: any) => n.id === props.node.id);
           await callback(node);
           await graphStore.updateGraphFromSnapshot(descripton);
         },
@@ -56,10 +56,10 @@
         onData(e: any) {
           emit('data', e);
         },
-        onImpulse(value) {
+        onImpulse(value: any) {
           props.scheduler.instance.url(props.node.url, value, 'impulse', props.hostNode);
         },
-        onImpulseServer(value) {
+        onImpulseServer(value: any) {
           console.log('impluse server');
           useOrchestratorStore().dataProviders.graph.send({
               action: 'executeGraph',
@@ -76,7 +76,7 @@
         importedProps,
       );
 
-      const mountError = (error) => {
+      const mountError = (error: any) => {
         emit('mountError', new Error('Error mounting node component. ' + error));
         return false;
       }

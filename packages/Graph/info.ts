@@ -5,9 +5,9 @@ export default {
             inputs: [],
             outputs: [],
         } as any;
-        this.graphSnapshot.nodes.forEach((v) => {
+        this.graphSnapshot.nodes.forEach((v: any) => {
             ["inputs", "outputs"].forEach((io) => {
-                v.properties[io].forEach((i) => {
+                v.properties[io].forEach((i: any) => {
                     if (i.external) {
                         info[io].push({
                             node: v,
@@ -35,7 +35,7 @@ export default {
     raiseError(err: Error) {
         throw err;
     },
-    isGraphTarget(e): boolean {
+    isGraphTarget(e: any): boolean {
         let parentNode = e.target;
         const navEl = document.getElementsByClassName('graph-nav-drawer')[0];
         const menuEl = document.getElementsByClassName('v-overlay-container')[0];
@@ -61,7 +61,7 @@ export default {
         // HACK: cheap hack, just check one node up for no-target
         return !(r.test(e.target.className) || (e.target.parentNode && r.test(e.target.parentNode.className)));
     },
-    getItemAt(e) {
+    getItemAt(e: any) {
         while (e.parentNode) {
             if (e.className === "node-inputs" || e.className === "node-outputs") {
                 return {port: true};
@@ -69,7 +69,7 @@ export default {
             if (e.className === "node") {
                 const nodeId = e.getAttribute("x-node-id");
                 return {
-                    node: this.graph!.nodes.find((v) => {
+                    node: this.graph!.nodes.find((v: any) => {
                         return v.id === nodeId;
                     }),
                 };

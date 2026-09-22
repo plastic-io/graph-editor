@@ -112,7 +112,7 @@ export default {
         this.deleteSelected();
         e.preventDefault();
     },
-    evCopy(e) {
+    evCopy(e: any) {
         if (!this.isGraphTarget(e)
                 || /dont-propagate-copy/.test(e.target.className)
                 || this.selectedNodes.length === 0

@@ -29,17 +29,17 @@ export default {
             "selectNodes",
             "save",
         ]),
-        updateSelected(e) {
+        updateSelected(e: any) {
           this.selectNodes(e);
         },
-        copyNodeUrl(e, url) {
+        copyNodeUrl(e: any, url: any) {
             navigator.clipboard.writeText(url).then(() => {
                 this.showInfoDialog("URL Copied!");
             }, (err) => {
                 this.raiseError(new Error("Clipboard write failed" + err));
             });
         },
-        updateUrl(nodeId, url) {
+        updateUrl(nodeId: any, url: any) {
             // console.log("updateUrl", nodeId, url);
             this.updateNodeUrl({
                 nodeId,
@@ -56,10 +56,10 @@ export default {
           'preferences'
         ]),
         list() {
-            return this.selectedNodes.map(n => n.id);
+            return this.selectedNodes.map((n: any) => n.id);
         },
         mappedNodes() {
-          const nodes = this.graphSnapshot.nodes.map((node) => {
+          const nodes = this.graphSnapshot.nodes.map((node: any) => {
             return {
               title: node.properties.name || 'Untitled Node',
               value: node.id,

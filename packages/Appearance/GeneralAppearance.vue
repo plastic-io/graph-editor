@@ -6,7 +6,7 @@
       </v-card-text>
   </v-card>
 </template>
-<script lang="typescript">
+<script lang="ts">
   import colors from "vuetify/lib/util/colors";
   import {mapActions} from "pinia";
   export default {

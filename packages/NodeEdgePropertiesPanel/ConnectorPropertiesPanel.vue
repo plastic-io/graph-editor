@@ -59,8 +59,8 @@ export default {
       "selectConnector",
       "changeConnectorOrder",
     ]),
-    output(connector) {
-      const field = this.node.properties.outputs.find((output) => {
+    output(connector: any) {
+      const field = this.node.properties.outputs.find((output: any) => {
         return connector.field === output.name;
       });
       const index = this.node.properties.outputs.indexOf(field);
@@ -70,11 +70,11 @@ export default {
         field
       };
     },
-    input(connector) {
-      const node = this.graphSnapshot.nodes.find((v) => {
+    input(connector: any) {
+      const node = this.graphSnapshot.nodes.find((v: any) => {
         return v.id === connector.nodeId;
       });
-      const field = node ? node.properties.inputs.find((input) => {
+      const field = node ? node.properties.inputs.find((input: any) => {
         return connector.field === input.name;
       }) : null;
       const index = node ? node.properties.inputs.indexOf(field) : null;
@@ -84,27 +84,27 @@ export default {
         field
       };
     },
-    moveConnectorUp(connectorInfo) {
+    moveConnectorUp(connectorInfo: any) {
       this.changeConnectorOrder({
         nodeId: connectorInfo.node.id,
         connectorId: connectorInfo.connector.id,
         direction: "up",
       });
     },
-    moveConnectorDown(connectorInfo) {
+    moveConnectorDown(connectorInfo: any) {
       this.changeConnectorOrder({
         nodeId: connectorInfo.node.id,
         connectorId: connectorInfo.connector.id,
         direction: "down",
       });
     },
-    removeConnector(connectorInfo) {
+    removeConnector(connectorInfo: any) {
       this.deleteConnector(connectorInfo.connector);
     },
-    connectorSelect(connector) {
+    connectorSelect(connector: any) {
       this.selectConnector(connector);
     },
-    connectorHover(connector) {
+    connectorHover(connector: any) {
       this.hoveredConnector = {
         node: this.node,
         connector,
@@ -112,14 +112,14 @@ export default {
         output: this.output(connector),
       };
     },
-    getConnectors(ioKey, name) {
+    getConnectors(ioKey: any, name: any) {
       const connectors = [];
       if (ioKey === "inputs") {
-        this.graphSnapshot.nodes.forEach((v) => {
-          v.edges.forEach((edge) => {
-            connectors.push(...edge.connectors.filter((c) => {
+        this.graphSnapshot.nodes.forEach((v: any) => {
+          v.edges.forEach((edge: any) => {
+            connectors.push(...edge.connectors.filter((c: any) => {
               return c.nodeId === this.node.id && c.field === name;
-            }).map((connector) => {
+            }).map((connector: any) => {
               return {
                 connector,
                 node: v,
@@ -128,7 +128,7 @@ export default {
           });
         });
       } else {
-        connectors.push(...this.node.edges.find(e => e.field === name).connectors.map((connector) => {
+        connectors.push(...this.node.edges.find((e: any) => e.field === name).connectors.map((connector: any) => {
           return {
             connector,
             node: this.node,

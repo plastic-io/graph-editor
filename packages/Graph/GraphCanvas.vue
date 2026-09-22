@@ -137,14 +137,14 @@ export default {
         'graphTemplateText',
         'collaborationAwareness',
     ]),
-    color(color) {
+    color(color: any) {
         if (!colors[color]) {
             console.warn('Color selected that does not exist.  Returning default color shades.', color);
             return colors['shades'];
         }
         return colors[color] ? colors[color].base : colors['shades'];
     },
-    drawGrid(canvas, context, translateX, translateY, scale) {
+    drawGrid(canvas: any, context: any, translateX: any, translateY: any, scale: any) {
         const largeGridSize = scale > 1 ? 100 : 1000;
         const txPct = scale > 1 ? scale : scale + 1;
         const smallGridSize = largeGridSize / 10;
@@ -208,11 +208,11 @@ export default {
             useOrchestratorStore().raiseError(this.graphSnapshot.id, err, 'vue');
         });
     },
-    async saveGraphTemplate(val) {
+    async saveGraphTemplate(val: any) {
         this.graphSnapshot.properties.template = val;
         await this.updateGraphFromSnapshot('Update Graph Presentation Template');
     },
-    dragOver(e) {
+    dragOver(e: any) {
         e.preventDefault();
         e.dataTransfer.dropEffect = "link";
     },
@@ -277,9 +277,9 @@ export default {
     },
     connectors: function () {
         let connectors = [];
-        this.graphSnapshot.nodes.forEach((node) => {
-            node.edges.forEach((edge) => {
-                edge.connectors.filter(c => !!c).forEach((connector) => {
+        this.graphSnapshot.nodes.forEach((node: any) => {
+            node.edges.forEach((edge: any) => {
+                edge.connectors.filter((c: any) => !!c).forEach((connector: any) => {
                     connectors.push({
                         connector,
                         edge,

@@ -48,7 +48,7 @@
     </div>
 </template>
 <script lang="ts">
-import {Connector, Node, Edge} from "@plastic-io/plastic-io";
+import type {Connector, Node, Edge} from "@plastic-io/plastic-io";
 import {mapState} from "pinia";
 import bezier from "./bezier";
 import {deepEqual} from "@plastic-io/graph-crdt";
@@ -119,10 +119,10 @@ export default {
           'movingConnector',
         ]),
         startEvents() {
-            return this.activityInfo.filter((i) => i.activityType === "start");
+            return this.activityInfo.filter((i: any) => i.activityType === "start");
         },
         endEvents() {
-            return this.activityInfo.filter((i) => i.activityType === "end");
+            return this.activityInfo.filter((i: any) => i.activityType === "end");
         },
         activityCounts() {
             if (!this.activityInfo) {
@@ -167,22 +167,22 @@ export default {
             return this.activityConnectors[this.connector.id];
         },
         watched() {
-            return this.watchConnectors.map((i) => i.id).indexOf(this.connector.id) !== -1;
+            return this.watchConnectors.map((i: any) => i.id).indexOf(this.connector.id) !== -1;
         },
         selected() {
-            return this.selectedConnectors.map((i) => i.id).indexOf(this.connector.id) !== -1;
+            return this.selectedConnectors.map((i: any) => i.id).indexOf(this.connector.id) !== -1;
         },
         errored() {
-            return this.errorConnectors.map((i) => i.id).indexOf(this.connector.id) !== -1;
+            return this.errorConnectors.map((i: any) => i.id).indexOf(this.connector.id) !== -1;
         },
         hovered() {
             return this.hoveredConnector && this.hoveredConnector.connector.id === this.connector.id || this.expand;
         },
         output() {
-            const node = (this.localGraph || this.graphSnapshot).nodes.find((v) => {
+            const node = (this.localGraph || this.graphSnapshot).nodes.find((v: any) => {
                 return v.id === this.connector.nodeId;
             }) ;
-            const field = this.node.properties.outputs.find((output) => {
+            const field = this.node.properties.outputs.find((output: any) => {
                 return this.edge && this.edge.field === output.name;
             });
             const index = this.node.properties.outputs.indexOf(field);
@@ -193,10 +193,10 @@ export default {
             };
         },
         input() {
-            const node = (this.localGraph || this.graphSnapshot).nodes.find((v) => {
+            const node = (this.localGraph || this.graphSnapshot).nodes.find((v: any) => {
                 return v.id === this.connector.nodeId;
             }) ;
-            const field = node ? node.properties.inputs.find((input) => {
+            const field = node ? node.properties.inputs.find((input: any) => {
                 return this.connector.field === input.name;
             }) : null;
             const index = node ? node.properties.inputs.indexOf(field) : null;
@@ -335,7 +335,7 @@ export default {
         },
     },
     methods: {
-        scrollIndex(e) {
+        scrollIndex(e: any) {
             const delta =
                 ((e as any).wheelDelta ? (e as any).wheelDelta / 120 : -e.deltaY / 3) * 0.01;
             this.setIndex(this.index + (delta > 0 ? 1 : -1));
@@ -346,10 +346,10 @@ export default {
             this.activityConnectors[this.connector.id] = [];
             this.expand = false;
         },
-        setIndex(val) {
+        setIndex(val: any) {
             this.index = Math.max(0, Math.min(this.startEvents.length - 1, val));
         },
-        getColor(key) {
+        getColor(key: any) {
             return getColor(key);
         },
         redraw() {

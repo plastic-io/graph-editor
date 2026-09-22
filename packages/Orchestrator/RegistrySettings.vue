@@ -8,7 +8,7 @@
       </v-card-text>
   </v-card>
 </template>
-<script lang="typescript">
+<script lang="ts">
   export default {
     name: 'registry-settings-panel',
     props: {

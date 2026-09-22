@@ -28,7 +28,7 @@
     </template>
   </div>
 </template>
-<script lang="typescript">
+<script lang="ts">
   import {mapState, mapActions} from "pinia";
   import {useStore as authenticationProviderStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
   export default {

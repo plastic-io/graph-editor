@@ -48,7 +48,13 @@ export default {
 export const useStore = defineStore('UserPreferences', {
   state: () => ({
     remotePreferences: null as any,
-    preferences: null as null | UserPreferences,
+    /**
+     * There are always preferences: the local provider loads them, or makes
+     * the defaults, before the editor renders anything, and every component
+     * and template reads them without checking.  Typing them as absent made
+     * every one of those reads an error to be silenced one by one.
+     */
+    preferences: new UserPreferences() as UserPreferences,
     originalPreferences: null as null | UserPreferences,
   }),
 });

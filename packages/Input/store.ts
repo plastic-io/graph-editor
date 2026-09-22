@@ -117,7 +117,7 @@ export const useStore = defineStore('input', {
                 y: this.graphStore.view.y,
                 x: this.graphStore.view.x,
             },
-            nodes: this.graphStore.graph.nodes.map((v) => {
+            nodes: this.graphStore.graph.nodes.map((v: any) => {
                 return {
                     id: v.id,
                     properties: {
@@ -140,7 +140,7 @@ export const useStore = defineStore('input', {
             [this.buttonMap[e.button]]: true,
         });
     },
-    mouseup(e) {
+    mouseup(e: any) {
         this.updateMouse({
             ...this.mouse,
             event: e,

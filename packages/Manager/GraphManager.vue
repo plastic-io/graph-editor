@@ -108,8 +108,8 @@
         showUndoDelete: false,
         tocRefreshTimer: 0,
         newGraphRules: [
-          value => !!value || 'Field must not be empty',
-          value => !!Object.keys(this.toc).indexOf(value) || 'This URL is already taken by another graph.'
+          (value: any) => !!value || 'Field must not be empty',
+          (value: any) => !!Object.keys(this.toc).indexOf(value) || 'This URL is already taken by another graph.'
         ],
       }
     },
@@ -128,7 +128,7 @@
           'getToc',
           'getPluginsByType',
       ]),
-      openGraph(id) {
+      openGraph(id: any) {
         window.location = `/graph-editor/${id}`;
       },
       /**
@@ -161,14 +161,14 @@
         this.refreshSoon();
       },
       /** Drop a graph from the list this browser is showing. */
-      forgetLocally(id) {
+      forgetLocally(id: any) {
         const next = {...this.toc};
         delete next[id];
         delete next[`endpoint/${id}`];
         this.toc = next;
       },
       /** Put entries back on the list this browser is showing. */
-      rememberLocally(entries) {
+      rememberLocally(entries: any) {
         const next = {...this.toc};
         Object.keys(entries || {}).forEach((key) => {
           if (entries[key]) {

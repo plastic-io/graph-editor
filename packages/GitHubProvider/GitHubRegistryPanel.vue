@@ -103,13 +103,13 @@ export default {
       "getPublicRepository",
       "getGetHubApiFile",
     ]),
-    detailItems(items, item) {
-      const detailItems = items.filter(i => i.id === item.id);
+    detailItems(items: any, item: any) {
+      const detailItems = items.filter((i: any) => i.id === item.id);
       return detailItems;
     },
-    groupItems(items) {
+    groupItems(items: any) {
       const list = {};
-      items.forEach((item) => {
+      items.forEach((item: any) => {
         if (!list[item.id]) {
           list[item.id] = item;
           return;
@@ -121,11 +121,11 @@ export default {
       const groupItems = Object.keys(list).map(key => list[key]);
       return groupItems;
     },
-    async dragStart(e, item) {
+    async dragStart(e: any, item: any) {
       e.dataTransfer.setData("application/json+plastic-io", JSON.stringify(item));
       e.dataTransfer.dropEffect = "link";
     },
-    iconType(item) {
+    iconType(item: any) {
       return {
         newNode: "mdi-shape-rectangle-plus",
         publishedNode: "mdi-network",

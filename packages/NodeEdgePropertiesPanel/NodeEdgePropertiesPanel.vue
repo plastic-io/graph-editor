@@ -76,7 +76,7 @@
     </v-card>
   </v-dialog>
 </template>
-<script lang="typescript">
+<script lang="ts">
 import {deepEqual} from "@plastic-io/graph-crdt";
 import {mapWritableState, mapActions, mapState} from "pinia";
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
@@ -118,28 +118,28 @@ export default {
         this.messageCallback();
       }
     },
-    moveUp(ioKey, io) {
+    moveUp(ioKey: any, io: any) {
       this[ioKey === "inputs" ? "changeInputOrder" : "changeOutputOrder"]({
         nodeId: this.node.id,
         name: io.name,
         direction: "up",
       });
     },
-    moveDown(ioKey, io) {
+    moveDown(ioKey: any, io: any) {
       this[ioKey === "inputs" ? "changeInputOrder" : "changeOutputOrder"]({
         nodeId: this.node.id,
         name: io.name,
         direction: "down",
       });
     },
-    add(ioKey) {
+    add(ioKey: any) {
       // if a key with this name exists, don't do it
       const isInput = ioKey === "inputs";
       const newName = isInput ? "input" : "output";
-      if (isInput && this.node.properties[ioKey].map(i => i.name).indexOf(newName) !== -1) {
+      if (isInput && this.node.properties[ioKey].map((i: any) => i.name).indexOf(newName) !== -1) {
         return;
       }
-      if (!isInput && this.node.properties.outputs.map(i => i.name).indexOf(newName) !== -1) {
+      if (!isInput && this.node.properties.outputs.map((i: any) => i.name).indexOf(newName) !== -1) {
         return;
       }
       this[isInput ? "addInput" : "addOutput"]({
@@ -147,13 +147,13 @@ export default {
         name: newName,
       });
     },
-    remove(ioKey, io, override) {
+    remove(ioKey: any, io: any, override: any) {
       // if there are connectors attached to edges, warn the user of the eventual removal of the connectors
       const isInput = ioKey === "inputs";
       if (isInput) {
         for (let x = 0; x < this.graphSnapshot.nodes.length; x += 1) {
           for (let y =0; y < this.graphSnapshot.nodes[x].edges.length; y += 1) {
-            const connectors = this.graphSnapshot.nodes[x].edges[y].connectors.find(c => c.nodeId === this.node.id && c.field === io.name);
+            const connectors = this.graphSnapshot.nodes[x].edges[y].connectors.find((c: any) => c.nodeId === this.node.id && c.field === io.name);
             if (!override && connectors) {
               this.showMessage = true;
               this.message = "There are connectors connected to this input.  Are you sure you want to delete it?";
@@ -168,7 +168,7 @@ export default {
           }
         }
       } else {
-        const edge = this.node.edges.find(e => e.field === io.name);
+        const edge = this.node.edges.find((e: any) => e.field === io.name);
         if (!edge) {
           return;
         }
@@ -190,7 +190,7 @@ export default {
       });
     },
     setLocalNode() {
-      const v = this.graphSnapshot.nodes.find((n) => {
+      const v = this.graphSnapshot.nodes.find((n: any) => {
         return n.id === this.nodeId;
       });
       if (!v) {
@@ -199,7 +199,7 @@ export default {
       this.node = JSON.parse(JSON.stringify(v));
     },
     getNode() {
-      return JSON.parse(JSON.stringify(this.graphSnapshot.nodes.find((v) => v.id === this.nodeId)));
+      return JSON.parse(JSON.stringify(this.graphSnapshot.nodes.find((v: any) => v.id === this.nodeId)));
     },
   },
   watch: {

@@ -126,19 +126,19 @@ export default {
           window.removeEventListener('mouseup', this.endTranslate);
           this.updateScale();
         },
-        validateSize(size) {
+        validateSize(size: any) {
           return {
             w: Math.max(this.minWidth, Math.min(size.w, window.innerWidth - this.margin)),
             h: Math.max(this.minHeight, Math.min(size.h, window.innerHeight - this.margin)),
           };
         },
-        validatePos(pos) {
+        validatePos(pos: any) {
           return {
             x: Math.max(0, Math.min(pos.x, window.innerWidth - this.margin)),
             y: Math.max(0, Math.min(pos.y, window.innerHeight - this.margin)),
           };
         },
-        translate(e) {
+        translate(e: any) {
           const x = this.translating.x - (e.clientX - this.translating.mx);
           const y = this.translating.y + (e.clientY - this.translating.my);
           this.rect = {
@@ -154,7 +154,7 @@ export default {
           window.removeEventListener('mouseup', this.endResize);
           this.updateScale();
         },
-        resizing(e) {
+        resizing(e: any) {
           const w = this.translating.w - (e.clientX - this.translating.mx);
           const h = this.translating.h + (e.clientY - this.translating.my);
           this.rect = {
@@ -162,7 +162,7 @@ export default {
             ...this.validateSize({h, w}),
           };
         },
-        startResize(e) {
+        startResize(e: any) {
           this.translating = {
             w: this.rect.w,
             h: this.rect.h,
@@ -174,7 +174,7 @@ export default {
           window.addEventListener('mousemove', this.resizing);
           window.addEventListener('mouseup', this.endResize);
         },
-        startTranslate(e) {
+        startTranslate(e: any) {
           this.translating = {
             x: this.rect.x,
             y: this.rect.y,
@@ -196,12 +196,12 @@ export default {
                 y: rect.height / 2 - 20,
             };
             this.min = {
-                x: Math.min.apply(null, this.graphSnapshot.nodes.map(v => v.properties.x)),
-                y: Math.min.apply(null, this.graphSnapshot.nodes.map(v => v.properties.y)),
+                x: Math.min.apply(null, this.graphSnapshot.nodes.map((v: any) => v.properties.x)),
+                y: Math.min.apply(null, this.graphSnapshot.nodes.map((v: any) => v.properties.y)),
             };
             this.max = {
-                x: Math.max.apply(null, this.graphSnapshot.nodes.map(v => v.properties.x)),
-                y: Math.max.apply(null, this.graphSnapshot.nodes.map(v => v.properties.y)),
+                x: Math.max.apply(null, this.graphSnapshot.nodes.map((v: any) => v.properties.x)),
+                y: Math.max.apply(null, this.graphSnapshot.nodes.map((v: any) => v.properties.y)),
             };
             const ratio = Math.max((-Math.min((this.min.y - this.max.y), (this.min.x - this.max.x)) / 50), 10);
             this.scale = ratio;
@@ -277,7 +277,7 @@ export default {
             };
         },
         nodeMapStyle() {
-            return (vect) => {
+            return (vect: any) => {
                 const el = document.getElementById("node-" + vect.id);
                 if (!el) {
                     return {};

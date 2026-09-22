@@ -214,7 +214,7 @@ export default {
         },
     },
     mounted() {
-        this.node = JSON.parse(JSON.stringify(this.graph.nodes.find(n => n.id === this.nodeId)));
+        this.node = JSON.parse(JSON.stringify(this.graph.nodes.find((n: any) => n.id === this.nodeId)));
     },
     computed: {
         ...mapState(useGraphStore, [

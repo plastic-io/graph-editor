@@ -94,7 +94,7 @@ export default {
     },
     methods: {
         ...mapActions(useOrchestratorStore, ['copyToClipboard']),
-        copy(val) {
+        copy(val: any) {
             try {
                 this.copyToClipboard(fromJSON(val));
             } catch (err) {
@@ -111,10 +111,10 @@ export default {
                 this.selectedIndex += 1;
             }
         },
-        fromNow(e) {
+        fromNow(e: any) {
             return moment(new Date(e)).fromNow();
         },
-        formatActivityValue(val) {
+        formatActivityValue(val: any) {
             let out;
             if (typeof val === 'object') {
                 return JSON.stringify(val)
@@ -139,7 +139,7 @@ export default {
         },
         selectedActivityEnd() {
             const end = (this.activityConnectors[this.activityKey] || [])
-                .find(a => a.activityType === 'end' && this.selectedActivity.key === a.key);
+                .find((a: any) => a.activityType === 'end' && this.selectedActivity.key === a.key);
             return end || this.emptyActivity;
         },
         firstSelectedConnectorId() {
@@ -155,7 +155,7 @@ export default {
                 return [];
             }
             return (this.activityConnectors[this.activityKey] || [])
-                .filter(a => a.activityType === 'start');
+                .filter((a: any) => a.activityType === 'start');
         },
     },
 };

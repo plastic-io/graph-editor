@@ -27,7 +27,7 @@ export default {
       };
     },
     methods: {
-        historyColor(index) {
+        historyColor(index: any) {
             let color = "";
             if (this.historyPosition === index) {
                 color = "background: teal;";
@@ -39,7 +39,7 @@ export default {
         ...mapActions(useGraphStore, [
             "moveHistoryPosition",
         ]),
-        getIcon(name) {
+        getIcon(name: any) {
             return {
                 "Start": "mdi-flag-variant",
                 "Nudge": "mdi-move-resize-variant",

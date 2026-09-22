@@ -16,7 +16,7 @@
     </v-list>
   </div>
 </template>
-<script lang="typescript">
+<script lang="ts">
   export default {
     name: 'import-panel-components',
     computed: {
@@ -25,7 +25,7 @@
       }
     },
     methods: {
-      dragStart(e, component) {
+      dragStart(e: any, component: any) {
           // put a package together that will blow the socks off of the graph component
           const pkg = {
             component,

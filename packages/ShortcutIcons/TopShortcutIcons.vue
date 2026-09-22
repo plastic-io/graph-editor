@@ -73,7 +73,7 @@
         :color="showHelp ? 'info' : ''"
         title="Help">mdi-help-circle-outline</v-icon>
 </template>
-<script lang="typescript">
+<script lang="ts">
 import {mapWritableState, mapActions, mapState} from "pinia";
 import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";

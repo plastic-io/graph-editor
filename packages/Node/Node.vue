@@ -77,7 +77,7 @@ import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 
 import {useStore} from "./store"; // eslint-disable-line
 
-import {Node, Graph} from "@plastic-io/plastic-io";
+import type {Node, Graph} from "@plastic-io/plastic-io";
 
 import {mapWritableState, mapActions, mapState} from "pinia";
 
@@ -119,7 +119,7 @@ export default {
                 this.broken = this.compiledTemplate.errors.length > 0;
                 this.component = this.compiledTemplate.component;
                 this.webWorkerProxy.nodes[this.nodeId] = {};
-                this.localNode.properties.inputs.forEach((input) => {
+                this.localNode.properties.inputs.forEach((input: any) => {
                     this.webWorkerProxy.nodes[this.nodeId] = {
                         [input.name]: null,
                     };
@@ -256,45 +256,45 @@ export default {
                 });
             }
         },
-        mountError(err) {
+        mountError(err: any) {
             this.broken = true;
             this.raiseError(this.localNode.id, err, 'vue');
         },
-        setLinkedNode(e) {
+        setLinkedNode(e: any) {
             console.log("setLinkedNode", e);
         },
-        bindNodeEvents(vect) {
+        bindNodeEvents(vect: any) {
             const events = {};
-            vect.properties.outputs.forEach((output) => {
-                events[output.name] = (val) => {
+            vect.properties.outputs.forEach((output: any) => {
+                events[output.name] = (val: any) => {
                     this.scheduler.instance.url(this.node.url, val, output.name, this.hostNode);
                 };
             });
             this.nodeEvents = events;
         },
-        bindNodeProps(vect) {
+        bindNodeProps(vect: any) {
             const props = {};
-            vect.properties.inputs.forEach((input) => {
+            vect.properties.inputs.forEach((input: any) => {
                 props[input.name] = undefined;
             });
             this.nodeProps = props;
         },
-        dataChange(e) {
+        dataChange(e: any) {
             this.updateNodeData({
                 nodeId: this.node.id,
                 data: e,
             });
         },
-        set(e) {
+        set(e: any) {
             this.scheduler.instance.url(this.node.url, e, "$url", this.hostNode);
         },
-        artifactKey(key) {
+        artifactKey(key: any) {
             if (!key) {
                 return;
             }
             return key.replace(/\/|\./g, "_").replace(/@/g, "_at_").replace(/:/g, "_col_");
         },
-        async downloadNode(artifact) {
+        async downloadNode(artifact: any) {
             if (artifact && /api\.github\.com/.test(artifact)) {
                 const data = await authorizedFetch(artifact);
                 const dataJson = await data.json();
@@ -303,7 +303,7 @@ export default {
             const seralizedV = await authorizedFetch(artifact);
             return await seralizedV.json();
         },
-        async importRoot(vect) {
+        async importRoot(vect: any) {
             const l = {
                 key: vect.id,
                 value: vect,
@@ -312,7 +312,7 @@ export default {
             this.styles = this.compiledTemplate.styles;
             this.redrawConnectorVersion += 1;
         },
-        async importGraph(g) {
+        async importGraph(g: any) {
             if (!g.linkedGraph.graph.properties.template) {
                 throw new Error('Linked Graph template is blank');
             }
@@ -321,7 +321,7 @@ export default {
             this.loaded = true;
             this.redrawConnectorVersion += 1;
         },
-        async importNode(v, artifactKey) {
+        async importNode(v: any, artifactKey: any) {
             v.artifact = this.node.artifact;
             v.url = this.node.url;
             v.artifactlId = v.id;
@@ -392,7 +392,7 @@ export default {
         },
         nodeStyle: function () {
             const hovered = this.hoveredNode && this.hoveredNode.id === this.localNode.id;
-            const selected = !!this.selectedNodes.find(v => v.id === this.localNode.id);
+            const selected = !!this.selectedNodes.find((v: any) => v.id === this.localNode.id);
             const hoveredAndSelected = hovered && selected;
             let borderColor = "transparent";
             let transition = "all 0.25s";

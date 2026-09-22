@@ -35,7 +35,7 @@
     </div>
   </component>
 </template>
-<script lang="typescript">
+<script lang="ts">
 import {mapWritableState, mapActions, mapState} from "pinia";
 import {newId} from "@plastic-io/graph-editor-vue3-utils";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
@@ -139,24 +139,28 @@ export default {
   data() {
     return {
       id: newId(),
-      binding: null,
-      cursorLocation: null,
+      // These hold things that only exist once the editor is mounted: a Monaco
+      // instance, timers, the popout window, the channel that keeps two copies
+      // of this editor in step.  They are typed as what they will be, so
+      // assigning one is not an error and reading one asks to be checked.
+      binding: null as any,
+      cursorLocation: null as any,
       updatingValue: false,
       editorHasFocus: false,
       autosave: false,
-      messageIds: [],
-      externalErrors: [],
+      messageIds: [] as string[],
+      externalErrors: [] as any[],
       loaded: false,
-      win: null,
-      timer: 0,
-      broadcastChannel: null,
-      debounceTimer: null,
-      broadcastUpdateTimer: null,
-      saveDebounceTimer: null,
+      win: null as Window | null,
+      timer: 0 as any,
+      broadcastChannel: null as BroadcastChannel | null,
+      debounceTimer: null as any,
+      broadcastUpdateTimer: null as any,
+      saveDebounceTimer: null as any,
       dirty: false,
-      emptyMessageTimer: null,
-      editor: null,
-      cursor: undefined,
+      emptyMessageTimer: null as any,
+      editor: null as any,
+      cursor: undefined as any,
       localValue: '',
       width: 0,
       height: 0,
@@ -243,7 +247,7 @@ export default {
 
       this.bindToDocument(editor);
 
-      const getSize = (l, defaultSize) => {
+      const getSize = (l: any, defaultSize: any) => {
         return localStorage.getItem(this.storeKey + '-size-' + l) || defaultSize;
       };
 
@@ -261,7 +265,7 @@ export default {
      * Attach the editor to the shared document.  Failing here is not fatal:
      * the editor falls back to the save-on-demand path it has always had.
      */
-    bindToDocument(editor) {
+    bindToDocument(editor: any) {
       if (!this.ytext) {
         return;
       }
@@ -321,7 +325,7 @@ export default {
         }, x);
       }
     },
-    mousemove(e) {
+    mousemove(e: any) {
       if (!this.$refs.dialog || this.isPopout) {
         return;
       }
@@ -407,7 +411,7 @@ export default {
       }
       this.resizeing = false;
     },
-    mousedown(e) {
+    mousedown(e: any) {
       if (this.isPopout) {
         return;
       }
@@ -483,7 +487,7 @@ export default {
         }, x);
       }
     },
-    setValue(val) {
+    setValue(val: any) {
       if (this.binding) {
         // The document drives the buffer now.
         return;

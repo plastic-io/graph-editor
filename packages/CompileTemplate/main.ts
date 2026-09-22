@@ -1,7 +1,7 @@
 import createVueComponent from "./importVue";
 import { defineComponent, h } from 'vue';
 
-export default async function compileTemplate(hostComp: any, id: string, tmp, clearLoad: boolean) {
+export default async function compileTemplate(hostComp: any, id: string, tmp: any, clearLoad: boolean) {
     let compSource: {component: any, errors: any[]};
     const createErrorComponent = (errs: any) => {
         return {
