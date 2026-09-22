@@ -4,6 +4,18 @@
   "compilerOptions": {
     "composite": true,
     "lib": [],
-    "types": ["node", "jsdom"]
-  }
+    "types": [
+      "node",
+      "jsdom"
+    ]
+  },
+  "include": [
+    "env.d.ts",
+    "packages/**/*",
+    "packages/**/*.vue",
+    "src/**/*",
+    "src/**/*.vue",
+    "e2e/**/*",
+    "playwright.config.ts"
+  ]
 }
