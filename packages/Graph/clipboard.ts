@@ -75,10 +75,11 @@ export default {
                 ...data,
             });
         } else if (jsonData) {
-            const data = JSON.parse(jsonData);
-            this.importItem({
-                item: data,
-            });
+            // JSON dropped from outside the editor is the same thing as JSON
+            // pasted onto it, and that path validates it and says so when it is
+            // not node data.  This called `importItem`, which exists nowhere,
+            // so every such drop threw.
+            this.tryPasteNodeString(jsonData);
         }
     },
     copyNodes(nodes: Node[]) {

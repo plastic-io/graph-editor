@@ -12,7 +12,6 @@ export {
   NODE_TEXT_PROPERTIES,
   NODE_TEMPLATE_TEXT_FIELDS,
   NODE_OPAQUE_FIELDS,
-  NODE_PROPERTY_CONTAINERS,
 } from "./schema";
 export type { AwarenessState, YjsEnvelope } from "./schema";
 export { fromJSON, toJSON, isEmpty, schemaVersionOf } from "./codec";

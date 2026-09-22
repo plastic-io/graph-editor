@@ -1,6 +1,5 @@
 import PreferencesProvider, {UserPreferences, useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 import EditorModule from "@plastic-io/graph-editor-vue3-editor-module";
-import {applyChange, diff} from "deep-diff";
 import {deref} from "@plastic-io/graph-editor-vue3-utils";
 const STORE_KEY = 'plastic-user-preferences';
 

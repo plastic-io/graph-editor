@@ -108,15 +108,11 @@ export default {
             'showInfo',
             'infoMessage',
             'dataProviders',
-            'pendingEvents',
             'pathPrefix',
             'panelVisibility',
             'showError',
             'locked',
         ]),
-        pending: function() {
-            return Object.keys(this.pendingEvents).length;
-        },
     },
     methods: {
         ...mapActions(useGraphStore, [

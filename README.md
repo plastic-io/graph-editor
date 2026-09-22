@@ -417,21 +417,15 @@ npm run build
 npm run test:unit
 ```
 
-### Run End-to-End Tests with [Cypress](https://www.cypress.io/)
+### Run the two-browser tests with [Playwright](https://playwright.dev/)
 
 ```sh
-npm run test:e2e:dev
+npm run test:hybrid
 ```
 
-This runs the end-to-end tests against the Vite development server.
-It is much faster than the production build.
-
-But it's still recommended to test the production build with `test:e2e` before deploying (e.g. in CI environments):
-
-```sh
-npm run build
-npm run test:e2e
-```
+These are about what **two** people watching one graph each do with a hop the
+server hands to the browsers, which a single page cannot answer.  They start the
+graph server (in memory, no AWS) and the editor on ports of their own.
 
 ### Lint with [ESLint](https://eslint.org/)
 

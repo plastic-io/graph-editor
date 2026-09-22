@@ -20,13 +20,9 @@ import MonacoCodeEditor from '@plastic-io/graph-editor-vue3-monaco-code-editor';
 import Appearance from '@plastic-io/graph-editor-vue3-appearance';
 import Auth0AuthenticationProvider from "@plastic-io/graph-editor-vue3-auth0-authentication-provider";
 import ConnectorInfo from "@plastic-io/graph-editor-vue3-connector-info";
-import EndpointListPanel from "@plastic-io/graph-editor-vue3-endpoint-list-panel";
 import ErrorInterstitial from "@plastic-io/graph-editor-vue3-error-interstitial";
-import EventLoggerPanel from "@plastic-io/graph-editor-vue3-event-logger-panel";
 import Graph from "@plastic-io/graph-editor-vue3-graph";
 import Manager from "@plastic-io/graph-editor-vue3-graph-manager";
-import Presentation from "@plastic-io/graph-editor-vue3-presentation";
-import PresentationPanel from "@plastic-io/graph-editor-vue3-presentation-panel";
 import GraphPropertiesPanel from "@plastic-io/graph-editor-vue3-graph-properties-panel";
 import Rewind from "@plastic-io/graph-editor-vue3-rewind";
 import ShortcutIcons from "@plastic-io/graph-editor-vue3-shortcut-icons";
@@ -41,7 +37,6 @@ import MiniMapInfo from "@plastic-io/graph-editor-vue3-mini-map-info";
 import Node from "@plastic-io/graph-editor-vue3-node";
 import NodeEdgeConnector from "@plastic-io/graph-editor-vue3-node-edge-connector";
 import NodeEdgePropertiesPanel from "@plastic-io/graph-editor-vue3-node-edge-properties-panel";
-import NodeListPanel from "@plastic-io/graph-editor-vue3-node-list-panel";
 import NodePropertiesPanel from "@plastic-io/graph-editor-vue3-node-properties-panel";
 import ProviderSettings from "@plastic-io/graph-editor-vue3-provider-settings";
 import SharedMouse from "@plastic-io/graph-editor-vue3-shared-mouse";
@@ -54,10 +49,8 @@ import AgentActivity from "@plastic-io/graph-editor-vue3-agent-activity";
 import AgentSettings from "@plastic-io/graph-editor-vue3-agent-settings";
 import SettingsPanel from "@plastic-io/graph-editor-vue3-settings-panel";
 import Workspace from "@plastic-io/graph-editor-vue3-workspace";
-import WorkspaceControlPanel from "@plastic-io/graph-editor-vue3-workspace-control-panel";
 import WssDocumentProvider from "@plastic-io/graph-editor-vue3-wss-document-provider-info";
 import WssCrdtProvider from "@plastic-io/graph-editor-vue3-wss-crdt-provider";
-import GitHubProvider from "@plastic-io/graph-editor-vue3-github-provider";
 
 // must come before plugin install
 const pinia = createPinia();
@@ -82,14 +75,10 @@ const plugins = [
   LocalUserPreferences,
   Appearance,
   ConnectorInfo,
-  EndpointListPanel,
   ErrorInterstitial,
-  EventLoggerPanel,
   Graph,
   MonacoCodeEditor,
   Manager,
-  Presentation,
-  PresentationPanel,
   GraphPropertiesPanel,
   Rewind,
   ShortcutIcons,
@@ -103,7 +92,6 @@ const plugins = [
   Node,
   NodeEdgeConnector,
   NodeEdgePropertiesPanel,
-  NodeListPanel,
   NodePropertiesPanel,
   ProviderSettings,
   SharedMouse,
@@ -115,12 +103,10 @@ const plugins = [
   AgentActivity,
   AgentSettings,
   SettingsPanel,
-  WorkspaceControlPanel,
   WssDocumentProvider,
   WssCrdtProvider,
   Workspace,
   Auth0AuthenticationProvider,
-  GitHubProvider,
 ] as any;
 (async () => {
   const pluginInstances = {} as any;

@@ -166,7 +166,6 @@ export default {
             'showInfo',
             'infoMessage',
             'dataProviders',
-            'pendingEvents',
             'pathPrefix',
             'showHelp',
             'panelVisibility',
@@ -179,7 +178,6 @@ export default {
             'createNewNode',
             'zoomOut',
             'zoomIn',
-            'zoomReset',
         ]),
         ...mapActions(useGraphStore, [
             'open',

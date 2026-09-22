@@ -6,7 +6,6 @@ import type Scheduler from "@plastic-io/plastic-io";
 import type {Graph, Node} from "@plastic-io/plastic-io";
 import {fromJSON} from 'flatted';
 import RegistrySettingsPanel from "./RegistrySettings.vue";
-import {createDeepProxy, type Path} from "./proxy";
 import getRandomName from "@plastic-io/graph-editor-names";
 import {helpTopics} from "@plastic-io/graph-editor-vue3-help-overlay";
 import type DocumentProvider from "@plastic-io/graph-editor-vue3-document-provider";
@@ -149,23 +148,13 @@ export const useStore = defineStore('orchestrator', {
         "2": "rmb",
         "1": "mmb"
     },
-    fortunes: [],
     inRewindMode: false,
     startTime:  0,
     redrawConnectorVersion: 0,
     testOutputVersion: 0,
-    testOutput: [],
-    ownEvents: [],
     testsVisible: false,
-    mouseMovements: [],
     mouseTransmitInterval: 1000,
-    heartBeatInterval: 50000,
-    queuedEvent: null,
-    resyncRequired: false,
-    eventQueue: [],
-    pendingEvents: {},
     graphUserMouse: {},
-    graphUserChat: {},
     /** Who else has this graph open, keyed by their session id. */
     graphUsers: {} as Record<string, any>,
     /**
@@ -175,8 +164,6 @@ export const useStore = defineStore('orchestrator', {
      */
     agentsAtWork: [] as any[],
     showConnectorView: false,
-    connectionState: "closed",
-    createdGraphId: null,
     scheduleWorker: null as any,
     helpTopics,
     log: [] as any,
@@ -195,11 +182,8 @@ export const useStore = defineStore('orchestrator', {
         "lambda",
         "cli",
     ],
-    graphReferences: {},
     registry: {} as Record<string, any>,
     artifacts: {},
-    remoteEvents: [],
-    remoteSnapshot: {},
     setMapScale: 1,
     showInfo: false,
     infoMessage: "",
@@ -601,11 +585,6 @@ export const useStore = defineStore('orchestrator', {
     async createScheduler() {
 
         this.scheduleWorker = new SchedulerWorker();
-
-        const sendUpdateToWorker = (path: Path, value: any): void => {
-          this.scheduleWorker.postMessage({ path, value });
-        };
-        const mainObjProxy = createDeepProxy(this.webWorkerProxy, [], sendUpdateToWorker);
 
         // performance hack.  Avoid using the store on messages from
         // scheduler to avoid any sort of long term memory leaks/GCing

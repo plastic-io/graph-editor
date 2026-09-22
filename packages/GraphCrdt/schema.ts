@@ -89,14 +89,6 @@ export const NODE_TEMPLATE_TEXT_FIELDS = ["set", "vue"];
  */
 export const NODE_OPAQUE_FIELDS = ["data", "linkedGraph", "linkedNode"];
 
-/** Keys on `node.properties` that are structured rather than scalar. */
-export const NODE_PROPERTY_CONTAINERS = [
-  "presentation",
-  "groups",
-  "inputs",
-  "outputs",
-];
-
 /** Identity of one collaborator, carried on the awareness channel. */
 export interface AwarenessState {
   user: {

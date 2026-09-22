@@ -119,8 +119,6 @@ export default {
         ]),
         ...mapActions(useGraphStore, [
             "externalIO",
-            "save",
-            "selectNode",
             "updateGraphFromSnapshot",
         ]),
     },
