@@ -2,6 +2,14 @@
     <div class="connector-info-container" @wheel.stop @mousedown.stop @mouseup.stop @click.stop>
         <v-card min-width="400px" class="pa-2" height="100%">
             <v-card-actions class="py-0">
+                <v-btn-toggle v-model="source" density="compact" variant="outlined" divided mandatory class="mr-2">
+                    <v-btn value="live" size="x-small" title="What crossed this connector in this browser, since the graph was opened">
+                        here {{ liveActivity.length }}
+                    </v-btn>
+                    <v-btn value="recorded" size="x-small" :loading="loadingRecorded" title="What crossed it in any execution the server kept, including ones that ran elsewhere">
+                        kept {{ recorded.length }}
+                    </v-btn>
+                </v-btn-toggle>
                 <div :key="activity.length" class="py-0">
                     <v-icon
                         color="secondary"
@@ -33,15 +41,24 @@
                 </div>
                 <div v-else>
                     <i v-if="selectedConnectors.length === 0">No Connector Selected</i>
-                    <i v-if="selectedConnectors.length > 0 && selectedActivity.empty">No Activity</i>
+                    <i v-else-if="source === 'recorded' && loadingRecorded">Looking through what was kept</i>
+                    <i v-else-if="source === 'recorded'">Nothing kept for this connector</i>
+                    <i v-else>No Activity</i>
                 </div>
             </v-card-title>
             <v-card-text class="pt-1 connector-meta-info-sub">
                 <div v-show="selectedActivity.event.time">
                     Occured {{fromNow(selectedActivity.event.time)}}
+                    <span v-if="selectedActivity.recorded" class="text-disabled">
+                        · {{selectedActivity.domain}} · {{selectedActivity.executionId.slice(-6)}}
+                    </span>
                 </div>
                 <div v-if="!selectedActivity.empty" class="connector-info-typeof">
-                    typeof {{typeof selectedActivity.event.value}}
+                    <span v-if="selectedActivity.valueKept">typeof {{typeof selectedActivity.event.value}}</span>
+                    <span v-else-if="selectedActivity.recorded">
+                        {{shapeOf(selectedActivity)}} — this graph keeps the shape of what crosses here, not the value
+                    </span>
+                    <span v-else>typeof {{typeof selectedActivity.event.value}}</span>
                 </div>
             </v-card-text>
             <v-card-text class="pa-0 connector-info-system-bar no-graph-target" elevation="7">
@@ -69,6 +86,11 @@ export default {
     data: () => ({
         selectedIndex: 0,
         changeVersion: 0,
+        /** "here" is what this browser saw; "kept" is what the server holds. */
+        source: "live" as "live" | "recorded",
+        recorded: [] as any[],
+        loadingRecorded: false,
+        recordedFor: "",
         emptyActivity: {
             empty: true,
             activityType: 'No activity',
@@ -84,6 +106,17 @@ export default {
     watch: {
         activityKey() {
             this.selectedIndex = 0;
+            this.recorded = [];
+            this.recordedFor = "";
+            if (this.source === "recorded") {
+                this.loadRecorded();
+            }
+        },
+        source() {
+            this.selectedIndex = 0;
+            if (this.source === "recorded") {
+                this.loadRecorded();
+            }
         },
         activity: {
             handler() {
@@ -114,6 +147,63 @@ export default {
         fromNow(e: any) {
             return moment(new Date(e)).fromNow();
         },
+        /**
+         * What crossed this connector in executions this browser did not run
+         * (plan §4.5.3, PB-114).  A hop that happened on the server, in
+         * somebody else's session, or before this page was opened leaves no
+         * trace here; the server kept it, so ask.
+         */
+        async loadRecorded() {
+            const orchestrator: any = useOrchestratorStore();
+            const provider = (orchestrator.syncProviders || []).find((p: any) => typeof p.observations === "function");
+            const graphId = this.graph && this.graph.id;
+            const connectorId = this.activityKey;
+            if (!provider || !graphId || !connectorId || this.recordedFor === connectorId) {
+                return;
+            }
+            this.loadingRecorded = true;
+            try {
+                const answer = await provider.observations(graphId, {connectorId, kind: "route", limit: 50});
+                this.recorded = ((answer && answer.observations) || []).map((o: any) => this.asActivity(o));
+                this.recordedFor = connectorId;
+            } catch (err: any) {
+                console.warn("Cannot ask what crossed this connector.", err);
+                this.recorded = [];
+            } finally {
+                this.loadingRecorded = false;
+            }
+        },
+        /** One kept observation, in the shape this panel already knows how to show. */
+        asActivity(observation: any) {
+            const payload = observation.payload || {};
+            const kept = payload.value !== undefined;
+            return {
+                empty: false,
+                activityType: "start",
+                recorded: true,
+                valueKept: kept,
+                domain: observation.domain || "server",
+                executionId: observation.executionId || "",
+                meta: payload.meta,
+                redacted: payload.redacted,
+                event: {
+                    time: new Date(observation.at).getTime(),
+                    value: kept ? payload.value : undefined,
+                    connector: {field: observation.edgeField || ""},
+                },
+            };
+        },
+        /** What is known about a value that was not kept whole. */
+        shapeOf(activity: any): string {
+            if (activity.redacted === "payload") {
+                return "kept, but reading values needs graph:inspect-payloads";
+            }
+            if (activity.redacted === "secret") {
+                return "a secret";
+            }
+            const meta = activity.meta || {};
+            return [meta.type, meta.bytes !== undefined ? `${meta.bytes} bytes` : ""].filter(Boolean).join(" · ") || "no shape recorded";
+        },
         formatActivityValue(val: any) {
             let out;
             if (typeof val === 'object') {
@@ -132,12 +222,16 @@ export default {
             'hoveredConnector',
             'selectedConnectors',
             'activityConnectors',
+            'graph',
         ]),
         selectedActivity() {
             const activity = this.activity[this.selectedIndex] || this.emptyActivity;
             return activity;
         },
         selectedActivityEnd() {
+            if (this.selectedActivity.recorded) {
+                return this.emptyActivity;      // a kept observation has no end of its own
+            }
             const end = (this.activityConnectors[this.activityKey] || [])
                 .find((a: any) => a.activityType === 'end' && this.selectedActivity.key === a.key);
             return end || this.emptyActivity;
@@ -150,12 +244,18 @@ export default {
                 ? this.hoveredConnector.connector.id
                 : this.firstSelectedConnectorId;
         },
-        activity() {
+        liveActivity(): any[] {
             if (!this.activityKey || (!this.hoveredConnector && this.selectedConnectors.length === 0)) {
                 return [];
             }
             return (this.activityConnectors[this.activityKey] || [])
                 .filter((a: any) => a.activityType === 'start');
+        },
+        activity(): any[] {
+            if (!this.activityKey || (!this.hoveredConnector && this.selectedConnectors.length === 0)) {
+                return [];
+            }
+            return this.source === "recorded" ? this.recorded : this.liveActivity;
         },
     },
 };

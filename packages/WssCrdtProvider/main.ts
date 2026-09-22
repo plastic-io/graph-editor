@@ -631,6 +631,18 @@ export class WssCrdtProvider {
   listExecutions(graphId: string, limit = 50): Promise<any> {
     return this.api(`${graphId}/executions?limit=${limit}`);
   }
+  /**
+   * What crossed one wire or one node, across the executions this graph has
+   * kept (plan §4.5.3, PB-114).  A value that went through a connector on the
+   * server, or in somebody else's browser, is only here.
+   */
+  observations(graphId: string, query: {connectorId?: string; nodeId?: string; kind?: string; executionId?: string; limit?: number} = {}): Promise<any> {
+    const search = Object.keys(query)
+      .filter((key) => (query as any)[key])
+      .map((key) => `${key}=${encodeURIComponent((query as any)[key])}`)
+      .join("&");
+    return this.api(`${graphId}/observations${search ? "?" + search : ""}`);
+  }
   /** One execution and everything observed for it, from whichever domain observed it. */
   execution(graphId: string, executionId: string): Promise<any> {
     return this.api(`${graphId}/executions/${executionId}`);
