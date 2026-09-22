@@ -50,6 +50,7 @@ import SyncStatus from "@plastic-io/graph-editor-vue3-sync-status";
 import Versions from "@plastic-io/graph-editor-vue3-versions";
 import Proposals from "@plastic-io/graph-editor-vue3-proposals";
 import Executions from "@plastic-io/graph-editor-vue3-executions";
+import AgentActivity from "@plastic-io/graph-editor-vue3-agent-activity";
 import AgentSettings from "@plastic-io/graph-editor-vue3-agent-settings";
 import SettingsPanel from "@plastic-io/graph-editor-vue3-settings-panel";
 import Workspace from "@plastic-io/graph-editor-vue3-workspace";
@@ -111,6 +112,7 @@ const plugins = [
   Versions,
   Proposals,
   Executions,
+  AgentActivity,
   AgentSettings,
   SettingsPanel,
   WorkspaceControlPanel,

@@ -8,6 +8,7 @@
       :title="user.title"
     >
       <img v-if="user.avatar" :src="user.avatar" :alt="user.name"/>
+      <v-icon v-else-if="user.agent" size="small" :style="{color: user.color}">mdi-robot-outline</v-icon>
       <span v-else class="shared-user-initials" :style="{background: user.color}">
         {{user.initials}}
       </span>
@@ -20,10 +21,29 @@ import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-or
 export default {
   name: "shared-users",
   computed: {
-    ...mapState(useOrchestratorStore, ["graphUsers"]),
+    ...mapState(useOrchestratorStore, ["graphUsers", "agentsAtWork"]),
+    /**
+     * An agent is not a peer on the socket, so it cannot be shown as watching
+     * (plan PB-112).  What can be said is that it changed this graph a moment
+     * ago, which is what the row says when you rest on it.
+     */
+    agents(): any[] {
+      return ((this as any).agentsAtWork || []).map((agent: any) => {
+        const name = String(agent.sub || "").split("|").pop() || "an agent";
+        return {
+          key: `agent:${agent.sub}`,
+          name,
+          agent: true,
+          avatar: "",
+          color: "#c98a00",
+          title: `${name} — an agent; last change ${agent.what ? `"${agent.what}" ` : ""}a moment ago`,
+          initials: "AI",
+        };
+      });
+    },
     users(): any[] {
       const people = this.graphUsers || {};
-      return Object.keys(people).map((key) => {
+      return (this as any).agents.concat(Object.keys(people).map((key: string) => {
         const user = people[key] || {};
         const name = user.name || "Someone";
         return {
@@ -34,7 +54,7 @@ export default {
           title: user.email ? `${name} (${user.email})` : name,
           initials: name.split(/\s+/).map((part: string) => part[0]).join("").slice(0, 2).toUpperCase(),
         };
-      });
+      }));
     },
   },
 }

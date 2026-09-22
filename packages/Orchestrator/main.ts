@@ -168,6 +168,12 @@ export const useStore = defineStore('orchestrator', {
     graphUserChat: {},
     /** Who else has this graph open, keyed by their session id. */
     graphUsers: {} as Record<string, any>,
+    /**
+     * Agents that have changed this graph in the last few minutes (plan
+     * PB-112).  An agent is not a peer on the socket, so this is what can be
+     * said honestly: it acted recently, not that it is here.
+     */
+    agentsAtWork: [] as any[],
     showConnectorView: false,
     connectionState: "closed",
     createdGraphId: null,

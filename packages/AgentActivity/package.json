@@ -1,0 +1,10 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-agent-activity",
+  "license": "BSD-3-Clause",
+  "author": "TonyGermaneri@gmail.com",
+  "version": "1.0.0",
+  "private": false,
+  "description": "What has been done to this graph, by whom: every admitted change, every refusal, and which agents have been at work.",
+  "main": "./main.ts",
+  "files": []
+}
