@@ -77,8 +77,9 @@ test.describe("a published graph, imported by reference", () => {
     const kept = await observed(hostId, executionId, "visit");
     expect(kept.filter((v: any) => v.path).map((v: any) => v.path).sort()).toEqual(CALLED);
 
-    // a node that draws nothing draws nothing: no template is not an error
+    // a node that draws nothing draws nothing, and says nothing about it
     expect(await page.locator("text=Cannot read properties of null").count()).toBe(0);
+    expect(await page.locator("text=At least one <template> or <script> is required").count()).toBe(0);
 
     await context.close();
   });

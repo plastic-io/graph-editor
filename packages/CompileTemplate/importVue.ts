@@ -7,6 +7,16 @@ export default async function (sfc: string, id: string) {
     const TEMPLATE_KEY = id + '-template';
     const STYLE_KEY = id + '-style';
     const errors = [];
+    /**
+     * Nothing to draw is not a failure.  A node whose `template.vue` is empty
+     * has no single-file component to compile, and the SFC parser rightly says
+     * so — "At least one <template> or <script> is required" — which the card
+     * then showed instead of the node.  The question was never asked of it.
+     */
+    const empty = { styles: [] as any[], component: { render: () => null }, errors: [] as any[] };
+    if (!sfc || !String(sfc).trim()) {
+        return empty;
+    }
     const blocks = await compiler.parse(sfc, {
         filename: id + '.vue',
         sourceMap: true,
@@ -20,6 +30,10 @@ export default async function (sfc: string, id: string) {
      */
     const hasTemplate = !!(descriptor && descriptor.template);
     const hasScript = !!(descriptor && (descriptor.script || descriptor.scriptSetup));
+    if (!hasTemplate && !hasScript) {
+        // whitespace, or a comment, and the same answer: it draws nothing
+        return empty;
+    }
     const template = !hasTemplate ? "" : compiler.compileTemplate({
         id,
         ...blocks.descriptor,
