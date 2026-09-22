@@ -11,6 +11,20 @@
       <v-list-item v-if="!delegations.length" title="No agents delegated"/>
     </v-list>
     <v-divider class="my-2"/>
+    <div class="text-subtitle-2">How much of their work you see first</div>
+    <p class="text-caption mb-1">
+      Supervised: an agent proposes and you decide. Auto: an agent you delegated commit to acts without asking.
+      Either way it can only do what you delegated, and either way the tests and journeys still decide what may be published or run.
+    </p>
+    <v-radio-group v-model="autonomy" density="compact" hide-details inline :disabled="busy" @update:modelValue="saveAutonomy">
+      <v-radio label="Supervised" value="supervised"/>
+      <v-radio label="Auto" value="auto"/>
+    </v-radio-group>
+    <p class="text-caption mb-2">
+      This is your setting, for everything of yours. A graph can answer for itself in its properties, and what the graph says wins.
+      <span v-if="graphAutonomy">This graph says <b>{{ graphAutonomy }}</b>.</span>
+    </p>
+    <v-divider class="my-2"/>
     <v-text-field v-model="form.agentSub" density="compact" label="Agent subject (the token's sub, e.g. abc123@clients)" hide-details class="mb-2"/>
     <v-text-field v-model="form.graphId" density="compact" label="Graph id, or * for every graph" hide-details class="mb-2"/>
     <div class="d-flex flex-wrap">
@@ -30,7 +44,11 @@ export default {
       message: "",
       messageType: "info" as "info" | "warning" | "error" | "success",
       delegations: [] as any[],
-      scopeOptions: ["graph:read", "graph:inspect-internals", "graph:observe", "graph:propose", "registry:read"],
+      autonomy: "supervised" as string,
+      graphAutonomy: "" as string,
+      // what an agent can be given; commit is what lets it act without asking,
+      // and only in auto mode
+      scopeOptions: ["graph:read", "graph:inspect-internals", "graph:observe", "graph:propose", "graph:commit", "graph:test", "graph:execute", "registry:read"],
       form: { agentSub: "", graphId: "*", scopes: ["graph:read", "graph:propose", "graph:observe"], days: null as number | null },
     };
   },
@@ -46,10 +64,38 @@ export default {
       this.message = text;
       this.messageType = type;
     },
+    async saveAutonomy(value: string) {
+      const provider = this.provider();
+      if (!provider || typeof provider.setAutonomy !== "function") {
+        return;
+      }
+      this.busy = true;
+      try {
+        await provider.setAutonomy(value);
+        this.say(value === "auto"
+          ? "Agents you delegated commit to now act without asking. The tests and journeys still decide what may be published or run."
+          : "You will be asked before an agent's work takes effect.", "success");
+      } catch (err: any) {
+        this.say(`Cannot change this: ${err.message}`, "error");
+        await this.refresh();
+      } finally {
+        this.busy = false;
+      }
+    },
     async refresh() {
       const provider = this.provider();
       if (!provider) {
         return;
+      }
+      try {
+        if (typeof provider.autonomy === "function") {
+          const r = await provider.autonomy();
+          this.autonomy = (r && r.autonomy) || "supervised";
+        }
+        const graph: any = (useOrchestratorStore() as any).graphStore && (useOrchestratorStore() as any).graphStore.graph;
+        this.graphAutonomy = (graph && graph.properties && graph.properties.autonomy) || "";
+      } catch (err) {
+        // the panel still works without it
       }
       try {
         const r = await provider.listDelegations();

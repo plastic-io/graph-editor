@@ -31,7 +31,7 @@ export interface DiffOp {
   op:
     | "add-node" | "remove-node" | "set-node-code" | "set-node-props" | "set-node-fields"
     | "set-graph-props" | "set-graph-fields" | "connect" | "disconnect"
-    | "set-component-pin" | "set-capabilities" | "set-placement" | "set-containment" | "set-budget" | "set-iac-desired"
+    | "set-component-pin" | "set-capabilities" | "set-placement" | "set-containment" | "set-autonomy" | "set-budget" | "set-iac-desired"
     | "set-meta" | "set-observed" | "set-policy"
     | "touch";
   namespace: Namespace;
@@ -116,6 +116,7 @@ const NAMESPACE_OP: Partial<Record<Namespace, DiffOp["op"]>> = {
   capabilities: "set-capabilities",
   placement: "set-placement",
   containment: "set-containment",
+  "policy-autonomy": "set-autonomy",
   budgets: "set-budget",
   iac: "set-iac-desired",
   meta: "set-meta",

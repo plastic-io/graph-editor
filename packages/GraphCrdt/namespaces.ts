@@ -18,6 +18,8 @@ export type Namespace =
   | "placement"
   /** Where a node's code runs: inside a contained realm, or in the runtime's own. */
   | "containment"
+  /** Whether an agent's work on this graph takes effect without a person seeing it. */
+  | "policy-autonomy"
   | "budgets"
   | "tests"
   | "iac"
@@ -33,7 +35,7 @@ const HOUSEKEEPING_KEYS = ["version", "lastUpdate"];
 export const SERVER_OWNED_NAMESPACES: Namespace[] = ["meta", "observed", "policy"];
 
 /** Namespaces whose change widens what a node may do. */
-export const PRIVILEGE_NAMESPACES: Namespace[] = ["capabilities", "placement", "containment"];
+export const PRIVILEGE_NAMESPACES: Namespace[] = ["capabilities", "placement", "containment", "policy-autonomy"];
 
 /** Keys at the root of the graph. */
 export function graphKeyNamespace(key: string): Namespace {
@@ -46,6 +48,9 @@ export function graphKeyNamespace(key: string): Namespace {
 
 /** Keys of `graph.properties`. */
 export function graphPropertyNamespace(key: string): Namespace {
+  // How much of an agent's work takes effect unreviewed is a privilege, so a
+  // change to it shows in the diff like any other (plan §8.1.8).
+  if (key === "autonomy") return "policy-autonomy";
   if (HOUSEKEEPING_KEYS.includes(key)) return "housekeeping";
   if (key === "template" || key === "scripts") return "code";
   if (key === "icon" || key === "height" || key === "width") return "layout";

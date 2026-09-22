@@ -636,6 +636,13 @@ export class WssCrdtProvider {
   auditRecords(graphId: string, limit = 50): Promise<any> {
     return this.api(`${graphId}/audit?limit=${limit}`);
   }
+  /** How much of an agent's work this person wants to see first (plan §4.4.5). */
+  autonomy(): Promise<any> {
+    return this.call("policy/autonomy");
+  }
+  setAutonomy(autonomy: "supervised" | "auto", note?: string): Promise<any> {
+    return this.call("policy/autonomy", { method: "PUT", body: JSON.stringify({ autonomy, note }) });
+  }
   listDelegations(): Promise<any> {
     return this.call("policy/agents");
   }
