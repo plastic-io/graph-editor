@@ -11,11 +11,20 @@ export default async function (sfc: string, id: string) {
         filename: id + '.vue',
         sourceMap: true,
     });
-    const template = compiler.compileTemplate({
+    const descriptor: any = (blocks as any).descriptor;
+    /**
+     * A node that draws nothing draws nothing.  An empty `template.vue`, or one
+     * with only a script, has no <template> block, and reading its content threw
+     * a TypeError that the caller turned into an error component — so every node
+     * without a template said "Cannot read properties of null" on the canvas.
+     */
+    const hasTemplate = !!(descriptor && descriptor.template);
+    const hasScript = !!(descriptor && (descriptor.script || descriptor.scriptSetup));
+    const template = !hasTemplate ? "" : compiler.compileTemplate({
         id,
         ...blocks.descriptor,
         ssr: false,
-        source: (blocks as any).descriptor.template.content,
+        source: descriptor.template.content,
     }).code
         .replace(/import {.*} from "vue"/,
             `const _createElementVNode = self.dependencies.vue.createElementVNode;
@@ -76,10 +85,10 @@ const _suspense = self.dependencies.vue.suspense;
 const _normalizeStyle = self.dependencies.vue.normalizeStyle;
 `);
 
-    const script = compiler.compileScript(blocks.descriptor, {
+    const script = hasScript ? compiler.compileScript(blocks.descriptor, {
         sourceMap: true,
         id,
-    });
+    }) : null;
 
     let styles = blocks.descriptor.styles.map((style: any) => {
         const s = compiler.compileStyle({id, source: style.content} as any);
@@ -91,9 +100,11 @@ const _normalizeStyle = self.dependencies.vue.normalizeStyle;
         'vue': vue,
     } as {[key: string]: any};
     const options = {
-        ...(await import(/* @vite-ignore */stringToBase64Url(script.content, 'application/Javascript'))).default,
-        template: (await import(/* @vite-ignore */stringToBase64Url(template, 'application/Javascript'))),
-        render: (await import(/* @vite-ignore */stringToBase64Url(template, 'application/Javascript'))).render,
+        ...(script ? (await import(/* @vite-ignore */stringToBase64Url(script.content, 'application/Javascript'))).default : {}),
+        ...(hasTemplate ? {
+            template: (await import(/* @vite-ignore */stringToBase64Url(template, 'application/Javascript'))),
+            render: (await import(/* @vite-ignore */stringToBase64Url(template, 'application/Javascript'))).render,
+        } : { render: () => null }),
     };
 
     const compDef = vue.defineComponent(options);

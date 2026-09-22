@@ -77,6 +77,9 @@ test.describe("a published graph, imported by reference", () => {
     const kept = await observed(hostId, executionId, "visit");
     expect(kept.filter((v: any) => v.path).map((v: any) => v.path).sort()).toEqual(CALLED);
 
+    // a node that draws nothing draws nothing: no template is not an error
+    expect(await page.locator("text=Cannot read properties of null").count()).toBe(0);
+
     await context.close();
   });
 });
