@@ -226,3 +226,42 @@ describe("naming", () => {
     expect(qualify("node", ["host", "nested"])).toBe("host/nested/node");
   });
 });
+
+/**
+ * A runtime that instantiates a linked graph when a value arrives at it
+ * (plastic-io 2.3 and later) runs what flattening cannot: a graph that
+ * contains itself, one instance per turn.  Flattening's job there is to get
+ * out of the way and leave the link where the runtime will find it.
+ */
+describe("what a runtime that can make calls is given", () => {
+  const selfReferential = () => {
+    const self: any = graph("loop", []);
+    self.nodes.push(linkedNode("again", self));
+    return self;
+  };
+
+  it("keeps the link on the node so the runtime can call it", async () => {
+    const { graph: flat, warnings } = await flattenLinkedGraphs(selfReferential(), { leaveForRuntime: true });
+    const host = flat.nodes.find((n: any) => n.id === "again");
+    expect(host.linkedGraph).toBeTruthy();
+    expect(host.loadedGraph).toBeUndefined();
+    expect(warnings[0].message).toContain("left for the runtime to call, one instance per turn");
+  });
+
+  it("drops it, as a flat-only runtime needs, when it is not asked to", async () => {
+    const { graph: flat, warnings } = await flattenLinkedGraphs(selfReferential());
+    const host = flat.nodes.find((n: any) => n.id === "again");
+    expect(host.linkedGraph).toBeUndefined();
+    expect(warnings[0].message).toContain("cannot be run inside itself");
+  });
+
+  it("flattens everything it can either way, and only leaves what it cannot", async () => {
+    const outer = graph("outer", [
+      node("entry", { edges: [{ field: "out", connectors: [connector("host")] }] }),
+      linkedNode("host", inner()),
+    ]);
+    const { graph: flat, warnings } = await flattenLinkedGraphs(outer, { leaveForRuntime: true });
+    expect(warnings).toEqual([]);
+    expect(flat.nodes.map((n: any) => n.id).sort()).toEqual(["entry", "host", "host/in-node", "host/out-node"]);
+  });
+});

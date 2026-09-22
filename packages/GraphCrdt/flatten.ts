@@ -70,6 +70,21 @@ export interface FlattenOptions {
     resolve?: (node: any, path: string[]) => Promise<any | null> | any | null;
     /** How deep the nesting may go before it is reported and stopped. */
     maxDepth?: number;
+    /**
+     * What to do with a link flattening cannot resolve — a graph that contains
+     * itself, or one nested past the limit.
+     *
+     * By default the link is dropped and reported: the node stays as an empty
+     * shell and nothing runs inside it, which is what a runtime that can only
+     * run a flat set of nodes needs.
+     *
+     * A runtime that instantiates a linked graph **when a value arrives at it**
+     * (plastic-io 2.3 and later, and the Rust runtime) wants the opposite: pass
+     * `leaveForRuntime` and the node keeps its `linkedGraph`, so the call is
+     * made at the moment it happens, with its own state, as deep as the graph
+     * takes it.  That is how a recursive graph runs at all.
+     */
+    leaveForRuntime?: boolean;
 }
 
 const DEFAULT_MAX_DEPTH = 8;
@@ -110,15 +125,25 @@ export async function flattenLinkedGraphs(graph: any, options: FlattenOptions = 
             if (innerId && graphPath.indexOf(innerId) !== -1) {
                 warnings.push({
                     code: "LINKED_GRAPH_CYCLE", nodeId: here, graphId: innerId, path: graphPath.concat([innerId]),
-                    message: `${innerId} contains itself through ${graphPath.concat([innerId]).join(" → ")}; a graph cannot be run inside itself`,
+                    message: options.leaveForRuntime
+                        ? `${innerId} contains itself through ${graphPath.concat([innerId]).join(" → ")}; it is left for the runtime to call, one instance per turn`
+                        : `${innerId} contains itself through ${graphPath.concat([innerId]).join(" → ")}; a graph cannot be run inside itself`,
                 });
+                if (options.leaveForRuntime) {
+                    keepLink(nodes, here, node);
+                }
                 continue;
             }
             if (graphPath.length > maxDepth) {
                 warnings.push({
                     code: "LINKED_GRAPH_TOO_DEEP", nodeId: here, graphId: innerId, path: graphPath,
-                    message: `linked graphs are nested more than ${maxDepth} deep here; the rest is left as it is`,
+                    message: options.leaveForRuntime
+                        ? `linked graphs are nested more than ${maxDepth} deep here; the rest is left for the runtime to call`
+                        : `linked graphs are nested more than ${maxDepth} deep here; the rest is left as it is`,
                 });
+                if (options.leaveForRuntime) {
+                    keepLink(nodes, here, node);
+                }
                 continue;
             }
             const inner = await resolve(node, graphPath);
@@ -199,6 +224,19 @@ export async function flattenLinkedGraphs(graph: any, options: FlattenOptions = 
     });
 
     return { graph: { ...graph, nodes }, warnings, instances };
+}
+
+/**
+ * Give a node its link back.  Flattening turns a linked node into a shell,
+ * which is right when the flat set is all the runtime can run; a runtime that
+ * makes a call of it needs the link itself, untouched.
+ */
+function keepLink(nodes: any[], id: string, original: any): void {
+    const copy = nodes.find((n: any) => n.id === id);
+    if (copy && original.linkedGraph) {
+        copy.linkedGraph = original.linkedGraph;
+        delete copy.loadedGraph;
+    }
 }
 
 /** One shell's fields, with the inner nodes named as they are in the flat set. */
