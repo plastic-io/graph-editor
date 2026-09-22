@@ -203,7 +203,7 @@ export default {
         // or value is when the external node has chnaged
         // either way we update the current value if it does not match
         if (message.type === 'update' || message.type === 'value') {
-          if (this.editorHasFocus || !this.$refs.editor || !this.$refs.editor.pinstance) {
+          if (this.editorHasFocus || !(this.$refs.editor as any) || !(this.$refs.editor as any).pinstance) {
             return;
           }
           const existingValue = this.getValue();
@@ -215,7 +215,7 @@ export default {
           this.$emit('dirty', message.value);
         }
       };
-      const editor = monaco.editor.create(this.$refs.editor, {
+      const editor = monaco.editor.create((this.$refs.editor as any), {
         language: this.language,
         theme: this.preferences.appearance.theme === 'dark' ? 'vs-dark' : 'vs',
       });
@@ -228,12 +228,12 @@ export default {
       editor.getModel().onDidChangeContent((event) => {
         this.update();
         if (this.updatingValue && this.cursorLocation) {
-          this.$refs.editor.pinstance.setPosition(this.cursorLocation);
+          (this.$refs.editor as any).pinstance.setPosition(this.cursorLocation);
         }
       });
       editor.onDidChangeCursorPosition(e => {
         if (!this.updatingValue) {
-          this.cursorLocation = this.$refs.editor.pinstance.getPosition();
+          this.cursorLocation = (this.$refs.editor as any).pinstance.getPosition();
         }
       });
       editor.onKeyDown((e) => {
@@ -243,7 +243,7 @@ export default {
         } 
       });
       // HACK: if editor is attached to "this" it will freeze the system
-      this.$refs.editor.pinstance = editor;
+      (this.$refs.editor as any).pinstance = editor;
 
       this.bindToDocument(editor);
 
@@ -329,7 +329,7 @@ export default {
       if (!this.$refs.dialog || this.isPopout) {
         return;
       }
-      const rect = this.$refs.dialog.getBoundingClientRect();
+      const rect = (this.$refs.dialog as any).getBoundingClientRect();
       const edgeSize = 5; // pixel range within which to detect edge
 
       // Cursor position relative to dialog
@@ -415,7 +415,7 @@ export default {
       if (this.isPopout) {
         return;
       }
-      const rect = this.$refs.dialog.getBoundingClientRect();
+      const rect = (this.$refs.dialog as any).getBoundingClientRect();
       this.startResize = {
         screenX: e.screenX,
         screenY: e.screenY,
@@ -430,8 +430,8 @@ export default {
     debounceLayout() {
       const layout = () => {
         this.timer = Date.now();
-        if (this.$refs.editor && this.$refs.editor.pinstance) {
-          this.$refs.editor.pinstance.layout(); // Adjust Monaco editor layout.
+        if ((this.$refs.editor as any) && (this.$refs.editor as any).pinstance) {
+          (this.$refs.editor as any).pinstance.layout(); // Adjust Monaco editor layout.
         }
       };
       if (Date.now() - this.timer >  500) {
@@ -441,10 +441,10 @@ export default {
       this.debounceTimer = setTimeout(layout, 150);
     },
     syncErrors() {
-      if (!this.$refs.editor || !this.$refs.editor.pinstance) {
+      if (!(this.$refs.editor as any) || !(this.$refs.editor as any).pinstance) {
         return;
       }
-      const model = this.$refs.editor.pinstance.getModel();
+      const model = (this.$refs.editor as any).pinstance.getModel();
       monaco.editor.setModelMarkers(model, 'owner', [...this.errors, ...this.externalErrors]
         .map((item) => {
         const e = item.error;
@@ -460,7 +460,7 @@ export default {
       }));
     },
     loadFromCache() {
-      if (!(this.$refs.editor && this.$refs.editor.pinstance)) {
+      if (!((this.$refs.editor as any) && (this.$refs.editor as any).pinstance)) {
         return;
       }
       if (this.binding) {
@@ -482,8 +482,8 @@ export default {
     resize() {
       for (let x = 0; x < 500; x += 100) {
         setTimeout(() => {
-          if (!this.$refs.editor || !this.$refs.editor.pinstance) { return; }
-          this.$refs.editor.pinstance.layout();
+          if (!(this.$refs.editor as any) || !(this.$refs.editor as any).pinstance) { return; }
+          (this.$refs.editor as any).pinstance.layout();
         }, x);
       }
     },
@@ -492,15 +492,15 @@ export default {
         // The document drives the buffer now.
         return;
       }
-      if (this.editorHasFocus || !this.$refs.editor || !this.$refs.editor.pinstance) {
+      if (this.editorHasFocus || !(this.$refs.editor as any) || !(this.$refs.editor as any).pinstance) {
         return;
       }
       this.updatingValue = true;
-      this.$refs.editor.pinstance.setValue(val);
+      (this.$refs.editor as any).pinstance.setValue(val);
       this.updatingValue = false;
     },
     getValue() {
-      return this.$refs.editor.pinstance.getValue();
+      return (this.$refs.editor as any).pinstance.getValue();
     },
     update() {
       if (this.binding) {
@@ -558,7 +558,7 @@ export default {
         return;
       }
       this.destroyBinding();
-      const editor = this.$refs.editor && this.$refs.editor.pinstance;
+      const editor = (this.$refs.editor as any) && (this.$refs.editor as any).pinstance;
       if (next && editor) {
         this.bindToDocument(editor);
       }

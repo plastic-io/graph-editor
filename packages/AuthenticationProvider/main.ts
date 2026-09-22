@@ -34,7 +34,9 @@ export const useStore = defineStore('authentication', {
         orchistratorStore: useOrchistratorStore(),
         identity: {
             isAuthenticated: false,
-            user: {},
+            // whatever the provider knows about the person: the shape is the
+            // identity provider's, not ours
+            user: {} as Record<string, any>,
             provider: '',
             token: '',
         },

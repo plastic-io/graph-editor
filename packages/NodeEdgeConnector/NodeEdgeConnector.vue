@@ -118,13 +118,13 @@ export default {
           'activityConnectors',
           'movingConnector',
         ]),
-        startEvents() {
+        startEvents(): any {
             return this.activityInfo.filter((i: any) => i.activityType === "start");
         },
-        endEvents() {
+        endEvents(): any {
             return this.activityInfo.filter((i: any) => i.activityType === "end");
         },
-        activityCounts() {
+        activityCounts(): any {
             if (!this.activityInfo) {
                 return {
                     total: 0,
@@ -144,7 +144,7 @@ export default {
                 pct: (ended / started) * 100,
             }
         },
-        formattedValue() {
+        formattedValue(): any {
             let v;
             try {
                 v = JSON.stringify(this.activityValue, null, '\t');
@@ -153,32 +153,32 @@ export default {
             };
             return v;
         },
-        activity() {
+        activity(): any {
             return (this.activityInfo && this.startEvents[this.index] !== undefined)
                 ? this.startEvents[this.index] : {event: { value: undefined, time: 0}};
         },
-        activityTime() {
+        activityTime(): any {
             return this.activity.event.time - this.startTime;
         },
-        activityValue() {
+        activityValue(): any {
             return this.activity.event.value;
         },
-        activityInfo() {
+        activityInfo(): any {
             return this.activityConnectors[this.connector.id];
         },
-        watched() {
+        watched(): any {
             return this.watchConnectors.map((i: any) => i.id).indexOf(this.connector.id) !== -1;
         },
-        selected() {
+        selected(): any {
             return this.selectedConnectors.map((i: any) => i.id).indexOf(this.connector.id) !== -1;
         },
-        errored() {
+        errored(): any {
             return this.errorConnectors.map((i: any) => i.id).indexOf(this.connector.id) !== -1;
         },
-        hovered() {
+        hovered(): any {
             return this.hoveredConnector && this.hoveredConnector.connector.id === this.connector.id || this.expand;
         },
-        output() {
+        output(): any {
             const node = (this.localGraph || this.graphSnapshot).nodes.find((v: any) => {
                 return v.id === this.connector.nodeId;
             }) ;
@@ -192,7 +192,7 @@ export default {
                 field
             };
         },
-        input() {
+        input(): any {
             const node = (this.localGraph || this.graphSnapshot).nodes.find((v: any) => {
                 return v.id === this.connector.nodeId;
             }) ;
@@ -206,7 +206,7 @@ export default {
                 field,
             };
         },
-        connectorCountStyle() {
+        connectorCountStyle(): any {
             const w = this.width * this.ratio;
             const h = this.height * this.ratio;
             return {
@@ -223,7 +223,7 @@ export default {
                 top: this.y + (h / 2) + 15 + "px",
             };
         },
-        connectorValueStyle() {
+        connectorValueStyle(): any {
             const w = this.width * this.ratio;
             const h = this.height * this.ratio;
             return {
@@ -233,7 +233,7 @@ export default {
                 top: this.y + (h / 2) + 23 + "px",
             };
         },
-        connectorStyle() {
+        connectorStyle(): any {
             return {
                 display: this.presentation ? "none" : "block",
                 height: (this.height * this.ratio) + "px",
@@ -366,7 +366,7 @@ export default {
             if (this.presentation || !this.$refs.canvas) {
                 return;
             }
-            this.ctx = this.$refs.canvas.getContext("2d");
+            this.ctx = (this.$refs.canvas as any).getContext("2d");
             this.ctx.scale(this.ratio, this.ratio);
         },
         isInViewport() {
@@ -374,7 +374,7 @@ export default {
             if (!this.$refs.canvas) {
                 return true;
             }
-            const rect = this.$refs.canvas.getBoundingClientRect();
+            const rect = (this.$refs.canvas as any).getBoundingClientRect();
             return (
                 rect.top < window.innerHeight && rect.bottom > 0 &&
                 rect.left < window.innerWidth && rect.right > 0

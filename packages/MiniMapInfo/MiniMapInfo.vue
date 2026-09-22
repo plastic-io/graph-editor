@@ -190,7 +190,7 @@ export default {
             if (!this.$refs.map) {
                 return;
             }
-            const rect = this.$refs.map.getBoundingClientRect();
+            const rect = (this.$refs.map as any).getBoundingClientRect();
             this.mapPosOffset = {
                 x: (rect.width / 2) - 20,
                 y: rect.height / 2 - 20,
