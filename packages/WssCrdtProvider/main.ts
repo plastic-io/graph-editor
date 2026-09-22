@@ -115,10 +115,13 @@ export class WssCrdtProvider {
     this.wss.subscribe(channelIdFor(graphId), this.channelListener);
     this.sendRaw(writeSyncStep1(encodeStateVector(session.doc)), "Sync");
     useSyncStatusStore().setConnected(true);
+    // A hop handed to this browser while it was not here is still waiting
+    // (plan §4.8.2, PB-073).
+    orchestrator.resumeDeliveries(graphId);
     if (typeof this.wss.onOpen === "function") {
       // After a reconnect: exchange state vectors again (anything missed while
-      // the socket was down flows both ways) and send the unanswered mutation
-      // again under the same id.
+      // the socket was down flows both ways), send the unanswered mutation
+      // again under the same id, and pick up the deliveries that waited.
       this.detachOpen = this.wss.onOpen(() => {
         if (!this.session) {
           return;
@@ -129,6 +132,7 @@ export class WssCrdtProvider {
         } else {
           this.pump();
         }
+        orchestrator.resumeDeliveries(this.graphId);
       });
     }
 
@@ -606,6 +610,22 @@ export class WssCrdtProvider {
    */
   deliverEdge(graphId: string, delivery: any): Promise<any> {
     return this.api(`${graphId}/deliveries`, { method: "POST", body: JSON.stringify(delivery) });
+  }
+  /**
+   * What is still waiting for a browser (plan §4.8.2, PB-073).  A session that
+   * was away — a closed laptop, a dropped socket — asks for what it missed;
+   * the server answers with what this session would run.
+   */
+  pendingDeliveries(graphId: string, query: {session?: string; executionId?: string} = {}): Promise<any> {
+    const search = Object.keys(query)
+      .filter((key) => (query as any)[key])
+      .map((key) => `${key}=${encodeURIComponent((query as any)[key])}`)
+      .join("&");
+    return this.api(`${graphId}/deliveries/pending${search ? "?" + search : ""}`);
+  }
+  /** Say a delivery has been taken, so nothing records it as never taken. */
+  claimDelivery(graphId: string, body: {executionId: string; key: string; session: string; state?: string}): Promise<any> {
+    return this.api(`${graphId}/deliveries/claim`, { method: "POST", body: JSON.stringify(body) });
   }
   /** What ran for this graph, newest first (plan §4.5.3). */
   listExecutions(graphId: string, limit = 50): Promise<any> {

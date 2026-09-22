@@ -17,7 +17,7 @@ import SchedulerWorker from "./schedulerWorker?worker";
 import {useTheme} from 'vuetify';
 import {deref, newId} from "@plastic-io/graph-editor-vue3-utils";
 import {newUlid} from "@plastic-io/graph-editor-vue3-sync-status/ulid";
-import {deepEqual as crdtDeepEqual, shouldRunDelivery} from "@plastic-io/graph-crdt";
+import {deepEqual as crdtDeepEqual, shouldRunDelivery, deliveryKey} from "@plastic-io/graph-crdt";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import AuthenticationProvider, {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
 import * as mdi from "@mdi/js";
@@ -590,6 +590,48 @@ export const useStore = defineStore('orchestrator', {
       }
       this.scheduleWorker.postMessage({method: 'delivery-response', args: [{id, answer}]});
     },
+    /**
+     * Take a delivery the server handed to the browsers (plan §4.8.2).  Taking
+     * is what is reported: a tab that dies half way through leaves the hop
+     * undone, and running an effect twice is worse than not running it.
+     */
+    takeDelivery(delivery: any) {
+      this.scheduleWorker.postMessage({method: 'deliver', args: [delivery]});
+      const provider: any = this.syncProviders.find((p: any) => typeof p.claimDelivery === "function");
+      if (!provider || !delivery || !delivery.executionId) {
+        return;
+      }
+      provider.claimDelivery(delivery.graphId || this.graphStore.graph.id, {
+        executionId: delivery.executionId,
+        key: deliveryKey(delivery),
+        session: this.sessionId,
+      }).catch((err: any) => console.warn('Cannot tell the server this delivery was taken.', err));
+    },
+    /**
+     * What this session missed while it was away (plan §4.8.2, PB-073).  The
+     * server keeps a delivery until a browser takes it; on connecting, and
+     * again after a reconnect, this session asks for the ones it would run.
+     * The delivery key keeps it from running again what it already ran.
+     */
+    async resumeDeliveries(graphId: string) {
+      const provider: any = this.syncProviders.find((p: any) => typeof p.pendingDeliveries === "function");
+      if (!provider || !graphId) {
+        return 0;
+      }
+      try {
+        const answer = await provider.pendingDeliveries(graphId, {session: this.sessionId});
+        const deliveries = (answer && answer.deliveries) || [];
+        deliveries.forEach((delivery: any) => {
+          if (shouldRunDelivery(delivery, this.sessionId)) {
+            this.takeDelivery(delivery);
+          }
+        });
+        return deliveries.length;
+      } catch (err: any) {
+        console.warn('Cannot ask what this session missed.', err);
+        return 0;
+      }
+    },
     async createScheduler() {
 
         this.scheduleWorker = new SchedulerWorker();
@@ -753,7 +795,7 @@ export const useStore = defineStore('orchestrator', {
             // the server reached a node placed here; whether this session is
             // the one to run it is the shared rule (plan §4.8.2)
             if (shouldRunDelivery(args, this.sessionId)) {
-              this.scheduleWorker.postMessage({method: 'deliver', args: [args]});
+              this.takeDelivery(args);
             }
             return;
           }

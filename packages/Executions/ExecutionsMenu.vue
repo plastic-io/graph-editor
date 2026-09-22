@@ -57,6 +57,9 @@
             <v-spacer/>
             <small v-if="crossDomain" class="text-info">crossed between browser and server</small>
           </div>
+          <v-alert v-if="waiting.length" density="compact" type="info" variant="tonal" class="mb-2">
+            <small>{{ waitingLine }}</small>
+          </v-alert>
           <v-list density="compact" max-height="35vh" style="overflow-y: auto">
             <v-list-item v-for="o in observations" :key="o.id" :title="lineFor(o)" :subtitle="detailFor(o)">
               <template v-slot:prepend>
@@ -100,6 +103,7 @@ export default {
       lastRun: {} as Record<string, any>,
       runningJourney: "" as string,
       selected: "",
+      waiting: [] as any[],
       listener: null as any,
       subscribedTo: "",
     };
@@ -147,6 +151,14 @@ export default {
     },
     journeyHealthClass(): string {
       return (this as any).journeyHealth.includes("failing") ? "text-error" : "text-success";
+    },
+    waitingLine(): string {
+      const waiting = (this as any).waiting;
+      const names = waiting.map((d: any) => (this as any).nameOf(d.nodeId));
+      const who = waiting.some((d: any) => d.target === "initiator")
+        ? "the browser that started it"
+        : "a browser";
+      return `waiting for ${who} to take ${names.length === 1 ? names[0] : names.join(", ")}`;
     },
     crossDomain(): boolean {
       const domains = new Set((this as any).observations.map((o: any) => o.domain));
@@ -243,8 +255,27 @@ export default {
         const result = await provider.execution(graphId, executionId);
         this.selected = executionId;
         this.observations = (result && result.observations) || [];
+        this.waiting = await this.waitingFor(graphId, executionId);
       } catch (err: any) {
         this.message = String((err && err.message) || err);
+      }
+    },
+    /**
+     * A hop handed to the browsers that none of them has taken yet (plan
+     * §4.8.2).  An execution can end on the server with work still waiting
+     * somewhere else, and that is worth saying plainly rather than leaving a
+     * trail that appears to stop.
+     */
+    async waitingFor(graphId: string, executionId: string): Promise<any[]> {
+      const provider = this.provider();
+      if (!provider || typeof provider.pendingDeliveries !== "function") {
+        return [];
+      }
+      try {
+        const answer = await provider.pendingDeliveries(graphId, {executionId});
+        return (answer && answer.deliveries) || [];
+      } catch (err: any) {
+        return [];
       }
     },
     /**
