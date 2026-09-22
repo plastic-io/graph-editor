@@ -23,6 +23,7 @@
     </div>
 </template>
 <script lang="ts">
+import type {PropType} from "vue";
 import {mapWritableState, mapActions, mapState} from "pinia";
 
 import type {Node} from "@plastic-io/plastic-io";

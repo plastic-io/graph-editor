@@ -48,6 +48,7 @@
     </div>
 </template>
 <script lang="ts">
+import type {PropType} from "vue";
 import type {Connector, Node, Edge} from "@plastic-io/plastic-io";
 import {mapState} from "pinia";
 import bezier from "./bezier";

@@ -68,6 +68,7 @@
     </div>
 </template>
 <script lang="ts">
+import type {PropType} from "vue";
 import {authorizedFetch} from "@plastic-io/graph-editor-vue3-authentication-provider";
 import compileTemplate from "@plastic-io/graph-editor-vue3-compile-template";
 

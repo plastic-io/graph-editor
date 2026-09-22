@@ -90,12 +90,12 @@ export default {
   },
   data() {
     return {
-      node: null,
+      node: null as any,
       override: false,
       showMessage: false,
       message: "",
       messageCallback: null,
-      panel: null,
+      panel: null as any,
       inputsTabs: null
     };
   },

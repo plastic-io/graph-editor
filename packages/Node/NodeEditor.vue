@@ -94,7 +94,7 @@
     },
     data() {
       return {
-        hoveredLocally: null,
+        hoveredLocally: null as any,
         localNode: null,
         showVueEditor: false,
         showSetEditor: false,
