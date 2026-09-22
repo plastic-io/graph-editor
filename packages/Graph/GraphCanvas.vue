@@ -14,11 +14,11 @@
         />
         <canvas
             class="grid"
-            :style="{backgroundColor: this.color(this.preferences!.appearance.backgroundColor)}"
-            v-if="preferences!.appearance.showGrid && !presentation"
+            :style="{backgroundColor: color(preferences.appearance.backgroundColor)}"
+            v-if="preferences.appearance.showGrid && !presentation"
             ref="grid"/>
         <div
-            :style="preferences!.appearance.theme === 'dark' ? '' : 'filter: invert(1);'"
+            :style="preferences.appearance.theme === 'dark' ? '' : 'filter: invert(1);'"
             :class="graphCanvasClasses"
             @drop="drop($event)"
             @dragover="dragOver($event)"
@@ -137,12 +137,17 @@ export default {
         'graphTemplateText',
         'collaborationAwareness',
     ]),
-    color(color: any) {
-        if (!colors[color]) {
-            console.warn('Color selected that does not exist.  Returning default color shades.', color);
-            return colors['shades'];
+    /**
+     * A colour name from preferences, as something CSS can use.  The fallback
+     * used to be the whole shades palette, which is an object: anywhere it was
+     * reached, the style it was written into simply did not apply.
+     */
+    color(color: any): string {
+        if (!colors[color] || !colors[color].base) {
+            console.warn('Color selected that does not exist.  Using black.', color);
+            return colors.shades.black;
         }
-        return colors[color] ? colors[color].base : colors['shades'];
+        return colors[color].base;
     },
     drawGrid(canvas: any, context: any, translateX: any, translateY: any, scale: any) {
         const largeGridSize = scale > 1 ? 100 : 1000;
@@ -162,7 +167,7 @@ export default {
         // make the grid more transparent as you zoom out so not to overwhelm the user
         const tcp = Math.max(0, Math.floor(150 - (150 / txPct))).toString(16).padStart(2, "0");
         const fcp = Math.max(64, Math.floor(255 - (255 / txPct))).toString(16).padStart(2, "0");
-        context.strokeStyle = this.color(this.preferences!.appearance.gridMinor) + tcp;
+        context.strokeStyle = this.color(this.preferences.appearance.gridMinor) + tcp;
         context.beginPath();
         for (let x = (offsetX / scale) % smallGridSize; x < width / scale; x += smallGridSize) {
             context.lineWidth = minorLineWidth;
@@ -175,7 +180,7 @@ export default {
             context.lineTo(width / scale, y);
         }
         context.stroke();
-        context.strokeStyle = this.color(this.preferences!.appearance.gridMajor) + fcp;
+        context.strokeStyle = this.color(this.preferences.appearance.gridMajor) + fcp;
         context.beginPath();
         for (let x = startOffset - (largeGridSize / 2) +  ((offsetX / scale) % largeGridSize); x < width / scale; x += largeGridSize) {
             context.lineWidth = minorLineWidth;
@@ -304,7 +309,7 @@ export default {
             top: this.selectionRect.y + "px",
             width: this.selectionRect.width + "px",
             height: this.selectionRect.height + "px",
-            borderColor: this.color(this.preferences!.appearance.selectionRectColor),
+            borderColor: this.color(this.preferences.appearance.selectionRectColor),
         };
     },
     boundingRectStyle: function() {
@@ -314,7 +319,7 @@ export default {
             top: this.boundingRect.y + "px",
             width: this.boundingRect.width + "px",
             height: this.boundingRect.height + "px",
-            borderColor: this.color(this.preferences!.appearance.boundingRectColor),
+            borderColor: this.color(this.preferences.appearance.boundingRectColor),
         }
         return b;
     },

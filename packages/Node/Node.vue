@@ -122,9 +122,12 @@ export default {
                 this.renderVersion = this.renderVersion + 1;
                 this.broken = this.compiledTemplate.errors.length > 0;
                 this.component = this.compiledTemplate.component;
-                this.webWorkerProxy.nodes[this.nodeId] = {};
+                // `this.nodeId` was never declared here, so this wrote every
+                // node's inputs to the key `undefined`; the node's own id is
+                // what the worker's state is keyed by
+                this.webWorkerProxy.nodes[this.localNode.id] = {};
                 this.localNode.properties.inputs.forEach((input: any) => {
-                    this.webWorkerProxy.nodes[this.nodeId] = {
+                    this.webWorkerProxy.nodes[this.localNode.id] = {
                         [input.name]: null,
                     };
                 });
@@ -196,6 +199,9 @@ export default {
             longLoading: false,
             loaded: false,
             errorMessage: "",
+            // whether this node's template failed to compile; the card shows the
+            // errors instead of the node when it did
+            broken: null as any,
             localHoveredNode: null,
             localSelectedNodes: [],
             nodeEvents: {},
