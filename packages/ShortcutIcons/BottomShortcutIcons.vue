@@ -130,7 +130,7 @@ export default {
         activityConnectors: {
             deep: true,
             handler() {
-                this.hasActivityLog = Object.values(this.activityConnectors)
+                this.hasActivityLog = (Object.values(this.activityConnectors) as any[])
                 .reduce((total, currentArray) => total + currentArray.length, 0) > 0;
             },
         }

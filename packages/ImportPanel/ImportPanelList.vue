@@ -36,13 +36,6 @@ import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-or
 import {mapActions, mapState} from "pinia";
 export default {
     name: "import-panel-list",
-    data: () => {
-        return {
-            localToc: null,
-            search: "",
-            selectedItem: null,
-        };
-    },
     mounted() {
         this.getToc();
     },
@@ -84,38 +77,9 @@ export default {
             'toc',
         ]),
 
-        list() {
+        list(): Record<string, any[]> {
             return this.groupByPrefix(this.toc);
         },
-        artifacts() {
-            return (id: any) => {
-                const regEx = new RegExp(this.search, "ig");
-                return this.list.filter((item: any) => {
-                    return /published/.test(item.type) && item.id === id
-                        && (this.search === ""
-                            || (regEx.test(item.name)
-                            || regEx.test(item.description)
-                            || item.tags.split(",").find((tag: any) => regEx.test(tag)))
-                        );
-                });
-            };
-        },
-        items() {
-            const items = {};
-            const regEx = new RegExp(this.search, "ig");
-            this.list.filter((item: any) => {
-                return (this.search === "" || item.tags.split(",").find((tag: any) => regEx.test(tag)) || (regEx.test(item.name) || regEx.test(item.description)));
-            }).sort((a: any, b: any) => {
-                return (a.name || '').localeCompare(b.name);
-            }).forEach((item: any) => {
-                if (/published/.test(item.type)) {
-                    if (!items[item.id] || items[item.id].version < item.version) {
-                        items[item.id] = item;
-                    }
-                }
-            });
-            return Object.keys(items).map(key => items[key]);
-        }
     },
 };
 </script>

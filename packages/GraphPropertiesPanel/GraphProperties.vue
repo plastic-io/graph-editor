@@ -131,7 +131,7 @@ export default {
         return {
             updateTimeout: 1000,
             panel: null,
-            saveTimeout: null,
+            saveTimeout: null as any,
             localGraph: null as any,
             updatingLocal: false,
         };

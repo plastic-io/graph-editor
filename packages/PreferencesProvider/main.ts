@@ -86,7 +86,7 @@ export class UserPreferences {
     graphWSSServer: string;
     graphHTTPServer: string;
     appearance: Appearance;
-    uiSize: Record<string, number>;
+    uiSize: Record<string, any>;
     constructor() {
         this.userName = getRandomName();
         this.email = "";

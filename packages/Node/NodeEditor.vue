@@ -90,7 +90,7 @@
     components: {NodeError},
     props: {
       hovered: Boolean,
-      nodeId: String,
+      nodeId: {type: String, required: true},
     },
     data() {
       return {

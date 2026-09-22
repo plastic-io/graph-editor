@@ -51,7 +51,7 @@ export default {
   props: {
     edge: {type: Object, required: true},
     node: {type: Object, required: true},
-    ioKey: String,
+    ioKey: {type: String, required: true},
   },
   methods: {
     ...mapActions(useGraphStore, [

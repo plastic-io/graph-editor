@@ -36,7 +36,7 @@ export default {
             navigator.clipboard.writeText(url).then(() => {
                 this.showInfoDialog("URL Copied!");
             }, (err) => {
-                this.raiseError(new Error("Clipboard write failed" + err));
+                this.raiseError(e.id, new Error("Clipboard write failed" + err), "node");
             });
         },
         updateUrl(nodeId: any, url: any) {

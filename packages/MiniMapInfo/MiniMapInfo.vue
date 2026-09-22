@@ -112,12 +112,8 @@ export default {
         },
         updatePrefStore() {
           const preferencesStore = usePreferencesStore();
-          preferencesStore.$patch({
-            preferences: {
-              uiSize: {
-                ['mini-map-location']: this.rect,
-              },
-            },
+          preferencesStore.$patch((state: any) => {
+            state.preferences.uiSize['mini-map-location'] = this.rect;
           });
         },
         endTranslate() {

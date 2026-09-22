@@ -113,8 +113,9 @@ export const useStore = defineStore('orchestrator', {
   state: () => ({
     moment,
     webWorkerProxy: {
-      state: {},
-      nodes: {},
+      state: {} as Record<string, any>,
+      /** One entry per node, keyed by node id, holding its current inputs. */
+      nodes: {} as Record<string, any>,
     },
     graphComponents: {} as any,
     /** Executions that ran in this browser, newest first (plan §4.5.3). */
@@ -165,7 +166,8 @@ export const useStore = defineStore('orchestrator', {
     pendingEvents: {},
     graphUserMouse: {},
     graphUserChat: {},
-    graphUsers: {},
+    /** Who else has this graph open, keyed by their session id. */
+    graphUsers: {} as Record<string, any>,
     showConnectorView: false,
     connectionState: "closed",
     createdGraphId: null,

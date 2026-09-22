@@ -279,7 +279,7 @@ export default {
             const events: Record<string, any> = {};
             vect.properties.outputs.forEach((output: any) => {
                 events[output.name] = (val: any) => {
-                    this.scheduler.instance.url(this.node.url, val, output.name, this.hostNode);
+                    this.scheduler.instance!.url(this.node.url, val, output.name, this.hostNode);
                 };
             });
             this.nodeEvents = events;
@@ -298,7 +298,7 @@ export default {
             });
         },
         set(e: any) {
-            this.scheduler.instance.url(this.node.url, e, "$url", this.hostNode);
+            this.scheduler.instance!.url(this.node.url, e, "$url", this.hostNode);
         },
         artifactKey(key: any) {
             if (!key) {

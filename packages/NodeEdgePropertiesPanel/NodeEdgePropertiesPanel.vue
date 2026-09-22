@@ -94,7 +94,7 @@ export default {
       override: false,
       showMessage: false,
       message: "",
-      messageCallback: null,
+      messageCallback: null as null | (() => void),
       panel: null as any,
       inputsTabs: null
     };
@@ -119,7 +119,7 @@ export default {
       }
     },
     moveUp(ioKey: any, io: any) {
-      this[ioKey === "inputs" ? "changeInputOrder" : "changeOutputOrder"]({
+      (this as any)[ioKey === "inputs" ? "changeInputOrder" : "changeOutputOrder"]({
         nodeId: this.node.id,
         name: io.name,
         direction: "up",
@@ -147,7 +147,7 @@ export default {
         name: newName,
       });
     },
-    remove(ioKey: any, io: any, override: any) {
+    remove(ioKey: any, io: any, override?: any) {
       // if there are connectors attached to edges, warn the user of the eventual removal of the connectors
       const isInput = ioKey === "inputs";
       if (isInput) {

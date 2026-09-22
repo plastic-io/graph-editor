@@ -21,7 +21,7 @@ export default {
   name: "shared-users",
   computed: {
     ...mapState(useOrchestratorStore, ["graphUsers"]),
-    users() {
+    users(): any[] {
       const people = this.graphUsers || {};
       return Object.keys(people).map((key) => {
         const user = people[key] || {};

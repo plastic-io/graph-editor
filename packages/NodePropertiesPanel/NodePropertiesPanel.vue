@@ -171,14 +171,11 @@ export default {
             }
         },
     },
-    mounted() {
-        this.checkVersions();
-    },
     data() {
         return {
             node: null as any,
             panel: null,
-            updateTimer: 0,
+            updateTimer: 0 as any,
             updateTimeout: 1000,
             newerVersion: null as any,
             versionsChecked: false,
@@ -215,6 +212,7 @@ export default {
     },
     mounted() {
         this.node = JSON.parse(JSON.stringify(this.graph.nodes.find((n: any) => n.id === this.nodeId)));
+        this.checkVersions();
     },
     computed: {
         ...mapState(useGraphStore, [

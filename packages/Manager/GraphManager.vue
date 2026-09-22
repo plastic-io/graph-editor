@@ -106,7 +106,7 @@
         lastDeleted: null as any,
         lastDeletedEntries: null as any,
         showUndoDelete: false,
-        tocRefreshTimer: 0,
+        tocRefreshTimer: 0 as any,
         newGraphRules: [
           (value: any) => !!value || 'Field must not be empty',
           (value: any) => !!Object.keys(this.toc).indexOf(value) || 'This URL is already taken by another graph.'
@@ -129,7 +129,7 @@
           'getPluginsByType',
       ]),
       openGraph(id: any) {
-        window.location = `/graph-editor/${id}`;
+        window.location.href = `/graph-editor/${id}`;
       },
       /**
        * Take a graph off the list.
@@ -152,7 +152,7 @@
         };
         this.forgetLocally(graph.id);
         try {
-          await this.dataProviders.graph.delete(graph.id);
+          await (this.dataProviders.graph as any).delete(graph.id);
         } catch (err) {
           console.error('Cannot delete the graph.', err);
         }

@@ -40,7 +40,7 @@ export default {
             "moveHistoryPosition",
         ]),
         getIcon(name: any) {
-            return {
+            return ({
                 "Start": "mdi-flag-variant",
                 "Nudge": "mdi-move-resize-variant",
                 "Duplicate": "mdi-content-duplicate",
@@ -69,7 +69,7 @@ export default {
                 "Rename IO": "mdi-pencil",
                 "Update Template": "mdi-pencil",
                 "Toggle Node Presentation": "mdi-presentation",
-            }[name] || "mdi-pencil";
+            } as Record<string, string>)[name] || "mdi-pencil";
         },
     },
     computed: {

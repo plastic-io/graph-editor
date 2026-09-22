@@ -22,14 +22,14 @@
     },
     setup(props: any, { slots, emit }: SetupContext) {
       const graphStore = useGraphStore();
-      const events = {};
+      const events: Record<string, any> = {};
       // bind outputs (events)
       props.node.properties.outputs.forEach((output: any) => {
         events['on' + output.name[0].toUpperCase() + output.name.substring(1)] = (val: any) => {
           try {
             val = JSON.parse(JSON.stringify(val));
           } catch (_) {}
-          props.scheduler.instance.url(props.node.url, val, output.name, props.hostNode);
+          props.scheduler.instance!.url(props.node.url, val, output.name, props.hostNode);
         };
       });
       const importedProps = {
@@ -58,11 +58,11 @@
           emit('data', e);
         },
         onImpulse(value: any) {
-          props.scheduler.instance.url(props.node.url, value, 'impulse', props.hostNode);
+          props.scheduler.instance!.url(props.node.url, value, 'impulse', props.hostNode);
         },
         onImpulseServer(value: any) {
           console.log('impluse server');
-          useOrchestratorStore().dataProviders.graph.send({
+          (useOrchestratorStore().dataProviders.graph as any).send({
               action: 'executeGraph',
               graphUrl: props.graph.url,
               nodeUrl: props.node.url,

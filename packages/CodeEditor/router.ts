@@ -15,7 +15,7 @@ export default (router: Router) => {
     async setup() {
       const route = useRoute();
       orchistratorStore.setTheme(preferencesStore.preferences!.appearance.theme);
-      await orchistratorStore.init(route.params.documentId);
+      await orchistratorStore.init(route.params.documentId as string);
       const nodeId = route.params.nodeId as string;
       const templateType = route.params.templateType as string;
 

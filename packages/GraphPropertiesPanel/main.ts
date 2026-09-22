@@ -13,7 +13,7 @@ export default class GraphProperties extends EditorModule {
     app.component('graph-code-menu', GraphCodeMenu);
     const graphOrchestratorStore =  useOrchestratorStore();
     
-    graphOrchestratorStore.addPlugin({
+    graphOrchestratorStore.addPlugin(new Plugin({
       name: 'GraphPropertiesMenu',
       title: 'Graph Properties',
       component: 'graph-properties-menu',
@@ -21,9 +21,9 @@ export default class GraphProperties extends EditorModule {
       helpTopic: 'graphProperties',
       type: 'system-bar-bottom',
       order: -1,
-    });
+    }));
 
-    graphOrchestratorStore.addPlugin({
+    graphOrchestratorStore.addPlugin(new Plugin({
       name: 'GraphCodeMenu',
       title: 'Graph Code',
       component: 'graph-code-menu',
@@ -31,7 +31,7 @@ export default class GraphProperties extends EditorModule {
       helpTopic: 'graphCode',
       type: 'system-bar-bottom',
       order: 0,
-    });
+    }));
 
   }
 };

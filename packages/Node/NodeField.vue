@@ -11,7 +11,7 @@
             class="node-field"
             :class="(type === 'output' ? 'field-output' : 'field-input')"
             :title="field.name"
-            :key="preferences.showLabels"
+            :key="String(preferences.showLabels)"
             :id="`node-${type}-${node.id}-${field.name}`"
         ></div>
         <div

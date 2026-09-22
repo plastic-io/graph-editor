@@ -6,7 +6,7 @@ export function testId(prefix = "id"): string {
   return `${prefix}-${String(seq).padStart(4, "0")}`;
 }
 
-export function makeConnector(over: Record<string, any> = {}) {
+export function makeConnector(over: Record<string, any> = {}): any {
   return {
     id: testId("con"),
     nodeId: "node-a",
@@ -17,7 +17,7 @@ export function makeConnector(over: Record<string, any> = {}) {
   };
 }
 
-export function makeNode(over: Record<string, any> = {}) {
+export function makeNode(over: Record<string, any> = {}): any {
   const id = over.id || testId("node");
   return {
     id,
@@ -58,7 +58,7 @@ export function makeNode(over: Record<string, any> = {}) {
   };
 }
 
-export function makeGraph(over: Record<string, any> = {}) {
+export function makeGraph(over: Record<string, any> = {}): any {
   const a = makeNode({ id: "node-a", properties: { ...makeNode({ id: "node-a" }).properties, createdOn: 1 } });
   const b = makeNode({ id: "node-b", properties: { ...makeNode({ id: "node-b" }).properties, createdOn: 2 } });
   a.edges[0].connectors.push(

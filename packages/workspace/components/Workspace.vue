@@ -92,9 +92,9 @@ export default {
                 background: this.bgColor,
             };
         },
-        graphContainerStyle: function() {
+        graphContainerStyle: function(): Record<string, any> {
             if (this.presentation) {
-                return;
+                return {};
             }
             let cursor = "";
             if ((this.mouse.lmb && this.translate) || this.mouse.mmb) {
@@ -155,9 +155,7 @@ export default {
         window.removeEventListener('mousemove', this.mousemove);
         window.removeEventListener('keyup', this.keyup);
         window.removeEventListener('keydown', this.keydown);
-        document.removeEventListener('wheel', this.onwheel, {
-            passive: false,
-        });
+        document.removeEventListener('wheel', this.onwheel);
     },
     mounted() {
         this.workspaceElement = this.$el;

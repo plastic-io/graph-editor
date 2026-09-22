@@ -143,7 +143,7 @@ export default {
             'getPluginsByType',
         ]),
         navigateToRoot() {
-            window.location = '/graph-editor/'
+            window.location.href = '/graph-editor/'
         },
         openGraph() {
             window.open(

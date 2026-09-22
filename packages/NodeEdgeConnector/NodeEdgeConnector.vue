@@ -71,16 +71,18 @@ export default {
     },
     data() {
         return {
-            dropTimer: null,
-            drawTimeout: null,
-            connectorTimeout: null,
+            // timers and the canvas context: filled in once the connector
+            // is on screen
+            dropTimer: null as any,
+            drawTimeout: null as any,
+            connectorTimeout: null as any,
             graphStore: useGraphStore(),
             durations: [],
             index: 0,
             duration: 0,
             expand: false,
-            activeConnector: null,
-            localGraph: null,
+            activeConnector: null as any,
+            localGraph: null as any,
             connections: null,
             sourceRect: null,
             targetRect: null,
@@ -90,7 +92,7 @@ export default {
             width: 20,
             x: 0,
             y: 0,
-            ctx: null,
+            ctx: null as any,
             ratio: 1,
             calls: 0,
         };

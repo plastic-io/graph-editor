@@ -46,7 +46,7 @@ import {mapWritableState, mapActions, mapState} from "pinia";
 export default {
   name: 'node-error',
   props: {
-    nodeId: String,
+    nodeId: {type: String, required: true},
   },
   data() {
     return {
