@@ -64,9 +64,9 @@ function getColor(key: string) {
 export default {
     name: "edge-connector",
     props: {
-        connector: Connector,
-        node: Node,
-        edge: Edge,
+        connector: {type: Object as PropType<Connector>, required: true},
+        node: {type: Object as PropType<Node>, required: true},
+        edge: {type: Object as PropType<Edge>, required: true},
     },
     data() {
         return {

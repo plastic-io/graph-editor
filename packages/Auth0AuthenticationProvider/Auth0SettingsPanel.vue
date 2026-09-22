@@ -34,7 +34,7 @@
   export default {
     name: 'auth0-settings-panel',
     props: {
-      modelValue: Object,
+      modelValue: {type: Object, required: true},
     },
     computed: {
       ...mapState(authenticationProviderStore, [

@@ -12,7 +12,7 @@
   export default {
     name: 'registry-settings-panel',
     props: {
-      modelValue: Object,
+      modelValue: {type: Object, required: true},
     },
   }
 </script>

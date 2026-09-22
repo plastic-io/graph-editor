@@ -49,8 +49,8 @@ import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 export default {
   name: 'connector-properties-panel',
   props: {
-    edge: Object,
-    node: Object,
+    edge: {type: Object, required: true},
+    node: {type: Object, required: true},
     ioKey: String,
   },
   methods: {

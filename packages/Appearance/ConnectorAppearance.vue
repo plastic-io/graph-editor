@@ -19,7 +19,7 @@
   export default {
     name: 'connector-appearance-settings-panel',
     props: {
-      modelValue: Object,
+      modelValue: {type: Object, required: true},
     },
     computed: {
         colorBaseKeys() {

@@ -77,8 +77,8 @@ export default {
         },
     },
     props: {
-        field: Object,
-        node: Node,
+        field: {type: Object, required: true},
+        node: {type: Object as PropType<Node>, required: true},
         type: String,
     }
 };

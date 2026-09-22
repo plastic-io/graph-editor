@@ -96,10 +96,13 @@ export default {
     name: "node",
     components: {NodeField, NodeComponent, NodeEditor},
     props: {
-        node: Node,
-        hostGraph: Node,
-        hostNode: Node,
-        graph: Object,
+        // These say what the prop is, rather than naming a type where Vue
+        // expects a constructor: `node: Node` declared the DOM's Node, because
+        // that is what the name means at runtime.
+        node: {type: Object as PropType<Node>, required: true},
+        hostGraph: {type: Object as PropType<Graph>, required: false},
+        hostNode: {type: Object as PropType<Node>, required: false},
+        graph: {type: Object as PropType<Graph>, required: false},
         presentation: Boolean,
     },
     errorCaptured(err) {

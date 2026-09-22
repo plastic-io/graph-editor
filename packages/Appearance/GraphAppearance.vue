@@ -24,7 +24,7 @@
   export default {
     name: 'graph-appearance-settings-panel',
     props: {
-      modelValue: Object,
+      modelValue: {type: Object, required: true},
     },
     computed: {
         colorBaseKeys() {

@@ -10,7 +10,7 @@
 <script lang="ts">
   export default {
     props: {
-      modelValue: Object,
+      modelValue: {type: Object, required: true},
     },
   }
 </script>
