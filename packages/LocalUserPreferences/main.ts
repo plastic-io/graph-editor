@@ -3,6 +3,27 @@ import EditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 import {applyChange, diff} from "deep-diff";
 import {deref} from "@plastic-io/graph-editor-vue3-utils";
 const STORE_KEY = 'plastic-user-preferences';
+
+/** Everything the stored copy says, and the defaults for everything it does not. */
+function withDefaults(defaults: any, stored: any): any {
+  if (stored === null || stored === undefined) {
+    return defaults;
+  }
+  if (typeof defaults !== "object" || defaults === null
+      || Array.isArray(defaults) || Array.isArray(stored)
+      || typeof stored !== "object") {
+    return stored;
+  }
+  const out: Record<string, any> = {...stored};
+  Object.keys(defaults).forEach((key) => {
+    out[key] = key in stored ? withDefaults(defaults[key], stored[key]) : defaults[key];
+  });
+  // the canvas background was called `background` until 2026-09-21
+  if (out.backgroundColor === undefined && typeof stored.background === "string") {
+    out.backgroundColor = stored.background;
+  }
+  return out;
+}
 export default class LocalStoragePreferencesProvider extends EditorModule {
   constructor(config: Record<string, any>) {
     super();
@@ -59,9 +80,15 @@ class LocalPreferencesProvider extends PreferencesProvider {
     preferencesStore.remotePreferences = {};
   }
   async get(): Promise<UserPreferences> {
-    let item: string = localStorage.getItem(STORE_KEY) ||
-      JSON.stringify(new UserPreferences());
-    return JSON.parse(item);
+    const defaults = new UserPreferences();
+    const item = localStorage.getItem(STORE_KEY);
+    if (!item) {
+      return defaults;
+    }
+    // What was saved was whatever UserPreferences looked like that day.  A
+    // setting added since is missing from it, and reading one that isn't
+    // there breaks the panel that asks for it, so the defaults fill the gaps.
+    return withDefaults(defaults, JSON.parse(item));
   }
   async set(value: UserPreferences): Promise<void> {
     localStorage.setItem(STORE_KEY, JSON.stringify(value));

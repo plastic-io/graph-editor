@@ -145,11 +145,13 @@ export default {
      * reached, the style it was written into simply did not apply.
      */
     color(color: any): string {
-        if (!colors[color] || !colors[color].base) {
+        const palette = colors[color];
+        if (!palette) {
             console.warn('Color selected that does not exist.  Using black.', color);
             return colors.shades.black;
         }
-        return colors[color].base;
+        // the shades palette holds black, white and transparent; it has no base
+        return palette.base || palette.black;
     },
     drawGrid(canvas: any, context: any, translateX: any, translateY: any, scale: any) {
         const largeGridSize = scale > 1 ? 100 : 1000;
