@@ -5,28 +5,25 @@
   "version": "1.0.0",
   "private": false,
   "description": "Shared Yjs CRDT schema, codec and reconciler for Plastic-IO graphs.  Used by both the graph editor and the graph server, so it must never import Vue, Pinia, or any browser/node specific API.",
-  "main": "./main.ts",
+  "main": "./dist/main.js",
   "peerDependencies": {
     "yjs": "^13.6.0",
     "lib0": "^0.2.99"
   },
   "files": [
-    "main.ts",
-    "schema.ts",
-    "codec.ts",
-    "reconcile.ts",
-    "text.ts",
-    "protocol.ts",
-    "updates.ts",
-    "namespaces.ts",
-    "diff.ts",
-    "digest.ts",
-    "ops.ts",
-    "capabilities.ts",
-    "contracts.ts",
-    "observe.ts",
-    "host.ts",
-    "ulid.ts",
-    "placement.ts"
-  ]
+    "dist"
+  ],
+  "types": "./dist/main.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/main.d.ts",
+      "require": "./dist/main.js",
+      "default": "./dist/main.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "npm run build"
+  }
 }

@@ -21,6 +21,16 @@ export default defineConfig((mode) => {
     resolve: {
       alias: {
         '@': resolve(__dirname, 'src'),
+        /**
+         * The shared package is a build for anyone who installs it and the
+         * source for the editor it lives in (PB-120).  Without this alias the
+         * editor gets both — half its files import it by name and half by
+         * path — and two copies of the CRDT module mean two sets of Yjs types,
+         * which fails as "Unexpected content type" the moment a document is
+         * decoded.
+         */
+        '@plastic-io/graph-crdt': resolve(__dirname, 'packages/GraphCrdt/main.ts'),
+
         './runtimeConfig': './runtimeConfig.browser',
       },
     },
