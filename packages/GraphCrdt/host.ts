@@ -21,6 +21,13 @@ export interface HostDeps {
     /** Resolve a secret reference (`openai`) to its value; only refs in scope reach it. */
     secrets?: (ref: string) => Promise<string>;
     kv?: { get(key: string): Promise<any>; put(key: string, value: any): Promise<void>; del(key: string): Promise<void> };
+    /**
+     * Ask for a stack to be brought to a desired state (plan §4.9, D-41).  The
+     * server hands in its IaC service; the browser hands in nothing, so a node
+     * placed there is told that the effect does not run here rather than that
+     * some global is missing.
+     */
+    deploy?: (request: any) => Promise<any>;
     audit?: (record: any) => Promise<void>;
     /** Clients a secret can be exchanged for, so the value itself never enters node scope. */
     clients?: { openai?: (apiKey: string, options: any) => any };
@@ -112,6 +119,26 @@ export function buildHostMembers(ctx: HostContext, deps: HostDeps): Record<strin
                     return { [headerName]: prefix + value };
                 },
             };
+        },
+        /**
+         * CloudFormation, for a node the graph owner granted `aws:cfn` on this
+         * stack (D-41: there is no builtin node kind; what stands between a
+         * node and CloudFormation is the capability, checked in the same three
+         * layers as every other effect, and `aws:cfn` is audited).
+         *
+         * The scope checked is the **stack name**, so a grant of
+         * `aws:cfn:pio-dev-*` is a grant over those stacks and no others.
+         * What the node asks for is a desired state; who asked, at which
+         * revision, and whether that was approved are decided by the server,
+         * which is why they are not parameters here.
+         */
+        async deploy(desired: any) {
+            const stack = (desired && desired.stack && desired.stack.name) || "";
+            await guard("aws:cfn", String(stack), { operation: (desired && desired.operation) || "plan" });
+            if (!deps.deploy) {
+                throw new EffectUnavailable("aws:cfn", domain);
+            }
+            return deps.deploy({ desired, graphId: ctx.graphId, nodeId, spanId: ctx.spanId, principal: ctx.principal });
         },
         /** The time, which a test may hold still. */
         now: deps.now || (() => Date.now()),

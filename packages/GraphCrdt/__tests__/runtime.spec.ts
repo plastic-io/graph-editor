@@ -174,3 +174,51 @@ describe("placement", () => {
     expect(wireValue("x".repeat(100), 50)).toMatchObject({ ok: false, reason: expect.stringMatching(/more than the 50/) });
   });
 });
+
+describe("reaching CloudFormation", () => {
+  /**
+   * D-41: there is no builtin node kind.  What stands between a node and
+   * CloudFormation is the `aws:cfn` capability, checked in the same three
+   * layers as every other effect and audited like the other privileged ones.
+   */
+  const deployNode = (capabilities: string[]) => ({ id: "stack", properties: { capabilities } });
+  const hostFor = (capabilities: string[], deps: any = {}) => {
+    const recorder = recorderFor({ domain: "server" });
+    const node = deployNode(capabilities);
+    const host = buildHostMembers({ graphId: "infra", node, effective: effectiveCapabilities(node, null, null), recorder, principal: owner }, { domain: "server", ...deps });
+    return { host, recorder };
+  };
+  const desired = (name = "pio-dev-uploads") => ({ stack: { name, account: "695527765921", region: "us-west-1", environment: "dev" }, operation: "plan" });
+
+  it("a grant over a prefix is a grant over those stacks and no others", async () => {
+    const deploy = vi.fn(async () => ({ state: "planned" }));
+    const { host, recorder } = hostFor(["aws:cfn:pio-dev-*"], { deploy });
+    await host.deploy(desired());
+    await expect(host.deploy(desired("prod-database"))).rejects.toThrow(/aws:cfn for prod-database is not granted \(instance\)/);
+    expect(deploy).toHaveBeenCalledTimes(1);
+    expect(deploy.mock.calls[0][0]).toMatchObject({ graphId: "infra", nodeId: "stack" });
+    // the refusal is recorded, not only thrown
+    expect(recorder.buffer.map((o) => [o.kind, o.capability!.decision])).toEqual([["effect", "allowed"], ["effect.denied", "denied"]]);
+  });
+
+  it("a node with no grant cannot reach it at all", async () => {
+    const deploy = vi.fn(async () => ({}));
+    const { host } = hostFor([], { deploy });
+    await expect(host.deploy(desired())).rejects.toBeInstanceOf(CapabilityDenied);
+    expect(deploy).not.toHaveBeenCalled();
+  });
+
+  it("a privileged effect is audited, allowed or refused", async () => {
+    const audit = vi.fn(async () => undefined);
+    const { host } = hostFor(["aws:cfn:pio-dev-*"], { deploy: async () => ({}), audit });
+    await host.deploy(desired());
+    await expect(host.deploy(desired("somebody-elses"))).rejects.toThrow();
+    expect(audit.mock.calls.map((c: any[]) => c[0].kind)).toEqual(["effect", "effect.denied"]);
+  });
+
+  it("where the effect cannot happen, the answer points at placement rather than a missing global", async () => {
+    const { host } = hostFor(["aws:cfn:pio-dev-*"], { domain: "browser" });
+    await expect(host.deploy(desired())).rejects.toBeInstanceOf(EffectUnavailable);
+    await expect(host.deploy(desired())).rejects.toThrow(/place this node on the server/);
+  });
+});
