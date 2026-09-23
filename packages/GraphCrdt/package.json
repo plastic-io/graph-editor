@@ -25,5 +25,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "prepare": "npm run build"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   }
 }
