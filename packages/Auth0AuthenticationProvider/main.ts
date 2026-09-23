@@ -26,8 +26,14 @@ export function authRequiredFor(prefs: any): boolean {
 
 /**
  * The Auth0 API identifier the access token must be minted for.  Precedence: an explicit
- * setting (Settings > Auth0 > audience); the `resource` the server publishes in its RFC 9728
- * protected-resource metadata; finally the HTTPS server URL without its trailing slash.
+ * setting (Settings > Auth0 > audience); the `audience` the server publishes in its RFC 9728
+ * protected-resource metadata; its `resource`, for a server that publishes no audience;
+ * finally the HTTPS server URL without its trailing slash.
+ *
+ * `audience` comes before `resource` because they are not the same string, and treating
+ * them as one locked this editor out: a resource indicator has to name the server itself
+ * or an MCP client refuses it, while an audience has to be an API the tenant knows.
+ * Asking Auth0 for a token for a URL it has never heard of answers "Service not found".
  */
 export async function resolveAudience(prefs: any): Promise<string> {
   const explicit = prefs && prefs.auth0 && prefs.auth0.audience;
@@ -42,6 +48,9 @@ export async function resolveAudience(prefs: any): Promise<string> {
     const response = await fetch(`${base}/.well-known/oauth-protected-resource`);
     if (response.ok) {
       const metadata = await response.json();
+      if (metadata && typeof metadata.audience === 'string' && metadata.audience) {
+        return metadata.audience;
+      }
       if (metadata && typeof metadata.resource === 'string' && metadata.resource) {
         return metadata.resource;
       }
