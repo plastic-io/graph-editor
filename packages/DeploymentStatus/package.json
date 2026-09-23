@@ -1,0 +1,10 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-deployment-status",
+  "license": "BSD-3-Clause",
+  "author": "TonyGermaneri@gmail.com",
+  "version": "1.0.0",
+  "private": false,
+  "description": "What this graph deploys: the stacks it describes, what a change would do, and what became of the last one.",
+  "main": "./main.ts",
+  "files": []
+}

@@ -632,6 +632,21 @@ export class WssCrdtProvider {
     return this.api(`${graphId}/executions?limit=${limit}`);
   }
   /**
+   * What this graph deploys, and what became of it (plan §4.9, PB-094).  The
+   * same service the agent tools ask, over the routes the editor speaks, so a
+   * stack cannot look one way to a person and another way to an agent.
+   */
+  listStacks(graphId: string): Promise<any> {
+    return this.api(`${graphId}/stacks`);
+  }
+  stackStatus(graphId: string, nodeId: string): Promise<any> {
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}`);
+  }
+  /** Ask what the change would do.  Nothing here can make it happen. */
+  planStack(graphId: string, nodeId: string): Promise<any> {
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/plan`, { method: "POST", body: "{}" });
+  }
+  /**
    * What crossed one wire or one node, across the executions this graph has
    * kept (plan §4.5.3, PB-114).  A value that went through a connector on the
    * server, or in somebody else's browser, is only here.

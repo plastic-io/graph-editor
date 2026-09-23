@@ -45,6 +45,7 @@ import SyncStatus from "@plastic-io/graph-editor-vue3-sync-status";
 import Versions from "@plastic-io/graph-editor-vue3-versions";
 import Proposals from "@plastic-io/graph-editor-vue3-proposals";
 import Executions from "@plastic-io/graph-editor-vue3-executions";
+import DeploymentStatus from "@plastic-io/graph-editor-vue3-deployment-status";
 import AgentActivity from "@plastic-io/graph-editor-vue3-agent-activity";
 import InsideBar from "@plastic-io/graph-editor-vue3-inside-bar";
 import AgentSettings from "@plastic-io/graph-editor-vue3-agent-settings";
@@ -101,6 +102,7 @@ const plugins = [
   Versions,
   Proposals,
   Executions,
+  DeploymentStatus,
   AgentActivity,
   InsideBar,
   AgentSettings,
