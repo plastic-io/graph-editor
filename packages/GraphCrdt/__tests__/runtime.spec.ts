@@ -191,7 +191,7 @@ describe("reaching CloudFormation", () => {
   const desired = (name = "pio-dev-uploads") => ({ stack: { name, account: "695527765921", region: "us-west-1", environment: "dev" }, operation: "plan" });
 
   it("a grant over a prefix is a grant over those stacks and no others", async () => {
-    const deploy = vi.fn(async () => ({ state: "planned" }));
+    const deploy = vi.fn(async (_request: any) => ({ state: "planned" }));
     const { host, recorder } = hostFor(["aws:cfn:pio-dev-*"], { deploy });
     await host.deploy(desired());
     await expect(host.deploy(desired("prod-database"))).rejects.toThrow(/aws:cfn for prod-database is not granted \(instance\)/);
