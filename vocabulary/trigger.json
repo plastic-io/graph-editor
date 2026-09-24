@@ -1,0 +1,15 @@
+{
+  "name": "Trigger",
+  "description": "One in, many out, in a known order: the last output fires first, as Max's trigger fires right to left.",
+  "icon": "mdi-call-split",
+  "inputs": [
+    "bang"
+  ],
+  "outputs": [
+    "first",
+    "second",
+    "third"
+  ],
+  "set": "/**\n * Trigger: one in, many out, in an order you can rely on.\n *\n * Max's `trigger` fires its outlets right to left, so that everything a hot\n * inlet depends on has already arrived by the time it fires.  Outputs here are\n * drawn top to bottom, so the last one fires first.  Delete the outputs you do\n * not need; this sends to whichever are there.\n */\nconst names = ((properties.outputs || []).map((o) => o.name)).reverse();\nfor (const name of names) {\n    edges[name] = value;\n}\n",
+  "vue": "<template>\n  <v-card :width=\"width\" density=\"compact\">\n    <v-card-title class=\"text-body-2 py-1\"><v-icon size=\"small\" class=\"mr-1\">mdi-call-split</v-icon>Trigger</v-card-title>\n    <v-card-text class=\"py-1 text-caption\">\n      <div class=\"d-flex align-center\" v-for=\"p in ports\" :key=\"p\">\n        <span class=\"text-caption\">{{ p }}</span>\n        <v-spacer/>\n        <v-icon size=\"x-small\" @click=\"remove(p)\" title=\"remove\">mdi-close</v-icon>\n      </div>\n      <div class=\"d-flex align-center mt-1\">\n        <v-text-field density=\"compact\" variant=\"plain\" hide-details placeholder=\"add an output\" v-model=\"fresh\" @keyup.enter=\"add\"/>\n        <v-icon size=\"small\" @click=\"add\" title=\"add\">mdi-plus</v-icon>\n      </div>\n      <div class=\"text-disabled mt-1\">the last one fires first</div>\n    </v-card-text>\n  </v-card>\n</template>\n<script>\nexport default {\n  props: { node: Object, state: Object },\n  data() { return { width: 230, fresh: \"\" }; },\n  computed: {\n    ports() { return ((this.node.properties && this.node.properties.outputs) || []).map((p) => p.name); },\n  },\n  methods: {\n    add() {\n      const name = (this.fresh || \"\").trim();\n      if (!name || this.ports.indexOf(name) !== -1) { return; }\n      this.node.properties.outputs = (this.node.properties.outputs || []).concat([{ name, type: \"Object\", external: false, visible: true }]);\n      this.node.edges = (this.node.edges || []).concat([{ field: name, connectors: [] }]);\n      this.fresh = \"\";\n    },\n    remove(name) {\n      this.node.properties.outputs = (this.node.properties.outputs || []).filter((p) => p.name !== name);\n      this.node.edges = (this.node.edges || []).filter((e) => e.field !== name);\n    },\n  },\n};\n</script>\n"
+}

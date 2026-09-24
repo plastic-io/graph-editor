@@ -1,0 +1,14 @@
+{
+  "name": "Delay",
+  "description": "Holds a value for a while, then sends it. Max's delay and pipe.",
+  "icon": "mdi-timer-sand",
+  "inputs": [
+    "value",
+    "ms"
+  ],
+  "outputs": [
+    "value"
+  ],
+  "set": "/**\n * Delay: hold a value for a while, then send it.\n *\n * Max's `delay`/`pipe`.  The wait is awaited rather than left running, so the\n * execution does not end while a value is still in the air — which is what\n * makes \"the run has finished\" mean something.\n */\nnode.data = (node.data && typeof node.data === \"object\") ? node.data : {ms: 250};\nif (field === \"ms\") {\n    node.data.ms = Number(value) || 0;\n    return;\n}\nconst ms = Math.max(0, Number(node.data.ms) || 0);\nawait new Promise((resolve) => setTimeout(resolve, ms));\nhost.throwIfCancelled();\nedges.value = value;\n",
+  "vue": "<template>\n  <v-card :width=\"width\" density=\"compact\">\n    <v-card-title class=\"text-body-2 py-1\"><v-icon size=\"small\" class=\"mr-1\">mdi-timer-sand</v-icon>Delay</v-card-title>\n    <v-card-text class=\"py-1\">\n      <v-text-field density=\"compact\" variant=\"plain\" type=\"number\" hide-details label=\"milliseconds\" v-model.number=\"ms\"/>\n    </v-card-text>\n  </v-card>\n</template>\n<script>\nexport default {\n  props: { node: Object, state: Object },\n  data() { return { width: 210 }; },\n  computed: { ms: {\n      get() { const d = this.node && this.node.data; return d && d.ms !== undefined ? d.ms : 250; },\n      set(v) { if (!this.node.data || typeof this.node.data !== \"object\") { this.node.data = {}; } this.node.data.ms = v; },\n    }, },\n};\n</script>\n"
+}

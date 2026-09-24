@@ -1,0 +1,14 @@
+{
+  "name": "Toggle",
+  "description": "Flips between true and false each time it is banged, and sends which it now is. Max's toggle.",
+  "icon": "mdi-toggle-switch-outline",
+  "inputs": [
+    "bang",
+    "set"
+  ],
+  "outputs": [
+    "value"
+  ],
+  "set": "/**\n * Toggle: flips on each bang and says which it now is.\n *\n * `set` puts it where you want without sending, so a graph can be armed\n * before it is started.\n */\nnode.data = (node.data && typeof node.data === \"object\") ? node.data : {on: false};\nif (field === \"set\") {\n    node.data.on = !!value;\n    return;\n}\nnode.data.on = !node.data.on;\nedges.value = node.data.on;\n",
+  "vue": "<template>\n  <v-card :width=\"width\" density=\"compact\">\n    <v-card-title class=\"text-body-2 py-1\"><v-icon size=\"small\" class=\"mr-1\">mdi-toggle-switch-outline</v-icon>Toggle</v-card-title>\n    <v-card-text class=\"py-1 text-caption\">{{ on ? \"on\" : \"off\" }}</v-card-text>\n  </v-card>\n</template>\n<script>\nexport default {\n  props: { node: Object, state: Object },\n  data() { return { width: 190 }; },\n  computed: { on() { const d = this.node && this.node.data; return !!(d && d.on); } },\n};\n</script>\n"
+}

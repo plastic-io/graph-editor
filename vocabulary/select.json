@@ -1,0 +1,15 @@
+{
+  "name": "Select",
+  "description": "Compares what arrives with what it was told to match: equal goes out yes, anything else out no. Max's select.",
+  "icon": "mdi-equal",
+  "inputs": [
+    "value",
+    "match"
+  ],
+  "outputs": [
+    "yes",
+    "no"
+  ],
+  "set": "/**\n * Select: equal goes out `yes`, everything else out `no`.\n *\n * Max's `select`, with the unmatched case given somewhere to go rather than\n * being dropped.  `match` sets what to compare against without testing, so the\n * thing being matched can be decided by the graph.\n */\nnode.data = (node.data && typeof node.data === \"object\") ? node.data : {match: \"\"};\nif (field === \"match\") {\n    node.data.match = value;\n    return;\n}\nconst same = JSON.stringify(value) === JSON.stringify(node.data.match);\nnode.data.last = same ? \"yes\" : \"no\";\nedges[same ? \"yes\" : \"no\"] = value;\n",
+  "vue": "<template>\n  <v-card :width=\"width\" density=\"compact\">\n    <v-card-title class=\"text-body-2 py-1\"><v-icon size=\"small\" class=\"mr-1\">mdi-equal</v-icon>Select</v-card-title>\n    <v-card-text class=\"py-1\">\n      <v-text-field density=\"compact\" variant=\"plain\" hide-details label=\"matches\" v-model=\"match\"/>\n      <div class=\"text-caption mt-1\" v-if=\"last\"><span class=\"text-disabled\">last:</span> {{ last }}</div>\n    </v-card-text>\n  </v-card>\n</template>\n<script>\nexport default {\n  props: { node: Object, state: Object },\n  data() { return { width: 220 }; },\n  computed: {\n    match: {\n      get() { const d = this.node && this.node.data; return d && d.match !== undefined ? d.match : \"\"; },\n      set(v) { if (!this.node.data || typeof this.node.data !== \"object\") { this.node.data = {}; } this.node.data.match = v; },\n    },\n    last() { const d = this.node && this.node.data; return d && d.last ? d.last : \"\"; },\n  },\n};\n</script>\n"
+}

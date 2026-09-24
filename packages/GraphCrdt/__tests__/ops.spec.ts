@@ -18,9 +18,9 @@ describe("applyOps", () => {
     expect(r.projection.nodes.map((n: any) => n.id)).toEqual(["a", "b"]);
     expect(r.projection.nodes[0].edges[0].connectors).toEqual([expect.objectContaining({ nodeId: "b", field: "in", graphId: "graph-1" })]);
     expect(r.projection.nodes[1].template.set).toBe("edges.out = value * 2;");
-    // nothing to draw is empty, which is what the editor's own nodes carry:
-    // a div with no content has no height, and left the node invisible
-    expect(r.projection.nodes[1].template.vue).toBe("");
+    // a node with no view of its own still draws its name: a div with no
+    // content has no height, and left the node invisible and unmovable
+    expect(r.projection.nodes[1].template.vue).toContain("node.properties.name");
     expect(r.projection.nodes[1].properties.x).toBe(100);
     expect(r.touched.sort()).toEqual(["a", "b"]);
     expect(graph.nodes).toHaveLength(1);   // input untouched
@@ -98,12 +98,13 @@ describe("a node an agent adds is a node a person can see", () => {
    * drawn, and invisible: two ports and a hairline, nothing to click.  Empty is
    * what the editor's own nodes carry, and the editor draws its body for them.
    */
-  it("draws what the editor's own nodes draw, which is to say nothing of its own", () => {
+  it("draws its own name, so there is something to read and something to drag", () => {
     const graph = makeGraph({ nodes: [makeNode({ id: "a" })] });
     const r = applyOps(graph, [{ op: "add-node", node: { id: "fresh", url: "fresh", name: "Fresh" } }]);
     expect(r.ok).toBe(true);
     const node = r.projection.nodes.find((n: any) => n.id === "fresh");
-    expect(node.template.vue).toBe("");
+    expect(node.template.vue).toContain("v-card");
+    expect(node.template.vue).toContain("node.properties.name");
     expect(node.template.set).toBe("");
   });
 

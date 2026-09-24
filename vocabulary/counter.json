@@ -1,0 +1,14 @@
+{
+  "name": "Counter",
+  "description": "Counts what arrives and sends the running count. Max's counter.",
+  "icon": "mdi-counter",
+  "inputs": [
+    "bang",
+    "reset"
+  ],
+  "outputs": [
+    "count"
+  ],
+  "set": "/**\n * Counter: counts what arrives and sends the running count.\n *\n * Max's `counter`.  Useful as an end in itself, and as the thing a graph asks\n * when it wants to know how far round a loop it has gone.\n */\nnode.data = (node.data && typeof node.data === \"object\") ? node.data : {count: 0};\nif (field === \"reset\") {\n    node.data.count = 0;\n    return;\n}\nnode.data.count = (node.data.count || 0) + 1;\nedges.count = node.data.count;\n",
+  "vue": "<template>\n  <v-card :width=\"width\" density=\"compact\">\n    <v-card-title class=\"text-body-2 py-1\"><v-icon size=\"small\" class=\"mr-1\">mdi-counter</v-icon>Counter</v-card-title>\n    <v-card-text class=\"py-1 text-h6\">{{ count }}</v-card-text>\n  </v-card>\n</template>\n<script>\nexport default {\n  props: { node: Object, state: Object },\n  data() { return { width: 170 }; },\n  computed: { count() { const d = this.node && this.node.data; return (d && d.count) || 0; } },\n};\n</script>\n"
+}

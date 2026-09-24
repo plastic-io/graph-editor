@@ -1,0 +1,13 @@
+{
+  "name": "Loadbang",
+  "description": "Sends once when the graph is drawn, so a graph can start itself. Max's loadbang.",
+  "icon": "mdi-flash-outline",
+  "inputs": [
+    "bang"
+  ],
+  "outputs": [
+    "value"
+  ],
+  "set": "/**\n * Loadbang: sends once, when the graph is first drawn.\n *\n * The impulse comes from the presentation, which emits on mount — a user-side\n * event travelling left to right like any other, so nothing here reaches back\n * into the graph.  Where there is no presentation (a run on the server) invoke\n * this node's url to start the same flow.\n */\nedges.value = value === undefined ? \"BANG\" : value;\n",
+  "vue": "<template>\n  <v-card :width=\"width\" density=\"compact\">\n    <v-card-title class=\"text-body-2 py-1\"><v-icon size=\"small\" class=\"mr-1\">mdi-flash-outline</v-icon>Loadbang</v-card-title>\n    <v-card-text class=\"py-1 text-caption\">\n      sends once when this graph is drawn\n      <div><v-btn size=\"x-small\" variant=\"text\" class=\"px-0\" @click=\"$emit('set', 'BANG')\">send again</v-btn></div>\n    </v-card-text>\n  </v-card>\n</template>\n<script>\nexport default {\n  props: { node: Object, state: Object },\n  data() { return { width: 210 }; },\n  mounted() { this.$emit(\"set\", \"BANG\"); },\n};\n</script>\n"
+}

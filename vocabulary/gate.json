@@ -1,0 +1,14 @@
+{
+  "name": "Gate",
+  "description": "Lets values through while it is open, and drops them while it is shut. Max's gate.",
+  "icon": "mdi-gate",
+  "inputs": [
+    "value",
+    "open"
+  ],
+  "outputs": [
+    "value"
+  ],
+  "set": "/**\n * Gate: values pass while it is open, and are dropped while it is shut.\n *\n * Max's `gate`.  Shut by default, because a gate that passes everything until\n * told otherwise is a gate that does nothing on the run that matters — the\n * first one.\n */\nnode.data = (node.data && typeof node.data === \"object\") ? node.data : {open: false};\nif (field === \"open\") {\n    node.data.open = !!value;\n    return;\n}\nif (node.data.open) {\n    edges.value = value;\n}\n",
+  "vue": "<template>\n  <v-card :width=\"width\" density=\"compact\">\n    <v-card-title class=\"text-body-2 py-1\"><v-icon size=\"small\" class=\"mr-1\">mdi-gate</v-icon>Gate</v-card-title>\n    <v-card-text class=\"py-1 text-caption\">\n      <span :class=\"open ? 'text-success' : 'text-disabled'\">{{ open ? \"open\" : \"shut\" }}</span>\n    </v-card-text>\n  </v-card>\n</template>\n<script>\nexport default {\n  props: { node: Object, state: Object },\n  data() { return { width: 190 }; },\n  computed: { open() { const d = this.node && this.node.data; return !!(d && d.open); } },\n};\n</script>\n"
+}

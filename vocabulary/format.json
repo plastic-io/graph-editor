@@ -1,0 +1,13 @@
+{
+  "name": "Format",
+  "description": "Makes a string out of what arrives, from a pattern with ${...} in it.",
+  "icon": "mdi-format-text",
+  "inputs": [
+    "value"
+  ],
+  "outputs": [
+    "value"
+  ],
+  "set": "/**\n * Format: a string from a pattern, with what arrived in it.\n *\n * `${value.name} in ${value.region}` — the pattern is data on the node, so a\n * label, a key or a name can be composed on the canvas instead of in code.\n */\nnode.data = (node.data && typeof node.data === \"object\") ? node.data : {pattern: \"${value}\"};\nconst pattern = String(node.data.pattern || \"\");\nconst made = pattern.replace(/\\$\\{([^}]*)\\}/g, (whole, expression) => {\n    try {\n        const read = Function(\"value\", \"state\", \"return (\" + expression + \");\")(value, state);\n        return read === undefined || read === null ? \"\" : String(read);\n    } catch (err) {\n        return whole;\n    }\n});\nnode.data.last = made.length > 40 ? made.slice(0, 40) + \"\\u2026\" : made;\nedges.value = made;\n",
+  "vue": "<template>\n  <v-card :width=\"width\" density=\"compact\">\n    <v-card-title class=\"text-body-2 py-1\"><v-icon size=\"small\" class=\"mr-1\">mdi-format-text</v-icon>Format</v-card-title>\n    <v-card-text class=\"py-1\">\n      <v-text-field density=\"compact\" variant=\"plain\" hide-details label=\"pattern\" v-model=\"pattern\"/>\n      <div class=\"text-caption mt-1\" v-if=\"last\"><span class=\"text-disabled\">last:</span> {{ last }}</div>\n    </v-card-text>\n  </v-card>\n</template>\n<script>\nexport default {\n  props: { node: Object, state: Object },\n  data() { return { width: 250 }; },\n  computed: {\n    pattern: {\n      get() { const d = this.node && this.node.data; return d && d.pattern !== undefined ? d.pattern : \"${value}\"; },\n      set(v) { if (!this.node.data || typeof this.node.data !== \"object\") { this.node.data = {}; } this.node.data.pattern = v; },\n    },\n    last() { const d = this.node && this.node.data; return d && d.last ? d.last : \"\"; },\n  },\n};\n</script>\n"
+}

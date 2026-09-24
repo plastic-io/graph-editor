@@ -41,17 +41,24 @@ export interface ApplyResult {
 }
 
 /**
- * What a node draws before anyone has drawn anything in it.
+ * What a node draws before anyone has drawn anything in it: its name, in a
+ * card.
  *
- * Empty, which is what the editor's own nodes carry: an empty `vue` compiles
- * to a component that renders nothing, and the editor draws its own body
- * around it, so the node looks like a node and can be selected and edited.
- * This used to be `<template><div></div></template>`, to dodge an SFC parser
- * error on empty input — but that error was fixed at the compiler, and a div
- * with no content has no height, so every node an agent added was there and
- * invisible: two ports and a hairline, and nothing to click.
+ * Not nothing.  An empty `vue` compiles to a component that renders nothing,
+ * and the editor draws no body of its own, so the node is two ports and a
+ * hairline — nothing to read, and, as the owner put it, nothing to take hold
+ * of to move it.  A node that has not been given a face still has a name, and
+ * the name is enough to find it, drag it and know what it is.
  */
-const DEFAULT_VUE_TEMPLATE = "";
+const DEFAULT_VUE_TEMPLATE = `<template>
+  <v-card width="200" density="compact">
+    <v-card-title class="text-body-2 py-1">{{ node.properties.name }}</v-card-title>
+  </v-card>
+</template>
+<script>
+export default { props: { node: Object, state: Object } };
+</script>
+`;
 
 const PROTECTED_NODE_PROPS = ["component", "capabilities", "placement", "containment", "budget", "budgets", "iac", "tests"];
 const PROTECTED_GRAPH_KEYS = ["id"];

@@ -1,0 +1,14 @@
+{
+  "name": "Iterate",
+  "description": "An array in, one element at a time out, then done. Max's iter.",
+  "icon": "mdi-format-list-numbered",
+  "inputs": [
+    "value"
+  ],
+  "outputs": [
+    "each",
+    "done"
+  ],
+  "set": "/**\n * Iterate: an array in, its elements out one at a time, then `done`.\n *\n * Max's `iter`.  Each element is a delivery of its own, so whatever is\n * downstream runs once per element and the scheduler counts every one against\n * the budget — a loop that cannot run away unnoticed.  `done` fires after the\n * last, carrying how many there were, which is what Collect wants to be told.\n */\nconst items = Array.isArray(value) ? value : (value === undefined ? [] : [value]);\nfor (const item of items) {\n    edges.each = item;\n}\nedges.done = items.length;\n",
+  "vue": "<template>\n  <v-card :width=\"width\" density=\"compact\">\n    <v-card-title class=\"text-body-2 py-1\"><v-icon size=\"small\" class=\"mr-1\">mdi-format-list-numbered</v-icon>Iterate</v-card-title>\n    <v-card-text class=\"py-1 text-caption text-disabled\">each element, then how many</v-card-text>\n  </v-card>\n</template>\n<script>\nexport default {\n  props: { node: Object, state: Object },\n  data() { return { width: 210 }; },\n};\n</script>\n"
+}

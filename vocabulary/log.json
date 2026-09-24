@@ -1,0 +1,13 @@
+{
+  "name": "Log",
+  "description": "Records what passes through it in the execution's own stream, and passes it on unchanged. Max's print.",
+  "icon": "mdi-eye-outline",
+  "inputs": [
+    "value"
+  ],
+  "outputs": [
+    "value"
+  ],
+  "set": "/**\n * Log: see what is passing, without stopping it.\n *\n * Max's `print`, except the place it prints to is the execution's own stream of\n * observations — so what a graph saw is beside what it did, in the same order,\n * wherever it ran.  The value passes through unchanged, so a Log can be left\n * in the middle of a working graph.\n */\nnode.data = (node.data && typeof node.data === \"object\") ? node.data : {label: \"\"};\nconst short = (v) => { const s = typeof v === \"string\" ? v : JSON.stringify(v); return s === undefined ? \"\" : (s.length > 40 ? s.slice(0, 40) + \"\\u2026\" : s); };\nnode.data.last = short(value);\nhost.emit(\"log\", {label: node.data.label || node.properties.name, value: value});\nedges.value = value;\n",
+  "vue": "<template>\n  <v-card :width=\"width\" density=\"compact\">\n    <v-card-title class=\"text-body-2 py-1\"><v-icon size=\"small\" class=\"mr-1\">mdi-eye-outline</v-icon>Log</v-card-title>\n    <v-card-text class=\"py-1\">\n      <v-text-field density=\"compact\" variant=\"plain\" hide-details label=\"label\" v-model=\"label\"/>\n      <div class=\"text-caption mt-1\" v-if=\"last\"><span class=\"text-disabled\">last:</span> {{ last }}</div>\n    </v-card-text>\n  </v-card>\n</template>\n<script>\nexport default {\n  props: { node: Object, state: Object },\n  data() { return { width: 230 }; },\n  computed: {\n    label: {\n      get() { const d = this.node && this.node.data; return d && d.label !== undefined ? d.label : \"\"; },\n      set(v) { if (!this.node.data || typeof this.node.data !== \"object\") { this.node.data = {}; } this.node.data.label = v; },\n    },\n    last() { const d = this.node && this.node.data; return d && d.last ? d.last : \"\"; },\n  },\n};\n</script>\n"
+}

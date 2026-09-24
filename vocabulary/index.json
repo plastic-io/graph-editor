@@ -1,0 +1,23 @@
+{
+  "description": "The flow-control vocabulary: the nodes that arrange values, rather than produce them.",
+  "nodes": [
+    "collect",
+    "counter",
+    "delay",
+    "format",
+    "gate",
+    "get",
+    "if",
+    "iterate",
+    "loadbang",
+    "log",
+    "pack",
+    "repeat",
+    "route",
+    "select",
+    "store",
+    "toggle",
+    "trigger",
+    "unpack"
+  ]
+}

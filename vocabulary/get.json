@@ -1,0 +1,15 @@
+{
+  "name": "Get",
+  "description": "Reads one path out of an object and sends it; a path that is not there goes out missing.",
+  "icon": "mdi-code-braces",
+  "inputs": [
+    "value",
+    "path"
+  ],
+  "outputs": [
+    "value",
+    "missing"
+  ],
+  "set": "/**\n * Get: read one path out of what arrives.\n *\n * `a.b.0.c`, the way anyone would write it.  A path that is not there goes out\n * `missing` carrying the path, rather than sending undefined down the happy\n * road — a missing value should be a branch, not a surprise later.\n */\nnode.data = (node.data && typeof node.data === \"object\") ? node.data : {path: \"\"};\nif (field === \"path\") {\n    node.data.path = String(value || \"\");\n    return;\n}\nconst parts = String(node.data.path || \"\").split(\".\").filter(Boolean);\nlet at = value;\nfor (const part of parts) {\n    if (at === null || at === undefined) { at = undefined; break; }\n    at = at[part];\n}\nconst short = (v) => { const s = typeof v === \"string\" ? v : JSON.stringify(v); return s === undefined ? \"\" : (s.length > 40 ? s.slice(0, 40) + \"\\u2026\" : s); };\nnode.data.last = at === undefined ? \"missing\" : short(at);\nif (at === undefined) {\n    edges.missing = {path: node.data.path, value: value};\n} else {\n    edges.value = at;\n}\n",
+  "vue": "<template>\n  <v-card :width=\"width\" density=\"compact\">\n    <v-card-title class=\"text-body-2 py-1\"><v-icon size=\"small\" class=\"mr-1\">mdi-code-braces</v-icon>Get</v-card-title>\n    <v-card-text class=\"py-1\">\n      <v-text-field density=\"compact\" variant=\"plain\" hide-details label=\"path\" placeholder=\"a.b.0.c\" v-model=\"path\"/>\n      <div class=\"text-caption mt-1\" v-if=\"last\"><span class=\"text-disabled\">last:</span> {{ last }}</div>\n    </v-card-text>\n  </v-card>\n</template>\n<script>\nexport default {\n  props: { node: Object, state: Object },\n  data() { return { width: 230 }; },\n  computed: {\n    path: {\n      get() { const d = this.node && this.node.data; return d && d.path !== undefined ? d.path : \"\"; },\n      set(v) { if (!this.node.data || typeof this.node.data !== \"object\") { this.node.data = {}; } this.node.data.path = v; },\n    },\n    last() { const d = this.node && this.node.data; return d && d.last ? d.last : \"\"; },\n  },\n};\n</script>\n"
+}

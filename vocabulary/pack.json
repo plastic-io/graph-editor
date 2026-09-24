@@ -1,0 +1,15 @@
+{
+  "name": "Pack",
+  "description": "Cold inputs remember what arrives; bang sends them as one object, keyed by the input each value came in on.",
+  "icon": "mdi-package-variant-closed",
+  "inputs": [
+    "bang",
+    "a",
+    "b"
+  ],
+  "outputs": [
+    "value"
+  ],
+  "set": "/**\n * Pack: the cold inputs remember, `bang` sends.\n *\n * Max's pack, with names instead of positions — what comes out is an object\n * keyed by the input each value arrived on, so the names drawn on the node are\n * the names whatever is downstream reads.  Add or rename inputs freely; this\n * works for any of them.\n */\nnode.data = (node.data && typeof node.data === \"object\") ? node.data : {};\nif (field === \"bang\") {\n    edges.value = {...node.data};\n} else {\n    node.data[field] = value;\n}\n",
+  "vue": "<template>\n  <v-card :width=\"width\" density=\"compact\">\n    <v-card-title class=\"text-body-2 py-1\"><v-icon size=\"small\" class=\"mr-1\">mdi-package-variant-closed</v-icon>Pack</v-card-title>\n    <v-card-text class=\"py-1 text-caption\">\n      <div v-if=\"!held.length\" class=\"text-disabled\">holding nothing yet</div>\n      <div v-for=\"h in held\" :key=\"h.key\"><strong>{{ h.key }}</strong>: {{ h.value }}</div>\n      <v-divider class=\"my-1\"/>\n      <div class=\"d-flex align-center\" v-for=\"p in ports\" :key=\"p\">\n        <span class=\"text-caption\">{{ p }}</span>\n        <v-spacer/>\n        <v-icon size=\"x-small\" @click=\"remove(p)\" title=\"remove\">mdi-close</v-icon>\n      </div>\n      <div class=\"d-flex align-center mt-1\">\n        <v-text-field density=\"compact\" variant=\"plain\" hide-details placeholder=\"add an input\" v-model=\"fresh\" @keyup.enter=\"add\"/>\n        <v-icon size=\"small\" @click=\"add\" title=\"add\">mdi-plus</v-icon>\n      </div>\n    </v-card-text>\n  </v-card>\n</template>\n<script>\nexport default {\n  props: { node: Object, state: Object },\n  data() { return { width: 240, fresh: \"\" }; },\n  computed: {\n    held() {\n      const d = (this.node && this.node.data) || {};\n      return Object.keys(d).map((key) => ({ key, value: this.short(d[key]) }));\n    },\n    ports() { return ((this.node.properties && this.node.properties.inputs) || []).map((p) => p.name); },\n  },\n  methods: {\n    short(v) { const s = typeof v === \"string\" ? v : JSON.stringify(v); return s && s.length > 22 ? s.slice(0, 22) + \"…\" : s; },\n    add() {\n      const name = (this.fresh || \"\").trim();\n      if (!name || this.ports.indexOf(name) !== -1) { return; }\n      this.node.properties.inputs = (this.node.properties.inputs || []).concat([{ name, type: \"Object\", external: false, visible: true }]);\n      \n      this.fresh = \"\";\n    },\n    remove(name) {\n      this.node.properties.inputs = (this.node.properties.inputs || []).filter((p) => p.name !== name);\n      \n    },\n  },\n};\n</script>\n"
+}

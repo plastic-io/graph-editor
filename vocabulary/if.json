@@ -1,0 +1,14 @@
+{
+  "name": "If",
+  "description": "Tests what arrives against a condition you write, and sends it out then or else.",
+  "icon": "mdi-source-branch",
+  "inputs": [
+    "value"
+  ],
+  "outputs": [
+    "then",
+    "else"
+  ],
+  "set": "/**\n * If: a condition a person can edit, rather than code they have to open.\n *\n * The test is written on the node (`value > 10`, `value.kind === \"bucket\"`)\n * and read as data, so a graph can be reasoned about without reading every\n * set script.  A condition that throws sends nothing and says why, rather\n * than quietly choosing a branch.\n */\nnode.data = (node.data && typeof node.data === \"object\") ? node.data : {test: \"value\"};\nconst test = String(node.data.test || \"value\");\nlet passed;\ntry {\n    passed = Function(\"value\", \"state\", \"properties\", \"return (\" + test + \");\")(value, state, properties);\n} catch (err) {\n    throw new Error(\"If: \" + test + \" — \" + err.message);\n}\nnode.data.last = passed ? \"then\" : \"else\";\nedges[passed ? \"then\" : \"else\"] = value;\n",
+  "vue": "<template>\n  <v-card :width=\"width\" density=\"compact\">\n    <v-card-title class=\"text-body-2 py-1\"><v-icon size=\"small\" class=\"mr-1\">mdi-source-branch</v-icon>If</v-card-title>\n    <v-card-text class=\"py-1\">\n      <v-text-field density=\"compact\" variant=\"plain\" hide-details label=\"condition\" v-model=\"test\"/>\n      <div class=\"text-caption mt-1\" v-if=\"last\"><span class=\"text-disabled\">last:</span> {{ last }}</div>\n    </v-card-text>\n  </v-card>\n</template>\n<script>\nexport default {\n  props: { node: Object, state: Object },\n  data() { return { width: 250 }; },\n  computed: {\n    test: {\n      get() { const d = this.node && this.node.data; return d && d.test !== undefined ? d.test : \"value\"; },\n      set(v) { if (!this.node.data || typeof this.node.data !== \"object\") { this.node.data = {}; } this.node.data.test = v; },\n    },\n    last() { const d = this.node && this.node.data; return d && d.last ? d.last : \"\"; },\n  },\n};\n</script>\n"
+}
