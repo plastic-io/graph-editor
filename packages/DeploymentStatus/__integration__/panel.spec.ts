@@ -130,10 +130,22 @@ describe("what it asks the server", () => {
     expect(self.planning).toBe("");
   });
 
-  it("a server with no such route is not an error on the screen", async () => {
-    const self = withProvider({});
+  it("nothing able to ask says so, because silence reads as a graph that deploys nothing", async () => {
+    const self = on();
+    self.provider = () => undefined;
+    self.graphId = () => "g1";
     await self.refresh();
-    expect(self.message).toBe("");
+    expect(self.message).toMatch(/Nothing here can ask/);
     expect(self.stacks).toEqual([]);
+    expect(self.canPlan).toBe(false);
+  });
+
+  it("asks the provider that offers the call, not whichever one syncs the document", () => {
+    // dataProviders.graph syncs documents and knows nothing about the server's
+    // own routes; reaching for it is what left this panel empty and silent.
+    const source = methods.provider.toString();
+    expect(source).toMatch(/syncProviders/);
+    expect(source).toMatch(/listStacks/);
+    expect(source).not.toMatch(/dataProviders/);
   });
 });

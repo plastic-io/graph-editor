@@ -111,17 +111,32 @@ export default {
     },
   },
   methods: {
+    /**
+     * The provider that speaks to the graph server's own routes.  Not
+     * `dataProviders.graph` — that one syncs the document and knows nothing
+     * about what the server can be asked, so reaching for it left this panel
+     * empty and silent.  The one that answers is whichever sync provider
+     * offers the call, which is how the executions panel finds it too.
+     */
     provider(): any {
       const orchestrator = useOrchestratorStore() as any;
-      return orchestrator.dataProviders && orchestrator.dataProviders.graph;
+      return (orchestrator.syncProviders || []).find((p: any) => typeof p.listStacks === "function");
     },
     graphId(): string {
       return (this as any).graph && (this as any).graph.id;
     },
     async refresh() {
-      const provider = this.provider();
       const graphId = this.graphId();
-      if (!provider || !graphId || typeof provider.listStacks !== "function") {
+      if (!graphId) {
+        return;
+      }
+      const provider = this.provider();
+      if (!provider) {
+        // Silence here reads as "this graph deploys nothing", which is a
+        // different thing from "nothing here can ask".
+        this.stacks = [];
+        this.canPlan = false;
+        this.message = "Nothing here can ask this server about stacks; it may be older than this editor.";
         return;
       }
       this.busy = true;
