@@ -45,3 +45,29 @@ describe("the audience the editor asks for", () => {
     expect(fetching).not.toHaveBeenCalled();
   });
 });
+
+describe("where Auth0 comes back to", () => {
+  /**
+   * This locked everyone out of the deployed editor: the address was built
+   * with a hardcoded `http://`, so the site served over https asked to be
+   * returned to `http://plastic-io.github.io/...`, and Auth0 refused the whole
+   * authorize request — "does not have a registered origin" — before a login
+   * screen could appear.  On localhost it had always worked, which is why it
+   * survived.
+   */
+  it("comes back on the scheme the page is served on", async () => {
+    const { redirectUriFor } = await import("../main");
+    expect(redirectUriFor({ protocol: "https:", host: "plastic-io.github.io" }))
+      .toBe("https://plastic-io.github.io/graph-editor/auth-callback");
+    expect(redirectUriFor({ protocol: "http:", host: "localhost:8080" }))
+      .toBe("http://localhost:8080/graph-editor/auth-callback");
+  });
+
+  it("anything that is not http or https is treated as https", async () => {
+    const { redirectUriFor } = await import("../main");
+    expect(redirectUriFor({ protocol: "file:", host: "plastic-io.github.io" }))
+      .toBe("https://plastic-io.github.io/graph-editor/auth-callback");
+    expect(redirectUriFor({ host: "plastic-io.github.io" } as any))
+      .toBe("https://plastic-io.github.io/graph-editor/auth-callback");
+  });
+});

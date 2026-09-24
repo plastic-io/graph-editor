@@ -35,6 +35,16 @@ export function authRequiredFor(prefs: any): boolean {
  * or an MCP client refuses it, while an audience has to be an API the tenant knows.
  * Asking Auth0 for a token for a URL it has never heard of answers "Service not found".
  */
+/**
+ * The address Auth0 returns to, on the site the editor is actually being
+ * served from.  Kept here, and tested, because getting it wrong locks everyone
+ * out of the deployed editor while localhost keeps working.
+ */
+export function redirectUriFor(location: {protocol?: string; host: string}): string {
+  const protocol = location.protocol && /^https?:$/.test(location.protocol) ? location.protocol : 'https:';
+  return `${protocol}//${location.host}/graph-editor/auth-callback`;
+}
+
 export async function resolveAudience(prefs: any): Promise<string> {
   const explicit = prefs && prefs.auth0 && prefs.auth0.audience;
   if (explicit) {
@@ -151,11 +161,13 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
           console.warn('Missing auth0 configuration information.  Go to Settings > Auth0 and add your information to finish setting up auth0');
           return;
         }
-        // determine redirect URI
-        this.redirectUri = (config.redirect_uri
-          ? config.redirect_uri
-          : 'http://:host/graph-editor/auth-callback')
-          .replace(/:host/, self.location.host);
+        // Where Auth0 comes back to.  The scheme is the page's own: this was
+        // hardcoded to http, so the editor served over https asked to be
+        // returned to an http address, and Auth0 refused the whole request —
+        // "does not have a registered origin" — before anyone could log in.
+        this.redirectUri = config.redirect_uri
+          ? String(config.redirect_uri).replace(/:host/, self.location.host)
+          : redirectUriFor(self.location);
         this.domain = config.domain;
         this.clientId = config.clientId;
         // The access token must be minted for the server's API identifier (Auth0 "API"),
