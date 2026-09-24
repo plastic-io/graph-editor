@@ -18,8 +18,9 @@ describe("applyOps", () => {
     expect(r.projection.nodes.map((n: any) => n.id)).toEqual(["a", "b"]);
     expect(r.projection.nodes[0].edges[0].connectors).toEqual([expect.objectContaining({ nodeId: "b", field: "in", graphId: "graph-1" })]);
     expect(r.projection.nodes[1].template.set).toBe("edges.out = value * 2;");
-    // a node with nothing to render is an error in the editor, so it gets the same empty component a hand-added node gets
-    expect(r.projection.nodes[1].template.vue).toBe("<template><div></div></template><script>export default {}</script>");
+    // nothing to draw is empty, which is what the editor's own nodes carry:
+    // a div with no content has no height, and left the node invisible
+    expect(r.projection.nodes[1].template.vue).toBe("");
     expect(r.projection.nodes[1].properties.x).toBe(100);
     expect(r.touched.sort()).toEqual(["a", "b"]);
     expect(graph.nodes).toHaveLength(1);   // input untouched
@@ -86,5 +87,29 @@ describe("applyOps", () => {
     expect(r.projection.nodes[0].edges[0].connectors).toEqual([]);
     expect(applyOps(graph, [{ op: "disconnect", connectorId: "nope" }]).errors[0].code).toBe("NOT_FOUND");
     expect(applyOps(graph, [{ op: "disconnect", connectorId: "c1" }]).projection.nodes[0].edges[0].connectors).toEqual([]);
+  });
+});
+
+describe("a node an agent adds is a node a person can see", () => {
+  /**
+   * It used to be added with `<template><div></div></template>`, to dodge an
+   * SFC parser error on empty input.  The error was fixed at the compiler, and
+   * a div with no content has no height — so the node was on the canvas,
+   * drawn, and invisible: two ports and a hairline, nothing to click.  Empty is
+   * what the editor's own nodes carry, and the editor draws its body for them.
+   */
+  it("draws what the editor's own nodes draw, which is to say nothing of its own", () => {
+    const graph = makeGraph({ nodes: [makeNode({ id: "a" })] });
+    const r = applyOps(graph, [{ op: "add-node", node: { id: "fresh", url: "fresh", name: "Fresh" } }]);
+    expect(r.ok).toBe(true);
+    const node = r.projection.nodes.find((n: any) => n.id === "fresh");
+    expect(node.template.vue).toBe("");
+    expect(node.template.set).toBe("");
+  });
+
+  it("keeps a view the caller asked for", () => {
+    const graph = makeGraph({ nodes: [makeNode({ id: "a" })] });
+    const r = applyOps(graph, [{ op: "add-node", node: { id: "drawn", url: "drawn", template: { vue: "<template><b>hello</b></template>" } } }]);
+    expect(r.projection.nodes.find((n: any) => n.id === "drawn").template.vue).toBe("<template><b>hello</b></template>");
   });
 });

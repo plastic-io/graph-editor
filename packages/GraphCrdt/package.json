@@ -2,7 +2,7 @@
   "name": "@plastic-io/graph-crdt",
   "license": "BSD-3-Clause",
   "author": "TonyGermaneri@gmail.com",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": false,
   "description": "Shared Yjs CRDT schema, codec and reconciler for Plastic-IO graphs.  Used by both the graph editor and the graph server, so it must never import Vue, Pinia, or any browser/node specific API.",
   "main": "./dist/main.js",

@@ -40,8 +40,18 @@ export interface ApplyResult {
   touched: string[];
 }
 
-/** What the editor gives a node someone adds by hand (`Graph/mutation.ts`). */
-const DEFAULT_VUE_TEMPLATE = "<template><div></div></template><script>export default {}</script>";
+/**
+ * What a node draws before anyone has drawn anything in it.
+ *
+ * Empty, which is what the editor's own nodes carry: an empty `vue` compiles
+ * to a component that renders nothing, and the editor draws its own body
+ * around it, so the node looks like a node and can be selected and edited.
+ * This used to be `<template><div></div></template>`, to dodge an SFC parser
+ * error on empty input — but that error was fixed at the compiler, and a div
+ * with no content has no height, so every node an agent added was there and
+ * invisible: two ports and a hairline, and nothing to click.
+ */
+const DEFAULT_VUE_TEMPLATE = "";
 
 const PROTECTED_NODE_PROPS = ["component", "capabilities", "placement", "containment", "budget", "budgets", "iac", "tests"];
 const PROTECTED_GRAPH_KEYS = ["id"];
