@@ -10,6 +10,8 @@ Serverless v3 drives CloudFormation from a developer laptop (`npx serverless dep
 
 What makes a deploy safe is the template validator (PB-091) and the IAM boundary (§4.9.6), not who called `deploy`.
 
+**Revised again 2026-09-24 (D-48): a stack is what the graph describes, not a file a node carries.** A **resource node** declares one resource in `properties.iac.resource` (`{type, properties, logicalId?, dependsOn?, deletionPolicy?, condition?, metadata?}`); a **stack node** declares `properties.iac.stack`; and a connector from the first to the second says which stack the resource belongs to. Asking for a plan assembles the template from the graph as that revision has it — a pure function of the projection, no node code, nothing fetched — and refuses what CloudFormation would refuse later with less to say: two resources with one logical id, a `Ref`/`GetAtt` naming something outside the stack, a `DependsOn` on nothing, a stack with nothing wired into it. A resource wired into no stack is reported as an orphan rather than ignored. A node that carries `template.text` still works, for a template somebody brought with them; the assembled form wins where both exist.
+
 **Desired-state input** (edge `desired`, JSON Schema 2020-12, `additionalProperties:false` throughout):
 ```ts
 interface IacDesiredState {
