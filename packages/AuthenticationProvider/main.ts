@@ -10,23 +10,36 @@ export default abstract class AuthenticationProvider {
     private initialization?: Promise<void>;
     private disposed = false;
     protected generation = 0;
-    protected abstract initialize(): Promise<void>;
+    protected abstract initialize(generation: number): Promise<void>;
+    protected isCurrent(generation: number) { return !this.disposed && generation === this.generation; }
+    protected assertCurrent(generation: number) {
+        if (!this.isCurrent(generation)) throw new Error('Session changed during authentication');
+    }
     init(): Promise<void> {
         if (this.disposed) return Promise.reject(new Error('Authentication provider is disposed'));
         if (!this.initialization) {
             const store = useStore();
+            const generation = this.generation;
             store.status = 'initializing';
-            this.initialization = Promise.resolve().then(() => this.initialize()).then(() => {
+            this.initialization = Promise.resolve().then(() => {
+                this.assertCurrent(generation);
+                return this.initialize(generation);
+            }).then(() => {
+                this.assertCurrent(generation);
                 if (store.status === 'initializing') store.status = 'unauthenticated';
             }).catch((error) => {
-                this.clear('failed');
-                store.error = error instanceof Error ? error.message : String(error);
+                // An old initialization must not clear a newer session or undo logout.
+                if (this.isCurrent(generation)) {
+                    this.clear('failed');
+                    store.error = error instanceof Error ? error.message : String(error);
+                }
                 throw error;
             });
         }
         return this.initialization;
     }
-    protected publish(user: Record<string, any>, token: string, provider: string) {
+    protected publish(user: Record<string, any>, token: string, provider: string, generation: number) {
+        this.assertCurrent(generation);
         const expiresAt = tokenExpiresAt(token);
         if (!user.sub || !token || (expiresAt !== undefined && expiresAt * 1000 <= Date.now())) {
             throw new Error('Authentication returned an invalid session');
@@ -38,7 +51,11 @@ export default abstract class AuthenticationProvider {
         this.generation++;
         useStore().$patch({ identity: emptyIdentity(), status, error: '' });
     }
-    dispose() { this.disposed = true; this.clear(); }
+    dispose() {
+        if (this.disposed) return;
+        this.clear();
+        this.disposed = true;
+    }
     abstract redirectCallback(): Promise<void>;
     abstract getUser(): Promise<any>;
     abstract getToken(forceRefresh?: boolean): Promise<string>;

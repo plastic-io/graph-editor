@@ -133,3 +133,59 @@ describe('deployment endpoint configuration', () => {
       .toEqual({graphHTTPServer:'https://api.example/dev/',graphWSSServer:'wss://socket.example/dev',authenticationRequired:true,useLocalStorage:false});
   });
 });
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>(finish => {resolve = finish;});
+  return {promise, resolve};
+}
+const auth0Client = () => ({isAuthenticated:vi.fn().mockResolvedValue(true),getTokenSilently:vi.fn().mockResolvedValue(jwt()),
+  getUser:vi.fn().mockResolvedValue({sub:'auth0|person'}),logout:vi.fn(),loginWithRedirect:vi.fn(),handleRedirectCallback:vi.fn()});
+
+for (const name of ['auth0', 'cognito']) {
+  describe(`${name} initialization cancellation`, () => {
+    function pendingProvider() {
+      const started = deferred<void>(); const pending = deferred<any>();
+      const client = auth0Client();
+      if (name === 'auth0') state.createAuth0.mockImplementationOnce(() => {started.resolve();return pending.promise;});
+      else state.fetchSession.mockImplementationOnce(() => {started.resolve();return pending.promise;});
+      return {provider:name === 'auth0' ? new Auth0AuthenticationProvider(router) : new AmplifyAuthenticationProvider(router,config),
+        started:started.promise, finish:()=>pending.resolve(name === 'auth0' ? client : session()), client};
+    }
+    it('does not publish a session restored after logout', async () => {
+      const {provider,started,finish} = pendingProvider();
+      const initialization = provider.init(); await started; await provider.logoff(); finish();
+      await expect(initialization).rejects.toThrow(/Session changed/);
+      expect(useStore().identity.token).toBe('');expect(useStore().status).toBe('unauthenticated');
+    });
+    it('does not overwrite a replacement provider session after disposal', async () => {
+      const {provider,started,finish} = pendingProvider();
+      const initialization = provider.init(); await started; provider.dispose();
+      useStore().$patch(store => {
+        store.identity={user:{sub:'new-person'},token:jwt(),isAuthenticated:true,provider:'replacement'};
+        store.status='authenticated';
+      });
+      finish();await expect(initialization).rejects.toThrow(/Session changed/);
+      expect(useStore().identity.user.sub).toBe('new-person');expect(useStore().status).toBe('authenticated');
+    });
+  });
+}
+
+describe('Auth0 login recovery', () => {
+  it.each(['consent_required','login_required'])('preserves one automatic recovery for %s', async (error) => {
+    const client=auth0Client();client.getTokenSilently.mockRejectedValue({error});state.createAuth0.mockResolvedValue(client);
+    const provider=new Auth0AuthenticationProvider(router);
+    await provider.init();expect(client.loginWithRedirect).toHaveBeenCalledTimes(1);
+    const replacement=new Auth0AuthenticationProvider(router);
+    await expect(replacement.init()).rejects.toEqual({error});expect(client.loginWithRedirect).toHaveBeenCalledTimes(1);
+  });
+  it('removes callback code and state even when the exchange fails', async () => {
+    vi.useFakeTimers();const previous=location.href;
+    const client=auth0Client();client.handleRedirectCallback.mockRejectedValue(new Error('invalid state'));state.createAuth0.mockResolvedValue(client);
+    history.replaceState(null,'','/graph-editor/auth-callback?code=one-use&state=bad');
+    try {
+      await expect(new Auth0AuthenticationProvider(router).init()).rejects.toThrow('invalid state');
+      expect(location.search).toBe('');expect(useStore().status).toBe('failed');
+    } finally {vi.clearAllTimers();history.replaceState(null,'',previous);}
+  });
+});

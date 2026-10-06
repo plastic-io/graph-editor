@@ -24,7 +24,7 @@ export class AmplifyAuthenticationProvider extends AuthenticationProvider {
         super();
         useAuthenticationStore().init = () => this.init();
     }
-    protected async initialize() {
+    protected async initialize(generation: number) {
         const required = authRequiredFor(usePreferencesStore().preferences);
         if (!required && !this.config.userPoolId) return;
         validateCognito(this.config);
@@ -43,14 +43,17 @@ export class AmplifyAuthenticationProvider extends AuthenticationProvider {
         this.configured = true;
         // Amplify awaits an in-flight OAuth exchange before returning this session.
         const session = await fetchAuthSession();
+        this.assertCurrent(generation);
         if (session.tokens?.accessToken) {
-            this.publishSession(session);
+            this.publishSession(session, generation);
             sessionStorage.removeItem(LOGIN_ATTEMPTED);
             if (/auth-callback/.test(location.pathname)) {
                 const target = sessionStorage.getItem(RETURN_TO) || '/';
                 sessionStorage.removeItem(RETURN_TO);
                 history.replaceState(history.state, '', location.pathname);
-                setTimeout(() => { void this.router.replace(target.startsWith('/') && !target.startsWith('//') ? target : '/'); }, 0);
+                setTimeout(() => {
+                    if (this.isCurrent(generation)) void this.router.replace(target.startsWith('/') && !target.startsWith('//') ? target : '/');
+                }, 0);
             }
         } else if (/auth-callback/.test(location.pathname) && new URLSearchParams(location.search).has('state')) {
             history.replaceState(history.state, '', location.pathname);
@@ -60,13 +63,13 @@ export class AmplifyAuthenticationProvider extends AuthenticationProvider {
             await this.login();
         }
     }
-    private publishSession(session: Awaited<ReturnType<typeof fetchAuthSession>>) {
+    private publishSession(session: Awaited<ReturnType<typeof fetchAuthSession>>, generation: number) {
         const access = session.tokens?.accessToken;
         const sub = access?.payload.sub;
         if (!access || typeof sub !== 'string' || access.payload.iss !== this.issuer) throw new Error('No Cognito access token for the configured user pool');
         const claims = session.tokens?.idToken?.payload || {};
         const user = { sub: cognitoSubject(this.issuer, sub), name: claims.name, email: claims.email, picture: claims.picture };
-        this.publish(user, access.toString(), 'Cognito');
+        this.publish(user, access.toString(), 'Cognito', generation);
         return access.toString();
     }
     async redirectCallback() { await this.getToken(); }
@@ -74,16 +77,17 @@ export class AmplifyAuthenticationProvider extends AuthenticationProvider {
     async getToken(forceRefresh = false): Promise<string> {
         if (!this.configured) throw new Error('Cognito is not initialized');
         const generation = this.generation;
+        this.assertCurrent(generation);
         try {
             const session = await fetchAuthSession({forceRefresh});
-            if (generation !== this.generation) throw new Error('Session changed during refresh');
-            return this.publishSession(session);
+            return this.publishSession(session, generation);
         } catch (error) {
-            if (generation === this.generation) this.clear('failed');
+            if (this.isCurrent(generation)) this.clear('failed');
             throw error;
         }
     }
     async login() {
+        this.assertCurrent(this.generation);
         if (!this.configured) throw new Error('Configure Cognito and reload before signing in');
         sessionStorage.setItem(RETURN_TO, location.pathname.replace(this.router.options.history.base, '') || '/');
         // This public SDK hook preserves SDK-generated PKCE and state, adding only
@@ -95,6 +99,7 @@ export class AmplifyAuthenticationProvider extends AuthenticationProvider {
         } } } : undefined);
     }
     async logoff() {
+        this.assertCurrent(this.generation);
         this.clear();
         sessionStorage.setItem(LOGIN_ATTEMPTED, '1');
         if (this.configured) await signOut();

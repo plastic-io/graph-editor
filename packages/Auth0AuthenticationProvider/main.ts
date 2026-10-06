@@ -127,7 +127,7 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
         super();
         useAuthenticationStore().init = () => this.init();
     }
-    protected async initialize() {
+    protected async initialize(generation: number) {
         const prefs: any = usePreferencesStore().preferences;
         const config = { ...(this.config.defaults || {}), ...(prefs.auth0 || {}), ...(this.config.overrides || {}) };
         this.required = authRequiredFor(prefs);
@@ -138,23 +138,44 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
         this.redirectUri = config.redirect_uri
             ? String(config.redirect_uri).replace(/:host/, self.location.host) : redirectUriFor(self.location);
         this.audience = await resolveAudience({ ...prefs, auth0: config });
+        this.assertCurrent(generation);
         this.client = await createAuth0Client({
             domain: config.domain, clientId: config.clientId,
             cacheLocation: 'localstorage', useRefreshTokens: true, useRefreshTokensFallback: true,
             authorizationParams: { redirect_uri: this.redirectUri, ...(this.audience ? { audience: this.audience } : {}) },
         });
+        this.assertCurrent(generation);
         const params = new URLSearchParams(location.search);
         if (/auth-callback/.test(location.pathname)) {
-            if (params.has('state') && (params.has('code') || params.has('error'))) await this.redirectCallback();
-            const target = localStorage.getItem(STORE_KEY) || '/';
-            localStorage.removeItem(STORE_KEY);
-            // Drop callback secrets immediately; navigate after the init promise settles
-            // so a nested navigation guard cannot await its own initialization.
-            history.replaceState(history.state, '', location.pathname);
-            setTimeout(() => { void this.router.replace(target.startsWith('/') && !target.startsWith('//') ? target : '/'); }, 0);
+            try {
+                if (params.has('state') && (params.has('code') || params.has('error'))) await this.redirectCallback();
+            } finally {
+                if (this.isCurrent(generation)) {
+                    const target = localStorage.getItem(STORE_KEY) || '/';
+                    localStorage.removeItem(STORE_KEY);
+                    // Remove callback secrets even on failure; defer navigation so its
+                    // guard cannot await the initialization that initiated navigation.
+                    history.replaceState(history.state, '', location.pathname);
+                    setTimeout(() => {
+                        if (this.isCurrent(generation)) void this.router.replace(target.startsWith('/') && !target.startsWith('//') ? target : '/');
+                    }, 0);
+                }
+            }
         }
-        if (await this.client.isAuthenticated()) {
-            await this.getToken();
+        const authenticated = await this.client.isAuthenticated();
+        this.assertCurrent(generation);
+        if (authenticated) {
+            try {
+                await this.fetchToken(generation);
+            } catch (error: any) {
+                this.assertCurrent(generation);
+                if (this.required && ['login_required','consent_required'].includes(error?.error) && !sessionStorage.getItem(LOGIN_ATTEMPTED_KEY)) {
+                    sessionStorage.setItem(LOGIN_ATTEMPTED_KEY, '1');
+                    await this.login();
+                    return;
+                }
+                throw error;
+            }
             sessionStorage.removeItem(LOGIN_ATTEMPTED_KEY);
         } else if (this.required && !sessionStorage.getItem(LOGIN_ATTEMPTED_KEY)) {
             sessionStorage.setItem(LOGIN_ATTEMPTED_KEY, '1');
@@ -164,20 +185,24 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
     async redirectCallback() { await this.client.handleRedirectCallback(); }
     async getUser() { return this.client?.getUser(); }
     async getToken(forceRefresh = false): Promise<string> {
-        if (!this.client) throw new Error('Auth0 is not initialized');
         const generation = this.generation;
         try {
-            const token = await this.client.getTokenSilently({ ...(this.audience ? { authorizationParams: { audience: this.audience } } : {}), ...(forceRefresh ? { cacheMode: 'off' } : {}) });
-            const user = await this.client.getUser();
-            if (generation !== this.generation) throw new Error('Session changed during refresh');
-            this.publish(user, token, 'Auth0');
-            return token;
+            return await this.fetchToken(generation, forceRefresh);
         } catch (error) {
-            if (generation === this.generation) this.clear('failed');
+            if (this.isCurrent(generation)) this.clear('failed');
             throw error;
         }
     }
+    private async fetchToken(generation: number, forceRefresh = false): Promise<string> {
+        this.assertCurrent(generation);
+        if (!this.client) throw new Error('Auth0 is not initialized');
+        const token = await this.client.getTokenSilently({ ...(this.audience ? { authorizationParams: { audience: this.audience } } : {}), ...(forceRefresh ? { cacheMode: 'off' } : {}) });
+        const user = await this.client.getUser();
+        this.publish(user, token, 'Auth0', generation);
+        return token;
+    }
     async login() {
+        this.assertCurrent(this.generation);
         if (!this.client) throw new Error('Configure Auth0 and reload before signing in');
         localStorage.setItem(STORE_KEY, location.pathname.replace(this.router.options.history.base, '') || '/');
         return this.client.loginWithRedirect({ authorizationParams: {
@@ -185,6 +210,7 @@ export class Auth0AuthenticationProvider extends AuthenticationProvider {
         } });
     }
     async logoff() {
+        this.assertCurrent(this.generation);
         this.clear();
         sessionStorage.setItem(LOGIN_ATTEMPTED_KEY, '1');
         return this.client?.logout({ logoutParams: { returnTo: location.origin + (this.router.options.history.base || '/') } });
