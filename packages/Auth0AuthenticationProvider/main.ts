@@ -4,26 +4,13 @@ import Auth0SettingsPanel from './Auth0SettingsPanel.vue';
 import Auth0LogOffMenu from './Auth0LogOffMenu.vue';
 import type { Store } from 'pinia';
 import {createAuth0Client} from "@auth0/auth0-spa-js";
-import AuthenticationProvider, {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
+import AuthenticationProvider, {useStore as useAuthenticationStore, authRequiredFor} from "@plastic-io/graph-editor-vue3-authentication-provider";
 import EditorModule, {Plugin} from "@plastic-io/graph-editor-vue3-editor-module";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 const STORE_KEY = 'auth0-redirect';
 const LOGIN_ATTEMPTED_KEY = 'auth0-login-attempted';
-/**
- * Whether the configured server checks tokens: an explicit audience, or an HTTPS server.
- * Local dev servers (http://) have no authorizer, so no login is required for them.
- */
-export function authRequiredFor(prefs: any): boolean {
-  if (!prefs || prefs.useLocalStorage) {
-    return false;
-  }
-  if (prefs.auth0 && prefs.auth0.audience) {
-    return true;
-  }
-  return /^https:\/\//i.test(String(prefs.graphHTTPServer || ''));
-}
-
+export {authRequiredFor} from '@plastic-io/graph-editor-vue3-authentication-provider';
 /**
  * The Auth0 API identifier the access token must be minted for.  Precedence: an explicit
  * setting (Settings > Auth0 > audience); the `audience` the server publishes in its RFC 9728
@@ -78,7 +65,7 @@ export default class Auth0 extends EditorModule {
     app.component('auth0-settings-panel', Auth0SettingsPanel);
     const graphOrchestratorStore = useOrchestratorStore();
 
-    const authProvider = new Auth0AuthenticationProvider(router);
+    const authProvider = new Auth0AuthenticationProvider(router, config);
 
     const settingsPanel = new Plugin({
       name: 'Auth0',
@@ -127,203 +114,79 @@ export default class Auth0 extends EditorModule {
     graphOrchestratorStore.addPlugin(settingsPanel);
     graphOrchestratorStore.addPlugin(logoffIconManager);
 
-    authProvider.router = router;
     graphOrchestratorStore.authProvider = authProvider;
   }
 };
 
 export class Auth0AuthenticationProvider extends AuthenticationProvider {
-    audience = '';
-    serverMode = false;
-    authRequired = false;
-    domain: string = '';
-    clientId: string = '';
-    redirectUri: string = '';
-    router: Router;
-    loaded: boolean = false;
-    authenticationStore: any;
-    preferencesStore: any;
-    constructor(router: Router) {
-      super();
-      this.router = router;
-      this.authenticationStore = useAuthenticationStore();
-      this.preferencesStore = usePreferencesStore();
-      const setup = async () => {
-        // if setup has already run or preferences isn't loaded yet then wait
-        if (!this.preferencesStore.preferences || this.loaded) {
-          return;
+    private client: any;
+    private audience = '';
+    private redirectUri = '';
+    private required = false;
+    constructor(private router: Router, private config: Record<string, any> = {}) {
+        super();
+        useAuthenticationStore().init = () => this.init();
+    }
+    protected async initialize() {
+        const prefs: any = usePreferencesStore().preferences;
+        const config = { ...(this.config.defaults || {}), ...(prefs.auth0 || {}), ...(this.config.overrides || {}) };
+        this.required = authRequiredFor(prefs);
+        if (!config.domain || !config.clientId) {
+            if (this.required) throw new Error('Configure the Auth0 domain and client ID');
+            return;
         }
-        this.loaded = true;
-        // grab the auth0 data from prefs
-        const config = (this.preferencesStore.preferences as any).auth0;
-        // validate data
-        if (!config || !config.clientId || !config.domain) {
-          console.warn('Missing auth0 configuration information.  Go to Settings > Auth0 and add your information to finish setting up auth0');
-          return;
-        }
-        // Where Auth0 comes back to.  The scheme is the page's own: this was
-        // hardcoded to http, so the editor served over https asked to be
-        // returned to an http address, and Auth0 refused the whole request —
-        // "does not have a registered origin" — before anyone could log in.
         this.redirectUri = config.redirect_uri
-          ? String(config.redirect_uri).replace(/:host/, self.location.host)
-          : redirectUriFor(self.location);
-        this.domain = config.domain;
-        this.clientId = config.clientId;
-        // The access token must be minted for the server's API identifier (Auth0 "API"),
-        // which defaults to the HTTP server URL without its trailing slash.
-        const prefs = this.preferencesStore.preferences as any;
-        this.serverMode = !prefs.useLocalStorage;
-        // Login is mandatory only when the server actually checks tokens (an HTTPS server
-        // or an explicit audience); the local dev server on http://localhost has no authorizer.
-        this.authRequired = authRequiredFor(prefs);
-        this.audience = await resolveAudience(prefs);
-        if (this.authRequired) {
-          try {
-            const target = new URL(this.redirectUri).host;
-            if (target !== self.location.host) {
-              console.warn(`Auth0 will return to ${target} but the editor is open on ${self.location.host}; the login transaction lives in this tab's sessionStorage and will not be found there.`);
-            }
-          } catch (err) { /* malformed redirect uri; Auth0 will report it */ }
+            ? String(config.redirect_uri).replace(/:host/, self.location.host) : redirectUriFor(self.location);
+        this.audience = await resolveAudience({ ...prefs, auth0: config });
+        this.client = await createAuth0Client({
+            domain: config.domain, clientId: config.clientId,
+            cacheLocation: 'localstorage', useRefreshTokens: true, useRefreshTokensFallback: true,
+            authorizationParams: { redirect_uri: this.redirectUri, ...(this.audience ? { audience: this.audience } : {}) },
+        });
+        const params = new URLSearchParams(location.search);
+        if (/auth-callback/.test(location.pathname)) {
+            if (params.has('state') && (params.has('code') || params.has('error'))) await this.redirectCallback();
+            const target = localStorage.getItem(STORE_KEY) || '/';
+            localStorage.removeItem(STORE_KEY);
+            // Drop callback secrets immediately; navigate after the init promise settles
+            // so a nested navigation guard cannot await its own initialization.
+            history.replaceState(history.state, '', location.pathname);
+            setTimeout(() => { void this.router.replace(target.startsWith('/') && !target.startsWith('//') ? target : '/'); }, 0);
         }
-        // init auth0 client; a failure here must never abort navigation
+        if (await this.client.isAuthenticated()) {
+            await this.getToken();
+            sessionStorage.removeItem(LOGIN_ATTEMPTED_KEY);
+        } else if (this.required && !sessionStorage.getItem(LOGIN_ATTEMPTED_KEY)) {
+            sessionStorage.setItem(LOGIN_ATTEMPTED_KEY, '1');
+            await this.login();
+        }
+    }
+    async redirectCallback() { await this.client.handleRedirectCallback(); }
+    async getUser() { return this.client?.getUser(); }
+    async getToken(forceRefresh = false): Promise<string> {
+        if (!this.client) throw new Error('Auth0 is not initialized');
+        const generation = this.generation;
         try {
-          await this.init();
-        } catch (err) {
-          console.error('Auth0 initialisation failed; the editor continues without a session', err);
-        }
-      }
-      this.authenticationStore.init = setup;
-    }
-    async init() {
-      // begin login/redirect flow
-
-      const params = new URLSearchParams(self.location.search);
-      const onCallbackRoute = /auth-callback/.test(self.location.toString());
-      // Only a URL carrying a fresh authorization response can be exchanged; a reload,
-      // bookmark or back-navigation onto the callback route has nothing to exchange.
-      const isCallbackUrl = onCallbackRoute && params.has('state') && (params.has('code') || params.has('error'));
-
-      const options: any = {
-          domain: this.domain,
-          clientId: this.clientId,
-          // Keep the session across reloads: tokens in localStorage, renewed with refresh
-          // tokens when the API allows offline access, else silently in an iframe.  Without
-          // this every reload restarted the login (and, on localhost, Auth0's consent screen).
-          cacheLocation: 'localstorage',
-          useRefreshTokens: true,
-          useRefreshTokensFallback: true,
-          authorizationParams: {
-            redirect_uri: this.redirectUri,
-            ...(this.audience ? { audience: this.audience } : {}),
-          },
-      };
-
-      this.client = await (createAuth0Client as any)(options);
-
-      // coming back from logging in
-      if (isCallbackUrl) {
-        try {
-          await this.client.handleRedirectCallback();
-        } catch (err: any) {
-          console.error('Auth0 redirect callback failed:', err && (err.error_description || err.message), err);
-        }
-        const rdr = localStorage.getItem(STORE_KEY);
-        localStorage.removeItem(STORE_KEY);
-        // Drop code/state from the address bar first, so a reload cannot replay the exchange.
-        await this.router.replace(rdr || '/');
-      } else if (onCallbackRoute) {
-        await this.router.replace('/');
-      }
-
-      const isAuthenticated = await this.client.isAuthenticated();
-
-      if (!isAuthenticated) {
-        if (this.authRequired && !sessionStorage.getItem(LOGIN_ATTEMPTED_KEY)) {
-          // A server-backed editor cannot do anything without a token: every route on the
-          // graph server requires one.  Send the user to log in and come back here (once
-          // per tab; if that does not produce a session the login button is the way in).
-          sessionStorage.setItem(LOGIN_ATTEMPTED_KEY, String(Date.now()));
-          await this.login();
-        } else if (this.authRequired) {
-          console.warn('Not authenticated after a login attempt; use the login button in the top bar.');
-        }
-        return;
-      }
-      sessionStorage.removeItem(LOGIN_ATTEMPTED_KEY);
-
-      let token: string;
-      try {
-        token = await this.client.getTokenSilently(this.tokenOptions());
-      } catch (err: any) {
-        console.error(`Cannot get an access token for audience "${this.audience}":`, err && (err.error_description || err.message), err);
-        if (this.authRequired && err && (err.error === 'login_required' || err.error === 'consent_required') && !sessionStorage.getItem(LOGIN_ATTEMPTED_KEY)) {
-          sessionStorage.setItem(LOGIN_ATTEMPTED_KEY, String(Date.now()));
-          await this.login();
-        }
-        return;
-      }
-
-      const user = await this.client.getUser();
-
-      this.authenticationStore.$patch({
-        identity: {
-          user,
-          token,
-          provider: 'Auth0',
-          isAuthenticated
-        },
-      });
-    }
-    async redirectCallback() {
-        return await this.client.handleRedirectCallback();
-    }
-    async getUser() {
-        try {
-            return await this.client.getUser();
-        } catch (err) {
-            throw new Error("Auth0AuthProvider getUser:" + err);
-        }
-    }
-    tokenOptions() {
-        return this.audience ? { authorizationParams: { audience: this.audience } } : {};
-    }
-    async getToken() {
-        try {
-            const token = await this.client.getTokenSilently(this.tokenOptions());
-            if (token && this.authenticationStore.identity.token !== token) {
-              this.authenticationStore.$patch({ identity: { ...this.authenticationStore.identity, token } });
-            }
+            const token = await this.client.getTokenSilently({ ...(this.audience ? { authorizationParams: { audience: this.audience } } : {}), ...(forceRefresh ? { cacheMode: 'off' } : {}) });
+            const user = await this.client.getUser();
+            if (generation !== this.generation) throw new Error('Session changed during refresh');
+            this.publish(user, token, 'Auth0');
             return token;
-        } catch (err) {
-            throw new Error("Auth0AuthProvider getToken:" + err);
+        } catch (error) {
+            if (generation === this.generation) this.clear('failed');
+            throw error;
         }
     }
     async login() {
-        // save the current location in localStore so we can send
-        // user back there when they respawn
-        localStorage.setItem(STORE_KEY, self.location.pathname
-          .replace(this.router.options.history.base, ''));
-        try {
-            return await this.client.loginWithRedirect({
-              authorizationParams: {
-                redirect_uri: this.redirectUri,
-                ...(this.audience ? { audience: this.audience } : {}),
-              }
-            });
-        } catch (err) {
-            throw new Error("Auth0AuthProvider login:" + err);
-        }
+        if (!this.client) throw new Error('Configure Auth0 and reload before signing in');
+        localStorage.setItem(STORE_KEY, location.pathname.replace(this.router.options.history.base, '') || '/');
+        return this.client.loginWithRedirect({ authorizationParams: {
+            redirect_uri: this.redirectUri, ...(this.audience ? { audience: this.audience } : {}),
+        } });
     }
     async logoff() {
-        try {
-            return await this.client.logout({
-              logoutParams: {
-                returnTo: self.location.origin + (this.router.options.history.base || '/'),
-              }
-            });
-        } catch (err) {
-            throw new Error("Auth0AuthProvider logout:" + err);
-        }
+        this.clear();
+        sessionStorage.setItem(LOGIN_ATTEMPTED_KEY, '1');
+        return this.client?.logout({ logoutParams: { returnTo: location.origin + (this.router.options.history.base || '/') } });
     }
 }

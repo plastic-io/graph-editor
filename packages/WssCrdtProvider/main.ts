@@ -1,4 +1,4 @@
-import {useStore as useAuthenticationStore} from "@plastic-io/graph-editor-vue3-authentication-provider";
+import {authorizedFetch} from "@plastic-io/graph-editor-vue3-authentication-provider";
 // Imported from the package's leaves rather than its entry point: the entry
 // registers a plugin and pulls in the orchestrator, which would make this a
 // circular import and leave these bindings undefined while connect() runs.
@@ -79,6 +79,7 @@ export class WssCrdtProvider {
   private outbox: Outbound[] = [];
   private inFlight: Outbound | null = null;
   private ackTimer: any = null;
+  private detachSession: (() => void) | null = null;
   private detachOpen: (() => void) | null = null;
   private recovering = false;
   private detach: (() => void) | null = null;
@@ -107,6 +108,7 @@ export class WssCrdtProvider {
       return;
     }
 
+    if (typeof this.wss.onSessionEnd === 'function') this.detachSession = this.wss.onSessionEnd(() => this.disconnect(true));
     // A whole graph does not fit in a WebSocket frame, so the first load comes
     // over HTTP and the socket only carries changes from then on.
     await this.loadInitialState(session);
@@ -163,20 +165,15 @@ export class WssCrdtProvider {
    * vector and receiving only the difference is the exchange Yjs documents, and
    * it means reopening a graph you were just editing transfers almost nothing.
    */
-  /** The graph server requires the Auth0 access token on every HTTP route. */
-  private authHeaders(): Record<string, string> {
-    const token = useAuthenticationStore().identity.token;
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }
   private async loadInitialState(session: any) {
     if (!this.httpBase) {
       return;
     }
     try {
       const ours = toBase64(encodeStateVector(session.doc));
-      const response = await fetch(
+      const response = await authorizedFetch(
         `${this.httpBase}crdt/${this.graphId}/state?sv=${encodeURIComponent(ours)}`,
-        { headers: this.authHeaders() },
+        {},
       );
       const data = await response.json();
       if (data && data.payload) {
@@ -326,9 +323,9 @@ export class WssCrdtProvider {
       return;
     }
     try {
-      const response = await fetch(`${this.httpBase}crdt/${this.graphId}/update`, {
+      const response = await authorizedFetch(`${this.httpBase}crdt/${this.graphId}/update`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...this.authHeaders() },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           payload: item.encoded, description: item.description, format: UPDATE_FORMAT,
           schemaVersion: 2, mutationId: item.mutationId, clientInfo: CLIENT_INFO,
@@ -505,7 +502,7 @@ export class WssCrdtProvider {
     if (!this.httpBase) {
       return [];
     }
-    const response = await fetch(`${this.httpBase}crdt/${graphId}/history`, { headers: this.authHeaders() });
+    const response = await authorizedFetch(`${this.httpBase}crdt/${graphId}/history`, {});
     this.historyCache = await response.json();
     return this.historyCache;
   }
@@ -518,7 +515,7 @@ export class WssCrdtProvider {
     if (!id) {
       return [];
     }
-    const response = await fetch(`${this.httpBase}crdt/${graphId}/state/${id}`, { headers: this.authHeaders() });
+    const response = await authorizedFetch(`${this.httpBase}crdt/${graphId}/state/${id}`, {});
     const data = await response.json();
     return data && data.payload ? [fromBase64(data.payload)] : [];
   }
@@ -535,9 +532,9 @@ export class WssCrdtProvider {
     if (!this.httpBase) {
       throw new Error("No graph server is configured.");
     }
-    const response = await fetch(`${this.httpBase}${path}`, {
+    const response = await authorizedFetch(`${this.httpBase}${path}`, {
       ...init,
-      headers: { "Content-Type": "application/json", ...this.authHeaders(), ...((init.headers as any) || {}) },
+      headers: { "Content-Type": "application/json", ...((init.headers as any) || {}) },
     });
     let body: any = null;
     try { body = await response.json(); } catch (err) { /* no body */ }
@@ -712,7 +709,7 @@ export class WssCrdtProvider {
     if (!this.httpBase) {
       throw new Error("No graph server is configured.");
     }
-    const response = await fetch(`${this.httpBase}components/${publishedId}`, { headers: this.authHeaders() });
+    const response = await authorizedFetch(`${this.httpBase}components/${publishedId}`, {});
     if (!response.ok) {
       throw new Error(`Cannot list versions of ${publishedId}: ${response.status}`);
     }
@@ -724,7 +721,7 @@ export class WssCrdtProvider {
     if (!this.httpBase) {
       throw new Error("No graph server is configured.");
     }
-    const response = await fetch(`${this.httpBase}components/${publishedId}/${version}`, { headers: this.authHeaders() });
+    const response = await authorizedFetch(`${this.httpBase}components/${publishedId}/${version}`, {});
     if (!response.ok) {
       throw new Error(`Cannot read ${publishedId}@${version}: ${response.status}`);
     }
@@ -739,7 +736,9 @@ export class WssCrdtProvider {
     this.wss.send({ action: "deleteGraph", id: graphId });
   }
 
-  disconnect() {
+  disconnect(discard = false) {
+    if (this.detachSession) { this.detachSession(); this.detachSession = null; }
+    if (discard) { this.queue = []; this.outbox = []; this.inFlight = null; }
     if (this.flushTimer) {
       clearTimeout(this.flushTimer);
       this.flushTimer = null;

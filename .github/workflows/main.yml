@@ -12,15 +12,15 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Setup Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v4
       with:
         node-version: '22'
 
     - name: Install dependencies
-      run: npm install
+      run: npm ci
 
     - name: Unit tests (CRDT packages)
       run: npm run test:crdt
@@ -31,6 +31,9 @@ jobs:
     - name: Type-check ratchet
       run: npm run type-check:ratchet
 
+    - name: Verify Auth0 and Cognito provider isolation
+      run: npm run test:auth-builds
+
     - name: Build project
       run: npm run build
 
@@ -40,7 +43,7 @@ jobs:
 
     - name: Deploy to GitHub Pages
       if: github.event_name == 'push'
-      uses: peaceiris/actions-gh-pages@v3
+      uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./dist

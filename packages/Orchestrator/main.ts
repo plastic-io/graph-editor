@@ -96,7 +96,7 @@ export default class GraphManager extends GraphEditorModule {
       order: 10,
     }));
     hostRouter.beforeEach(async (to: any, from: any, next: any) => {
-      await authenticationStore.init();
+      try { await authenticationStore.init(); } catch (error) { console.error('Authentication initialization failed', error); }
       if (/auth-callback/.test(self.location.toString())) {
         next();
         return;

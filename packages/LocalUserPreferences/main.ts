@@ -36,6 +36,9 @@ export default class LocalStoragePreferencesProvider extends EditorModule {
         }
         preferencesStore.preferences = userPreferences;
         await localPreferencesProvider.init(userPreferences.remoteConfiguration);
+        // Deployment endpoints win over saved preferences and remote registry config.
+        // Empty build configuration preserves the existing local/remote settings flow.
+        Object.assign(preferencesStore.preferences, config);
         resolve(true);
       });
     }).then(() => {

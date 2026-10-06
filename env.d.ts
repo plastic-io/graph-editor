@@ -28,3 +28,12 @@ interface Window {
   /** The editor hands the running graph its own handle on this. */
   plastic: any;
 }
+
+/** Values are fixed by the provider build configuration. */
+declare const __AUTH_CONFIG__: Record<string, any>;
+declare module '@graph/auth-provider' {
+  const Provider: new (config: Record<string, any>, app: any, router: any) => any;
+  export default Provider;
+}
+
+declare const __DEPLOYMENT_CONFIG__: Record<string, any>;

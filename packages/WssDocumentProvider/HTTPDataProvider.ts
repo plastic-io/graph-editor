@@ -1,38 +1,16 @@
-import type {Graph} from "@plastic-io/plastic-io"; // eslint-disable-line
+import {authorizedFetch} from '@plastic-io/graph-editor-vue3-authentication-provider';
 export default class HTTPDataProvider {
     baseUrl: string;
-    token = "";
     constructor(baseUrl: string) {
-        if (!baseUrl) {
-            throw new Error("No base url was passed to HTTPDataProvider");
-        }
-        this.baseUrl = baseUrl + (baseUrl[baseUrl.length - 1] === "/" ? "" : "/");
-    }
-    setToken(token: string) {
-        this.token = token;
+        if (!baseUrl) throw new Error('No base url was passed to HTTPDataProvider');
+        this.baseUrl = baseUrl.replace(/\/+$/, '') + '/';
     }
     async set(url: string, value: any) {
-        const request = new Request(this.baseUrl + url, {
-            headers: {
-                Authorization: `Bearer ${this.token}`,
-            },
-            method: "POST",
-            body: value
-        });
-        try {
-            const response = await fetch(request);
-            return await response.json();
-        } catch (err) {
-            throw new Error("Cannot post event: " + err);
-        }
+        const response = await authorizedFetch(this.baseUrl + url, { method: 'POST', body: value });
+        return response.json();
     }
     async get(url: string) {
-        const data = await fetch(this.baseUrl + url, {
-            headers: {
-                Authorization: `Bearer ${this.token}`,
-            },
-            method: "GET",
-        });
-        return await data.json();
+        const response = await authorizedFetch(this.baseUrl + url);
+        return response.json();
     }
 }

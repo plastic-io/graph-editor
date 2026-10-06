@@ -12,27 +12,16 @@
                 :label="preferences.useLocalStorage ? 'Local Storage' : 'Server Storage'"
                 v-model="preferences.useLocalStorage"></v-switch>
             <v-text-field
-                :disabled="preferences.useLocalStorage"
+                :disabled="preferences.useLocalStorage || deploymentConfigured"
                 v-model="preferences.graphHTTPServer"
                 help-topic="HTTPServer"
                 label="HTTPS Server"
             />
             <v-text-field
-                :disabled="preferences.useLocalStorage"
+                :disabled="preferences.useLocalStorage || deploymentConfigured"
                 v-model="preferences.graphWSSServer"
                 help-topic="WSSServer"
                 label="WSS Server"
-            />
-            <v-card-title>Authentication</v-card-title>
-            <v-text-field
-                v-model="preferences.auth0.domain"
-                help-topic="authDomain"
-                label="Authentication Domain"
-            />
-            <v-text-field
-                v-model="preferences.auth0.clientId"
-                help-topic="authClientId"
-                label="Authentication ClientId"
             />
         </v-card-text>
       </v-card>
@@ -44,6 +33,7 @@ import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-pre
 import {mapWritableState, mapActions, mapState} from "pinia";
 export default {
   computed: {
+    deploymentConfigured() { return Boolean(__DEPLOYMENT_CONFIG__.graphHTTPServer); },
     ...mapWritableState(usePreferencesStore, [
         "preferences",
     ]),

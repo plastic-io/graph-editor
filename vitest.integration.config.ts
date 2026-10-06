@@ -1,3 +1,5 @@
+import {authBuild} from './scripts/auth-build';
+const auth = authBuild();
 import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
 
@@ -14,7 +16,8 @@ import vue from '@vitejs/plugin-vue';
 /** Store-level integration tests: real Pinia stores, jsdom, fake providers. */
 export default defineConfig({
   plugins: [vue()],
-  resolve: { alias: sharedPackage },
+  define: auth.define,
+  resolve: { alias: { ...sharedPackage, ...auth.alias } },
   test: {
     include: ['packages/**/__integration__/**/*.spec.ts'],
     environment: 'jsdom',

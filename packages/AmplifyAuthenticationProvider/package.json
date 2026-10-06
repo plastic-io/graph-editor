@@ -1,0 +1,7 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-amplify-authentication-provider",
+  "version": "1.0.0",
+  "license": "BSD-3-Clause",
+  "main": "./main.ts",
+  "dependencies": { "aws-amplify": "6.22.1" }
+}

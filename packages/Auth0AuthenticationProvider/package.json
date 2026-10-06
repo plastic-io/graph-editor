@@ -6,5 +6,8 @@
   "private": false,
   "description": "Auth0 auth provider for graph editor IDE.",
   "main": "./main.ts",
-  "files": []
+  "files": [],
+  "dependencies": {
+    "@auth0/auth0-spa-js": "2.0.1"
+  }
 }

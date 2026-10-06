@@ -1,3 +1,5 @@
+import {authBuild} from './scripts/auth-build';
+const auth = authBuild();
 import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
 
@@ -15,7 +17,8 @@ const sharedPackage = { '@plastic-io/graph-crdt': resolve(__dirname, 'packages/G
  *   npm run test:e2e:crdt
  */
 export default defineConfig({
-  resolve: { alias: sharedPackage },
+  define: auth.define,
+  resolve: { alias: { ...sharedPackage, ...auth.alias } },
   test: {
     include: ['packages/**/__e2e__/**/*.spec.ts'],
     environment: 'node',

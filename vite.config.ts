@@ -1,11 +1,14 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
+import {authBuild} from './scripts/auth-build';
 import vue from '@vitejs/plugin-vue';
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify';
 import { resolve } from 'path';
 
-export default defineConfig((mode) => {
+export default defineConfig(({mode, command}) => {
+  const auth = authBuild({...loadEnv(mode, process.cwd(), ''), ...process.env}, command === 'build');
   return {
     base: '/graph-editor/',
+    define: auth.define,
     server: {
       port: 8080,
     },
@@ -13,6 +16,7 @@ export default defineConfig((mode) => {
       external: ['jszip']
     },
     plugins: [
+      auth.plugin,
       vue({
         template: { transformAssetUrls },
       }),
@@ -20,6 +24,7 @@ export default defineConfig((mode) => {
     ],
     resolve: {
       alias: {
+        ...auth.alias,
         '@': resolve(__dirname, 'src'),
         /**
          * The shared package is a build for anyone who installs it and the

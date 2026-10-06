@@ -3,8 +3,7 @@ import type {Router} from "vue-router";
 import type {Toc, TocItem, GraphDiff, NodeArtifact, GraphArtifact} from "@plastic-io/graph-editor-vue3-document-provider";
 import {useStore as useOrchistratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
-import {useStore as useAuthenticationStore, authorizedFetch} from "@plastic-io/graph-editor-vue3-authentication-provider";
-import {authRequiredFor} from "@plastic-io/graph-editor-vue3-auth0-authentication-provider";
+import {useStore as useAuthenticationStore, authorizedFetch, authRequiredFor, tokenExpiresAt} from "@plastic-io/graph-editor-vue3-authentication-provider";
 import {deref, newId} from "@plastic-io/graph-editor-vue3-utils";
 import EditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 const CHUNK_SIZE = 35000;
@@ -40,40 +39,32 @@ export default class WssDocumentProvider extends EditorModule {
       },
     };
     (orchistratorStore.dataProviders as any).artifact = wssDataProvider;
-    // Identity: against an HTTPS server with an Auth0 API identifier the socket opens once
-    // the Auth0 provider has a token and refreshes it before each reconnect; against a local
-    // dev server (no authorizer) it opens straight away without one.
     const authenticationStore = useAuthenticationStore();
     wssDataProvider.requireToken = authRequiredFor(preferencesStore.preferences);
-    if (!wssDataProvider.requireToken) {
-      wssDataProvider.connect();
-    }
-    wssDataProvider.tokenProvider = async () => {
-      const provider = orchistratorStore.authProvider as any;
-      if (provider && typeof provider.getToken === "function") {
-        try {
-          return await provider.getToken();
-        } catch (err) {
-          return authenticationStore.identity.token || undefined;
-        }
-      }
-      return authenticationStore.identity.token || undefined;
+    wssDataProvider.tokenProvider = async (forceRefresh) => {
+      const provider = orchistratorStore.authProvider;
+      return provider ? provider.getToken(forceRefresh) : undefined;
     };
-    authenticationStore.$subscribe((mutation: any, state: any) => {
-      if (state.identity && state.identity.token) {
-        wssDataProvider.setToken(state.identity.token);
-      }
-    });
+    let subject = '';
+    authenticationStore.$subscribe((_mutation: any, state: any) => {
+      const next = state.identity?.isAuthenticated ? String(state.identity.user.sub || '') : '';
+      if (subject && next !== subject) wssDataProvider.clearSession();
+      subject = next;
+      if (state.identity?.token) wssDataProvider.setToken(state.identity.token);
+      else if (wssDataProvider.requireToken) wssDataProvider.clearSession();
+    }, { detached: true, flush: 'sync' });
     if (authenticationStore.identity.token) {
+      subject = String(authenticationStore.identity.user.sub || '');
       wssDataProvider.setToken(authenticationStore.identity.token);
-    }
+    } else if (!wssDataProvider.requireToken) wssDataProvider.connect();
+
   }
 };
 
 
 
 
-class WSSDataProvider {
+export class WSSDataProvider {
     asyncUpdate: boolean;
     httpUrl: string;
     wssUrl: string;
@@ -113,10 +104,41 @@ class WSSDataProvider {
         // The socket opens once a token is available (setToken); until then every send()
         // queues.  The server requires the token at $connect, as a subprotocol.
     }
-    tokenProvider: (() => Promise<string | undefined>) | null = null;
+    tokenProvider: ((forceRefresh?: boolean) => Promise<string | undefined>) | null = null;
     /** When the server checks tokens the socket waits for one; a local dev server needs none. */
     requireToken = false;
     private opening = false;
+    private generation = 0;
+    private reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    private refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    private sessionEndListeners = new Set<() => void>();
+    onSessionEnd(listener: () => void): () => void {
+        this.sessionEndListeners.add(listener);
+        return () => { this.sessionEndListeners.delete(listener); };
+    }
+    clearSession() {
+        this.disconnect();
+        this.token = '';
+        this.messages = [];
+        this.chunks = {};
+        this.sessionEndListeners.forEach((listener) => listener());
+        this.events = {};
+        this.subscriptions = [];
+    }
+    private scheduleRefresh() {
+        clearTimeout(this.refreshTimer);
+        const expiresAt = tokenExpiresAt(this.token);
+        if (!expiresAt || !this.tokenProvider) return;
+        const generation = this.generation;
+        this.refreshTimer = setTimeout(async () => {
+            try {
+                const token = await this.tokenProvider!(true);
+                if (generation !== this.generation || !this.keepOpen) return;
+                if (!token || (tokenExpiresAt(token) || 0) * 1000 <= Date.now()) throw new Error('Session expired');
+                this.setToken(token);
+            } catch { if (generation === this.generation) this.clearSession(); }
+        }, Math.max(1000, Math.min(2147483647, expiresAt * 1000 - Date.now() - 30000)));
+    }
     private reconnectDelay = 1000;
     private openListeners = new Set<() => void>();
     /** Called every time the socket (re)opens, after queued messages and subscriptions are replayed. */
@@ -125,15 +147,19 @@ class WSSDataProvider {
         return () => { this.openListeners.delete(listener); };
     }
     setToken(token: string) {
+        const changed = token !== this.token;
         this.token = token;
-        this.httpDataProvider.setToken(token);
-        // Open the socket the first time a token arrives; a token that arrives while a
-        // socket is connecting or open is simply kept for the next (re)connect.
-        if (!this.webSocket && !this.opening) {
-            this.connect();
+        this.keepOpen = true;
+        this.scheduleRefresh();
+        if (changed && this.webSocket && this.webSocket.readyState <= WebSocket.OPEN) {
+            const previous = this.webSocket;
+            this.webSocket = undefined as any;
+            previous.close();
         }
+        if (!this.webSocket && !this.opening) void this.connect();
     }
     send(e: any) {
+        if (!this.keepOpen) return;
         if (this.state !== "open" || !this.webSocket || this.webSocket.readyState !== WebSocket.OPEN) {
             return this.messages.push(e);
         }
@@ -142,20 +168,19 @@ class WSSDataProvider {
     }
     async connect() {
         // one socket at a time: never start another while one is connecting or open
-        if (this.opening || (this.webSocket && this.webSocket.readyState <= WebSocket.OPEN)) {
+        if (!this.keepOpen || this.opening || (this.webSocket && this.webSocket.readyState <= WebSocket.OPEN)) {
             return;
         }
         this.opening = true;
-        if (this.tokenProvider) {
-            // tokens expire; fetch a fresh one before every (re)connect
+        const generation = this.generation;
+        if (this.tokenProvider && this.requireToken) {
             try {
                 const fresh = await this.tokenProvider();
-                if (fresh) {
-                    this.token = fresh;
-                    this.httpDataProvider.setToken(fresh);
-                }
-            } catch (err) {
-                console.warn("Cannot refresh the access token before connecting", err);
+                if (generation !== this.generation || !this.keepOpen) return;
+                this.token = fresh || '';
+            } catch {
+                if (generation === this.generation) this.clearSession();
+                return;
             }
         }
         if (!this.token && this.requireToken) {
@@ -168,6 +193,7 @@ class WSSDataProvider {
             : new WebSocket(this.wssUrl);
         this.webSocket = socket;
         this.opening = false;
+        this.scheduleRefresh();
         socket.addEventListener("open", () => {
             if (this.webSocket !== socket) {
                 return;   // superseded by a newer socket
@@ -194,11 +220,12 @@ class WSSDataProvider {
             this.close();
             if (this.keepOpen) {
                 // back off so a rejected handshake (expired token, 401) does not spin
-                setTimeout(() => this.connect(), this.reconnectDelay);
+                this.reconnectTimer = setTimeout(() => this.connect(), this.reconnectDelay);
                 this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000);
             }
         });
         socket.addEventListener("message", (e) => {
+            if (this.webSocket !== socket || !this.keepOpen) return;
             const val = JSON.parse(e.data);
             this.messageHandler(val);
         });
@@ -246,7 +273,14 @@ class WSSDataProvider {
     }
     disconnect() {
         this.keepOpen = false;
-        this.webSocket.close();
+        this.generation++;
+        this.opening = false;
+        clearTimeout(this.reconnectTimer);
+        clearTimeout(this.refreshTimer);
+        const previous = this.webSocket;
+        this.webSocket = undefined as any;
+        previous?.close();
+        this.state = 'closed';
     }
     subscribe(channelId: string, listener: ((e: any) => void) | null) {
         if (listener) {

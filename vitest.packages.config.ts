@@ -1,3 +1,5 @@
+import {authBuild} from './scripts/auth-build';
+const auth = authBuild();
 import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
 
@@ -10,7 +12,8 @@ import { resolve } from 'path';
  */
 const sharedPackage = { '@plastic-io/graph-crdt': resolve(__dirname, 'packages/GraphCrdt/main.ts') };
 export default defineConfig({
-  resolve: { alias: sharedPackage },
+  define: auth.define,
+  resolve: { alias: { ...sharedPackage, ...auth.alias } },
   test: {
     include: ['packages/**/__tests__/**/*.spec.ts'],
     environment: 'node',

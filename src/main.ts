@@ -18,7 +18,7 @@ import type GraphEditorModule from "@plastic-io/graph-editor-vue3-editor-module"
 import Orchestrator from "@plastic-io/graph-editor-vue3-orchestrator";
 import MonacoCodeEditor from '@plastic-io/graph-editor-vue3-monaco-code-editor';
 import Appearance from '@plastic-io/graph-editor-vue3-appearance';
-import Auth0AuthenticationProvider from "@plastic-io/graph-editor-vue3-auth0-authentication-provider";
+import SelectedAuthenticationProvider from "@graph/auth-provider";
 import ConnectorInfo from "@plastic-io/graph-editor-vue3-connector-info";
 import ErrorInterstitial from "@plastic-io/graph-editor-vue3-error-interstitial";
 import Graph from "@plastic-io/graph-editor-vue3-graph";
@@ -110,7 +110,7 @@ const plugins = [
   WssDocumentProvider,
   WssCrdtProvider,
   Workspace,
-  Auth0AuthenticationProvider,
+  SelectedAuthenticationProvider,
 ] as any;
 (async () => {
   const pluginInstances = {} as any;
@@ -118,7 +118,7 @@ const plugins = [
     "color: blue",
     "color: lightblue");
   for (const _Plugin of plugins) {
-     const plugin = new _Plugin({}, app, router, pinia);
+     const plugin = new _Plugin(_Plugin === SelectedAuthenticationProvider ? __AUTH_CONFIG__ : _Plugin === LocalUserPreferences ? __DEPLOYMENT_CONFIG__ : {}, app, router, pinia);
      if (plugin instanceof Promise) {
        await plugin;
      }
