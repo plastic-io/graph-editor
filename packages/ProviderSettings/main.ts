@@ -10,6 +10,9 @@ import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-pre
 export default class ProviderSettings extends EditorModule {
   constructor(config: Record<string, any>, app: App<Element>, hostRouter: Router) {
     super();
+    // Paired deployments choose their server and storage mode during the build.
+    // Keep connection controls for the unpaired GitHub Pages and local editor.
+    if (__DEPLOYMENT_CONFIG__.graphHTTPServer) return;
     app.component('provider-settings', _ProviderSettings);
 
     const graphOrchestratorStore = useOrchestratorStore();
