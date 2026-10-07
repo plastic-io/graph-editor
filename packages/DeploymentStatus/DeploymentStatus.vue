@@ -22,7 +22,7 @@
               <v-icon :color="colorFor(s)" :title="stateOf(s)">{{ iconFor(s) }}</v-icon>
             </template>
             <template v-slot:append>
-              <v-btn v-if="canPlan" size="x-small" variant="text" icon="mdi-magnify-scan" title="What would this change do?" :loading="planning === s.nodeId" @click.stop="plan(s)"/>
+              <v-btn v-if="canPlan" size="x-small" variant="text" icon="mdi-magnify-scan" title="Review infrastructure changes" aria-label="Review infrastructure changes" :loading="planning === s.nodeId" @click.stop="plan(s)"/>
             </template>
 
             <div v-if="problemsOf(s).length" class="mt-1">
@@ -47,6 +47,39 @@
       </v-card-text>
     </v-card>
   </v-menu>
+  <v-dialog v-model="reviewOpen" max-width="900" scrollable>
+    <v-card v-if="selected" data-testid="infrastructure-review">
+      <v-card-title class="d-flex align-center">Review infrastructure · {{ selected.name }}<v-spacer/><v-btn icon="mdi-close" variant="text" aria-label="Close infrastructure review" @click="reviewOpen = false"/></v-card-title>
+      <v-card-subtitle>{{ selected.stack.name }} · {{ selected.stack.account }} · {{ selected.stack.region }}</v-card-subtitle>
+      <v-card-text>
+        <v-alert v-if="reviewMessage" type="error" variant="tonal" class="mb-3">{{ reviewMessage }}</v-alert>
+        <v-alert v-if="!canReview" type="info" variant="tonal" class="mb-3">This server supports previews only. Reviewed apply is not enabled.</v-alert>
+        <div v-if="reviewBusy || pendingReview" class="mb-3"><v-progress-linear indeterminate class="mb-2"/>{{ reviewStatus?.state === 'applying' || reviewStatus?.state === 'apply-requested' ? 'Applying the approved changes in AWS…' : 'Preparing the CloudFormation review…' }}</div>
+        <v-alert v-if="reviewStatus" :type="reviewStatus.state === 'succeeded' ? 'success' : ['failed','rollback-failed','rolled-back'].includes(reviewStatus.state) ? 'error' : 'info'" variant="tonal" class="mb-3">
+          <strong>{{ reviewStateLabel }}</strong><div v-if="reviewStatus.reason">{{ reviewStatus.reason }}</div>
+          <div v-if="reviewStatus.manualRecoveryRequired">Check the stack in CloudFormation before retrying. This stack is locked for recovery.</div>
+        </v-alert>
+        <v-table v-if="reviewStatus?.plan" density="compact" class="mb-3">
+          <thead><tr><th>Change</th><th>Resource</th><th>Type</th><th>Replacement</th></tr></thead>
+          <tbody><tr v-for="(change,i) in reviewStatus.plan.changes" :key="i"><td>{{ change.action }}</td><td>{{ change.logicalId }}</td><td>{{ change.resourceType }}</td><td>{{ change.replacement || '—' }}</td></tr></tbody>
+        </v-table>
+        <p v-if="reviewStatus?.plan && !reviewStatus.plan.changes.length">The stack already matches; there are no changes to apply.</p>
+        <v-expansion-panels v-if="reviewStatus?.template" class="mb-3">
+          <v-expansion-panel title="Reviewed CloudFormation template"><v-expansion-panel-text><pre class="review-template">{{ reviewStatus.template.text }}</pre></v-expansion-panel-text></v-expansion-panel>
+        </v-expansion-panels>
+        <v-table v-if="reviewStatus?.outputs?.length" density="compact"><thead><tr><th>Output</th><th>Value</th></tr></thead><tbody><tr v-for="output in reviewStatus.outputs" :key="output.key"><td>{{ output.key }}</td><td class="text-break">{{ output.value }}</td></tr></tbody></v-table>
+        <v-alert v-if="reviewStatus?.plan?.destructive && reviewStatus?.state === 'awaiting-review'" type="warning" variant="tonal" class="mt-3">This change removes or replaces resources. Review the affected resources before applying.</v-alert>
+        <v-checkbox v-if="reviewStatus?.plan?.destructive && reviewStatus?.state === 'awaiting-review'" v-model="confirmDestructive" label="I approve the listed resource removals or replacements" hide-details/>
+        <p v-if="reviewStatus?.state === 'awaiting-review'" class="mt-3 text-caption">Approval applies exactly this review. Editing the template or stack settings requires a new review.</p>
+      </v-card-text>
+      <v-card-actions>
+        <v-btn v-if="canReview && ['planning','awaiting-review'].includes(reviewStatus?.state)" :disabled="reviewBusy" @click="discardReview">Discard review</v-btn>
+        <v-spacer/>
+        <v-btn v-if="!pendingReview && !reviewBusy" @click="plan(selected, true)">Create new review</v-btn>
+        <v-btn v-if="canReview && reviewStatus?.state === 'awaiting-review'" color="primary" variant="flat" :loading="reviewBusy" :disabled="reviewStatus.plan.destructive && !confirmDestructive" @click="applyReview">Approve and apply</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 <script lang="ts">
 import {mapState} from "pinia";
@@ -63,10 +96,7 @@ import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-pre
  * the template is one this environment allows, and — where the server can ask
  * CloudFormation — what the change would add, change or take away.
  *
- * Nothing here applies anything.  There is no button for it because there is
- * no route behind it: planning is the whole of what this milestone can do, and
- * a panel that offered more than the server can do would be a lie about what
- * has been built.
+ * Reviewed applies use an immutable change set and a server-verified approval.
  */
 export default {
   name: "deployment-status",
@@ -78,9 +108,21 @@ export default {
       message: "",
       stacks: [] as any[],
       canPlan: false,
+      canReview: false,
+      selected: null as any,
+      reviewStatus: null as any,
+      reviewOpen: false,
+      reviewBusy: false,
+      reviewMessage: '',
+      confirmDestructive: false,
+      reviewTimer: null as any,
+      reviewGeneration: 0,
     };
   },
+  beforeUnmount() { clearTimeout(this.reviewTimer); this.reviewGeneration++; },
   watch: {
+    reviewOpen(value: boolean) { if (!value) { clearTimeout(this.reviewTimer); this.reviewGeneration++; this.planning=""; this.reviewBusy=false; } },
+    'graph.id'() { this.reviewOpen=false; this.selected=null; this.reviewStatus=null; this.refresh(); },
     open(isOpen: boolean) {
       if (isOpen) {
         this.refresh();
@@ -98,6 +140,13 @@ export default {
     }
   },
   computed: {
+    pendingReview(): boolean { return ['planning','apply-requested','applying'].includes(this.reviewStatus?.state); },
+    reviewStateLabel(): string {
+      const labels: any={'awaiting-review':'Ready for your approval',planned:'Preview complete',planning:'Preparing review',
+        'apply-requested':'Approval recorded',applying:'Applying changes',succeeded:'Deployment complete',failed:'Deployment failed',
+        'rolled-back':'AWS rolled back the deployment','rollback-failed':'Rollback needs attention',cancelled:'Review discarded',expired:'Review expired','no-changes':'No changes needed'};
+      return labels[this.reviewStatus?.state] || this.reviewStatus?.state || '';
+    },
     ...mapState(useGraphStore, ["graphLoaded", "graph"]),
     serverMode(): boolean {
       const prefs = (usePreferencesStore() as any).preferences;
@@ -140,29 +189,63 @@ export default {
         return;
       }
       this.busy = true;
-      this.message = "";
       try {
         const answer = await provider.listStacks(graphId);
         this.stacks = (answer && answer.stacks) || [];
         this.canPlan = !!(answer && answer.canPlan);
+        this.canReview = !!answer?.canReview;
       } catch (err: any) {
         this.message = err.message || String(err);
       }
       this.busy = false;
     },
-    async plan(stack: any) {
-      const provider = this.provider();
-      this.planning = stack.nodeId;
-      this.message = "";
+    async plan(stack: any, replace = false) {
+      clearTimeout(this.reviewTimer);
+      const generation=++this.reviewGeneration, graphId=this.graphId();
+      this.selected=stack;this.reviewOpen=true;this.reviewBusy=true;this.reviewMessage='';this.message='';this.confirmDestructive=false;
+      this.reviewStatus=replace ? null : stack.status;
+      this.planning=stack.nodeId;
       try {
-        const answer = await provider.planStack(this.graphId(), stack.nodeId);
-        stack.status = answer.status || answer;
-      } catch (err: any) {
-        // a refusal is an answer: it says which template and why
-        this.message = err.message || String(err);
-      }
-      this.planning = "";
+        const answer=await this.provider().planStack(graphId,stack.nodeId,replace);
+        if(generation!==this.reviewGeneration || graphId!==this.graphId())return;
+        this.reviewStatus=answer.status || answer;
+        stack.status=this.reviewStatus;
+        this.scheduleReviewPoll(generation,graphId,stack.nodeId);
+      }catch(err:any){if(generation===this.reviewGeneration){this.reviewMessage=err.message || String(err);this.message=this.reviewMessage;}}
+      finally {if(generation===this.reviewGeneration){this.reviewBusy=false;this.planning='';}}
       await this.refresh();
+    },
+    scheduleReviewPoll(generation: number, graphId: string, nodeId: string) {
+      if(!this.reviewOpen || !this.reviewStatus?.operationId || !['planning','awaiting-review','apply-requested','applying'].includes(this.reviewStatus.state))return;
+      clearTimeout(this.reviewTimer);
+      this.reviewTimer=setTimeout(async()=>{
+        try {
+          const answer=await this.provider().stackReview(graphId,nodeId);
+          if(generation!==this.reviewGeneration || graphId!==this.graphId())return;
+          if(answer.status){this.reviewStatus=answer.status;const stack=this.stacks.find((s:any)=>s.nodeId===nodeId);if(stack)stack.status=answer.status;}
+        }catch(err:any){if(generation===this.reviewGeneration)this.reviewMessage=err.message || String(err);}
+        if(generation===this.reviewGeneration)this.scheduleReviewPoll(generation,graphId,nodeId);
+      },2000);
+    },
+    async applyReview() {
+      this.reviewBusy=true;this.reviewMessage='';
+      const generation=this.reviewGeneration,graphId=this.graphId(),nodeId=this.selected.nodeId;
+      try {
+        const answer=await this.provider().applyStack(graphId,nodeId,{operationId:this.reviewStatus.operationId,reviewDigest:this.reviewStatus.reviewDigest,confirmDestructive:this.confirmDestructive});
+        if(generation!==this.reviewGeneration)return;
+        this.reviewStatus=answer.status;this.scheduleReviewPoll(generation,graphId,nodeId);
+      }catch(err:any){if(generation===this.reviewGeneration)this.reviewMessage=err.message || String(err);}
+      finally {if(generation===this.reviewGeneration)this.reviewBusy=false;}
+    },
+    async discardReview() {
+      this.reviewBusy=true;this.reviewMessage='';
+      const generation=this.reviewGeneration;
+      try {
+        const answer=await this.provider().discardStackReview(this.graphId(),this.selected.nodeId,this.reviewStatus.operationId);
+        if(generation!==this.reviewGeneration)return;
+        this.reviewStatus=answer.status;clearTimeout(this.reviewTimer);await this.refresh();
+      }catch(err:any){if(generation===this.reviewGeneration)this.reviewMessage=err.message || String(err);}
+      finally {if(generation===this.reviewGeneration)this.reviewBusy=false;}
     },
     stateOf(stack: any): string {
       if (this.problemsOf(stack).length) {
@@ -201,10 +284,10 @@ export default {
         return "mdi-close-octagon-outline";
       }
       const state = (stack.status && stack.status.state) || "";
-      if (state === "planned") {
+      if (["planned", "awaiting-review", "succeeded", "no-changes"].includes(state)) {
         return this.planOf(stack) && this.planOf(stack).destructive ? "mdi-alert-outline" : "mdi-check-circle-outline";
       }
-      if (state === "failed") {
+      if (["failed", "rollback-failed", "rolled-back"].includes(state)) {
         return "mdi-alert-circle-outline";
       }
       return "mdi-cloud-question-outline";
@@ -225,3 +308,5 @@ export default {
   },
 };
 </script>
+
+<style scoped>.review-template {white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:360px;overflow:auto;}</style>

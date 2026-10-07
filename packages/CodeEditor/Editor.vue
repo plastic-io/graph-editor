@@ -14,11 +14,12 @@
           class="no-select"
           :style="{position: 'absolute', top: '-24px', left: 0, width: '100%', 'justify-content': 'left'}">
           <v-icon v-if="!isPopout" size="small" icon="mdi-close" @click="$emit('close')"/>
+          <span v-if="title" class="ml-2">{{ title }}</span>
           <v-divider class="mx-3" vertical></v-divider>
           <div style="margin-left: auto;"></div>
           <v-divider class="mx-3" vertical></v-divider>
-          <v-icon v-show="!autosave" icon="mdi-content-save" @click="save" title="Save"/>
-          <v-icon :color="autosave ? 'green' : ''" icon="mdi-auto-upload" title="Autosave" @click="autosave = !autosave"/>
+          <v-icon v-if="!readOnly" v-show="!autosave" icon="mdi-content-save" @click="save" title="Save"/>
+          <v-icon v-if="!readOnly" :color="autosave ? 'green' : ''" icon="mdi-auto-upload" title="Autosave" @click="autosave = !autosave"/>
           <v-divider class="mx-3" vertical></v-divider>
           <v-icon
             icon="mdi-help-circle-outline"
@@ -28,7 +29,7 @@
           }"/>
           <v-divider class="mx-3" vertical></v-divider>
           <v-icon
-            v-if="!isPopout" icon="mdi-open-in-new" @click="popout"/>
+            v-if="!isPopout && allowPopout" icon="mdi-open-in-new" @click="popout"/>
           
         </v-system-bar>
       </div>
@@ -122,6 +123,9 @@ export default {
   },
   props: {
     templateType: String,
+    title: String,
+    readOnly: Boolean,
+    allowPopout: {type:Boolean, default:true},
     language: String,
     nodeId: String,
     value: {type: String, default: ""},
@@ -221,6 +225,7 @@ export default {
       };
       const editor = monaco.editor.create((this.$refs.editor as any), {
         language: this.language,
+        readOnly: this.readOnly,
         theme: this.preferences.appearance.theme === 'dark' ? 'vs-dark' : 'vs',
       });
       editor.onDidFocusEditorText(() => {
@@ -479,7 +484,7 @@ export default {
         return;
       }
       this.localValue = this.value;
-      const cache = localStorage.getItem(this.storeKey);
+      const cache = this.readOnly ? null : localStorage.getItem(this.storeKey);
       const val = cache !== null ? cache : this.localValue;
       if (cache && cache !== this.localValue) {
         this.dirty = true;
@@ -511,6 +516,7 @@ export default {
       return (this.$refs.editor as any).pinstance.getValue();
     },
     update() {
+      if (this.readOnly) return;
       if (this.binding) {
         // Every keystroke is already in the shared document, so there is
         // nothing to mark dirty, cache or broadcast.
@@ -543,6 +549,7 @@ export default {
       this.dirty = false;
     },
     save() {
+      if (this.readOnly) return;
       this.dirty = false;
       localStorage.removeItem(this.storeKey);
       this.$emit('save', this.getValue());
@@ -570,6 +577,10 @@ export default {
       if (next && editor) {
         this.bindToDocument(editor);
       }
+    },
+    readOnly(value) {
+      const editor = (this.$refs.editor as any)?.pinstance;
+      if (editor) editor.updateOptions({readOnly:value});
     },
     dirty() {
       this.sendBroadcast({

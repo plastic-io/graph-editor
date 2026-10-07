@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import Panel from "../DeploymentStatus.vue";
 
 /**
@@ -21,7 +21,7 @@ const stack = (over: any = {}) => ({
 });
 /** the component's own methods, bound to just enough of an instance */
 const on = (data: any = {}) => {
-  const self: any = { stacks: [], canPlan: true, busy: false, planning: "", message: "", ...data };
+  const self: any = { ...component.data(), canPlan: true, ...data };
   Object.keys(methods).forEach((key) => { self[key] = methods[key].bind(self); });
   return self;
 };
@@ -147,5 +147,37 @@ describe("what it asks the server", () => {
     expect(source).toMatch(/syncProviders/);
     expect(source).toMatch(/listStacks/);
     expect(source).not.toMatch(/dataProviders/);
+  });
+});
+
+
+describe('review and apply feedback',()=>{
+  it('keeps the returned plan in the open dialog when the stack list refresh is stale',async()=>{
+    const provider=new FakeProvider();const self=withProvider(provider);
+    await self.plan(stack());
+    expect(self.reviewOpen).toBe(true);expect(self.reviewStatus.state).toBe('planned');
+    expect(self.reviewBusy).toBe(false);expect(self.stacks[0].status).toBeNull();
+  });
+  it('a successful refresh does not erase a failed review message',async()=>{
+    const provider=new FakeProvider();provider.planStack=async()=>{throw new Error('Review permission denied');};
+    const self=withProvider(provider);await self.plan(stack());
+    expect(self.reviewMessage).toBe('Review permission denied');expect(self.message).toBe('Review permission denied');
+  });
+  it('approval sends the displayed digest and destructive confirmation, then follows the operation',async()=>{
+    vi.useFakeTimers();
+    try {
+      const provider:any=new FakeProvider();provider.applyStack=vi.fn(async()=>({status:{operationId:'op',state:'applying'}}));
+      provider.stackReview=vi.fn(async()=>({status:{operationId:'op',state:'succeeded',outputs:[{key:'Bucket',value:'private'}]}}));
+      const self=withProvider(provider,{reviewOpen:true,selected:stack(),reviewStatus:{operationId:'op',reviewDigest:'reviewed',state:'awaiting-review'},confirmDestructive:true});
+      await self.applyReview();expect(provider.applyStack).toHaveBeenCalledWith('g1','stack',{operationId:'op',reviewDigest:'reviewed',confirmDestructive:true});
+      await vi.advanceTimersByTimeAsync(2000);expect(self.reviewStatus.state).toBe('succeeded');
+      expect(self.reviewStatus.outputs[0].value).toBe('private');
+    }finally{vi.useRealTimers();}
+  });
+  it('closing a review prevents a delayed response from reopening or changing it',async()=>{
+    let resolve:any;const provider:any=new FakeProvider();provider.planStack=()=>new Promise(r=>{resolve=r;});
+    const self=withProvider(provider);const pending=self.plan(stack());
+    self.reviewOpen=false;component.watch.reviewOpen.call(self,false);
+    resolve({status:{state:'planned'}});await pending;expect(self.reviewOpen).toBe(false);expect(self.reviewStatus).toBeNull();
   });
 });

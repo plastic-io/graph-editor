@@ -640,8 +640,20 @@ export class WssCrdtProvider {
     return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}`);
   }
   /** Ask what the change would do.  Nothing here can make it happen. */
-  planStack(graphId: string, nodeId: string): Promise<any> {
-    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/plan`, { method: "POST", body: "{}" });
+  planStack(graphId: string, nodeId: string, replace = false): Promise<any> {
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/plan`, { method: "POST", body: JSON.stringify({replace}) });
+  }
+  stackTemplate(graphId: string, nodeId: string): Promise<any> {
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/template`);
+  }
+  stackReview(graphId: string, nodeId: string): Promise<any> {
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/review`);
+  }
+  applyStack(graphId: string, nodeId: string, approval: any): Promise<any> {
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/apply`, {method:'POST',body:JSON.stringify(approval)});
+  }
+  discardStackReview(graphId: string, nodeId: string, operationId: string): Promise<any> {
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/discard`, {method:'POST',body:JSON.stringify({operationId})});
   }
   /**
    * What crossed one wire or one node, across the executions this graph has

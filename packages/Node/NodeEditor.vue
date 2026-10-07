@@ -33,6 +33,7 @@
           @dirty="setIsDirty = $event"
           @save="saveTemplate('set', $event)"
       />
+      <iac-editor v-if="showIacEditor && node?.properties?.iac" :node-id="nodeId" @close="showIacEditor = false"/>
     </div>
     <div class="position-absolute no-graph-targe"
         style="top: -25px; width: 200px;">
@@ -48,6 +49,9 @@
                 :color="showSetEditor ? 'secondary' : ''"
                 icon="mdi-lambda"
                 @click="showSetEditor = !showSetEditor"/>
+          </v-badge>
+          <v-badge v-if="node?.properties?.iac?.stack || node?.properties?.iac?.resource" color="transparent">
+            <v-icon icon="mdi-cloud-braces" title="CloudFormation template" aria-label="CloudFormation template" role="button" tabindex="0" :data-testid="'cfn-editor-' + nodeId" :color="showIacEditor ? 'secondary' : ''" @click="showIacEditor = !showIacEditor" @keydown.enter="showIacEditor = !showIacEditor"/>
           </v-badge>
           <v-badge v-if="errors.length > 0" color="red" :content="errors.length">
             <v-icon
@@ -85,9 +89,10 @@
   import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
   import { saveAs } from "file-saver";
   import NodeError from "./NodeError.vue";
+  import IacEditor from "./IacEditor.vue";
   export default {
     name: 'node-editor',
-    components: {NodeError},
+    components: {NodeError, IacEditor},
     props: {
       hovered: Boolean,
       nodeId: {type: String, required: true},
@@ -98,6 +103,7 @@
         localNode: null,
         showVueEditor: false,
         showSetEditor: false,
+        showIacEditor: false,
         showError: false,
         vueIsDirty: false,
         setIsDirty: false,
@@ -149,6 +155,7 @@
           || this.errors.length > 0
           || this.hovered
           || this.showVueEditor
+          || this.showIacEditor
           || this.showSetEditor
           || this.showError;
       },
