@@ -48,6 +48,7 @@ import Executions from "@plastic-io/graph-editor-vue3-executions";
 import DeploymentStatus from "@plastic-io/graph-editor-vue3-deployment-status";
 import AgentActivity from "@plastic-io/graph-editor-vue3-agent-activity";
 import InsideBar from "@plastic-io/graph-editor-vue3-inside-bar";
+import Chat from "../packages/Chat/main";
 import AgentSettings from "@plastic-io/graph-editor-vue3-agent-settings";
 import SettingsPanel from "@plastic-io/graph-editor-vue3-settings-panel";
 import Workspace from "@plastic-io/graph-editor-vue3-workspace";
@@ -106,6 +107,7 @@ const plugins = [
   AgentActivity,
   InsideBar,
   AgentSettings,
+  Chat,
   SettingsPanel,
   WssDocumentProvider,
   WssCrdtProvider,

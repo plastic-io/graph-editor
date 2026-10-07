@@ -1,0 +1,7 @@
+{
+  "name": "@plastic-io/graph-editor-vue3-chat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Graph collaboration chat and private direct messages over the shared WebSocket bus",
+  "main": "./main.ts"
+}
