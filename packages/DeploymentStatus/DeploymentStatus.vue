@@ -206,7 +206,9 @@ export default {
       this.reviewStatus=replace ? null : stack.status;
       this.planning=stack.nodeId;
       try {
-        const answer=await this.provider().planStack(graphId,stack.nodeId,replace);
+        const answer=this.canReview && stack.status?.operationId && !replace
+          ? await this.provider().stackReview(graphId,stack.nodeId)
+          : await this.provider().planStack(graphId,stack.nodeId,replace);
         if(generation!==this.reviewGeneration || graphId!==this.graphId())return;
         this.reviewStatus=answer.status || answer;
         stack.status=this.reviewStatus;

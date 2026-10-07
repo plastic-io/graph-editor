@@ -152,6 +152,12 @@ describe("what it asks the server", () => {
 
 
 describe('review and apply feedback',()=>{
+  it('reopening a completed review shows its outputs without starting new work',async()=>{
+    const provider:any=new FakeProvider();provider.stackReview=vi.fn(async()=>({status:{operationId:'finished',state:'succeeded',outputs:[{key:'Bucket',value:'private'}]}}));
+    const self=withProvider(provider,{canReview:true});
+    await self.plan(stack({status:{operationId:'finished',state:'succeeded'}}));
+    expect(provider.planned).toHaveLength(0);expect(self.reviewStatus.outputs[0].value).toBe('private');
+  });
   it('keeps the returned plan in the open dialog when the stack list refresh is stale',async()=>{
     const provider=new FakeProvider();const self=withProvider(provider);
     await self.plan(stack());
