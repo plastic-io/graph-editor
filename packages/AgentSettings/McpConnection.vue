@@ -13,7 +13,7 @@
           <v-alert v-if="discoveryError" type="info" variant="tonal" density="compact" class="my-3">
             Authentication details could not be loaded. The URL above still points to your configured graph server; check its OAuth setup before connecting.
           </v-alert>
-          <v-alert v-if="cognito" type="info" variant="tonal" density="compact" class="my-3">
+          <v-alert v-if="cognito && !automaticRegistration" type="info" variant="tonal" density="compact" class="my-3">
             Cognito requires an OAuth client registered for ChatGPT or Codex. Your editor login does not register that connection. See administrator setup below.
           </v-alert>
           <v-tabs v-model="tab" class="mb-3">
@@ -24,7 +24,7 @@
             <ol class="setup-steps">
               <li>Open ChatGPT Plugins, select the plus button, then <strong>Add custom MCP server</strong>.</li>
               <li>Name it <strong>Graph Server</strong> and paste the MCP server URL above.</li>
-              <li>Choose <strong>OAuth</strong>. Use the registered client credentials supplied by your administrator when required, then sign in with your graph account.</li>
+              <li>Choose <strong>OAuth</strong>. <span v-if="automaticRegistration">Leave the client ID and secret empty; the connection registers automatically. </span><span v-else>Use registered client credentials when your provider requires them. </span>Sign in with your graph account.</li>
               <li>Create and install the plugin. In a conversation, type <strong>@</strong> and select Graph Server.</li>
             </ol>
             <p class="text-caption my-3">Your ChatGPT workspace must allow custom MCP servers.</p>
@@ -33,10 +33,11 @@
           </section>
           <section v-else aria-label="Codex setup">
             <p class="mb-3">Run this command in a terminal with the Codex CLI installed.</p>
-            <v-text-field v-model="clientId" label="Registered OAuth client ID" :hint="cognito ? 'Required for Cognito. Get a dedicated public client ID from your administrator.' : 'Only needed if your identity provider requires a pre-registered client.'" persistent-hint density="compact" class="mb-3"/>
+            <v-text-field v-if="!automaticRegistration" v-model="clientId" label="Registered OAuth client ID" :hint="cognito ? 'Required for Cognito. Get a dedicated public client ID from your administrator.' : 'Only needed if your identity provider requires a pre-registered client.'" persistent-hint density="compact" class="mb-3"/>
             <pre class="command-block" data-testid="codex-add-command">{{ addCommand }}</pre>
-            <v-btn class="my-2" variant="tonal" size="small" @click="copy(addCommand)" :disabled="cognito && !clientId.trim()">Copy command</v-btn>
-            <p class="my-2">If using a registered client, have your administrator allow the exact callback URL printed by Codex. Then finish signing in:</p>
+            <v-btn class="my-2" variant="tonal" size="small" @click="copy(addCommand)" :disabled="cognito && !automaticRegistration && !clientId.trim()">Copy command</v-btn>
+            <p v-if="!automaticRegistration" class="my-2">If using a registered client, have your administrator allow the exact callback URL printed by Codex. Then finish signing in:</p>
+            <p v-if="automaticRegistration" class="my-2">The client registers automatically. Sign in with your graph account:</p>
             <pre class="command-block">codex mcp login graph-server</pre>
             <p class="my-2">Restart the Codex session and use <code>/mcp</code> to check the connection.</p>
             <p class="mt-3"><a href="https://learn.chatgpt.com/docs/extend/mcp" target="_blank" rel="noopener noreferrer">OpenAI Codex MCP setup guide</a></p>
@@ -46,12 +47,13 @@
               <v-expansion-panel-text>
                 <p v-if="issuer" class="mb-2">Authorization server: <code class="break-text">{{ issuer }}</code></p>
                 <p v-if="scopes.length" class="mb-2">API scopes: <code>{{ scopes.join(' ') }}</code></p>
-                <ol class="setup-steps">
+                <p v-if="automaticRegistration" class="my-3">Automatic OAuth registration is enabled for ChatGPT and local MCP clients. No manual client ID, secret, or callback registration is needed. Graph access requires an authenticated user.</p>
+                <ol v-else class="setup-steps">
                   <li>Register a separate authorization-code OAuth client with PKCE for each external app. Allow its exact callback URL from ChatGPT or Codex; do not substitute the editor callback.</li>
                   <li v-if="cognito">Enable the API scopes above and the OIDC scopes requested by the client. Add the new human client ID to the server's <code>COGNITO_CLIENT_IDS</code> through the deployment configuration.</li>
                   <li>Verify OAuth discovery advertises PKCE <code>S256</code> and a token authentication method accepted by the client. Native Cognito discovery may require an OAuth adapter to meet these requirements.</li>
                 </ol>
-                <p class="mt-3">Use a public client for local Codex. Keep any ChatGPT client secret in its OAuth setup, outside the editor. Configure a fixed callback port when your provider requires an exact loopback URL.</p>
+                <p v-if="!automaticRegistration" class="mt-3">Use a public client for local Codex. Keep any ChatGPT client secret in its OAuth setup, outside the editor. Configure a fixed callback port when your provider requires an exact loopback URL.</p>
                 <p class="mt-3"><a href="https://developers.openai.com/plugins/build/auth" target="_blank" rel="noopener noreferrer">OpenAI OAuth requirements</a></p>
               </v-expansion-panel-text>
             </v-expansion-panel>
@@ -71,7 +73,7 @@ export default defineComponent({
   props: {compact: Boolean},
   data() {
     return {visible:false, tab:'chatgpt', clientId:'', copyMessage:'', loading:false, discoveryError:false,
-      authProvider:'', issuer:'', scopes:[] as string[], request:null as AbortController | null};
+      authProvider:'', automaticRegistration:false, issuer:'', scopes:[] as string[], request:null as AbortController | null};
   },
   computed: {
     urls() {
@@ -79,7 +81,7 @@ export default defineComponent({
       return connectionUrls(preferences.graphHTTPServer, preferences.useLocalStorage);
     },
     cognito(): boolean { return this.authProvider === 'cognito'; },
-    addCommand(): string { return this.urls ? codexAddCommand(this.urls.mcp, this.clientId, this.cognito) : ''; },
+    addCommand(): string { return this.urls ? codexAddCommand(this.urls.mcp, this.automaticRegistration ? '' : this.clientId, this.cognito && !this.automaticRegistration) : ''; },
   },
   beforeUnmount() { this.request?.abort(); },
   methods: {
@@ -87,7 +89,7 @@ export default defineComponent({
       if (!this.urls) return;
       this.visible = true;
       this.copyMessage = '';
-      this.authProvider = ''; this.issuer = ''; this.scopes = [];
+      this.authProvider = ''; this.issuer = ''; this.scopes = []; this.automaticRegistration = false;
       this.discoveryError = false; this.loading = true;
       this.request?.abort();
       const request = new AbortController(); this.request = request;
@@ -98,6 +100,7 @@ export default defineComponent({
         const metadata = await response.json();
         if (this.request !== request) return;
         this.authProvider = String(metadata.auth_provider || '');
+        this.automaticRegistration = metadata.client_registration === 'dynamic';
         this.issuer = typeof metadata.authorization_servers?.[0] === 'string' ? metadata.authorization_servers[0] : '';
         this.scopes = Array.isArray(metadata.scopes_supported) ? metadata.scopes_supported.filter((scope:unknown) => typeof scope === 'string') : [];
       } catch {
