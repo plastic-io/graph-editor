@@ -24,7 +24,11 @@
             <div
                 help-topic="nodeInstance"
                 :id="'node-' + localNode.id"
-                :class="translating && mouse.lmb ? 'no-select' : ''"
+                :class="{
+                    'no-select': translating && mouse.lmb,
+                    'cloudformation-node-content': !!localNode.properties?.iac?.stack,
+                }"
+                @wheel="localNode.properties?.iac?.stack && $event.stopPropagation()"
             >
                 <v-card v-if="broken">
                     <v-card-title>
@@ -464,6 +468,14 @@ export default {
 };
 </script>
 <style>
+    .cloudformation-node-content {
+        box-sizing: border-box;
+        max-width: 640px;
+        max-height: 480px;
+        overflow: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+    }
     .node-inputs {
         position: absolute;
         left: -15px;
