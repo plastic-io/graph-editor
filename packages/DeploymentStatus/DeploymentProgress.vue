@@ -9,7 +9,7 @@
       <p v-if="status.reason" :class="failed ? 'failure' : ''">{{ status.reason }}</p>
       <p v-if="status.error" class="failure">{{ status.error.code }}: {{ status.error.message }}</p>
       <p v-if="status.recovery" class="recovery"><strong>{{ status.recovery.category }}</strong>: {{ status.recovery.message }}</p>
-      <p v-if="status.manualRecoveryRequired">This operation requires platform recovery. Monitoring does not approve or perform recovery.</p>
+      <p v-if="status.manualRecoveryRequired">Recovery is required. Check current readiness and prepare a separately approved recovery plan below.</p>
       <p v-if="status.progress?.collectionWarning" role="status">{{ status.progress.collectionWarning.reason }}</p>
       <small>Operation {{ status.operationId }} · updated {{ time(status.updatedAt) }}</small>
       <details>
@@ -26,12 +26,14 @@
 {{ entry.error.trace.join('\n') }}</template></pre><p v-if="!logs.length">No diagnostic log entries have been collected.</p></details>
       <p class="milestones">A validated proposal or accepted graph is not deployment approval. Only the exact reviewed digest can be approved in the infrastructure review.</p>
     </template>
+    <deployment-lifecycle :graph-id="graphId" :node-id="nodeId" :status="status" @refresh="refresh"/>
   </section>
 </template>
 <script lang="ts">
+import DeploymentLifecycle from './DeploymentLifecycle.vue';
 import {useStore as orchestratorStore} from '@plastic-io/graph-editor-vue3-orchestrator';
 export default {
-  name:'deployment-progress',props:{graphId:{type:String,required:true},nodeId:{type:String,required:true}},emits:['status'],
+  name:'deployment-progress',components:{DeploymentLifecycle},props:{graphId:{type:String,required:true},nodeId:{type:String,required:true}},emits:['status'],
   data(){return {status:null as any,events:[] as any[],operations:[] as any[],cursor:'',historyCursor:'',hasMore:false,selectedOperation:'',error:'',busy:false,timer:null as any,detach:null as any,generation:0,clipped:false};},
   computed:{
     latest():any{return this.status?.progress?.latest;},
@@ -42,7 +44,7 @@ export default {
     },
     logs():any[]{return this.events.filter((e:any)=>['cloudwatch','diagnostics'].includes(e.source)||e.error);},
     failed():boolean{return ['failed','rollback-failed','rolled-back'].includes(this.status?.state);},
-    phaseLabel():string{if(this.failed)return 'Failed · '+(this.status?.progress?.phase||this.latest?.phase||'terminal');const labels:any={guardrails:'Preparing guardrails',planning:'Planning', 'awaiting-approval':'Awaiting deployment approval',deploying:'Deploying','rolling-back':'Rolling back',cleanup:'Cleanup',terminal:this.status?.state};return labels[this.status?.progress?.phase||this.latest?.phase]||this.status?.state||'Loading';},
+    phaseLabel():string{if(this.failed)return 'Failed · '+(this.status?.progress?.phase||this.latest?.phase||'terminal');const labels:any={guardrails:'Preparing guardrails',planning:'Planning', 'awaiting-approval':'Awaiting deployment approval',deploying:'Deploying','rolling-back':'Rolling back',cleanup:'Cleanup',recovering:'Recovering', 'awaiting-recovery-approval':'Awaiting recovery approval',readiness:'Checking readiness',maintenance:'Platform maintenance',runtime:'Runtime diagnostics',terminal:this.status?.state==='recovered'?'Recovery complete':this.status?.state};return labels[this.status?.progress?.phase||this.latest?.phase]||this.status?.state||'Loading';},
   },
   watch:{graphId(){this.start();},nodeId(){this.start();}},
   mounted(){this.start();},beforeUnmount(){this.stop();},

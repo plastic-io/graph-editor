@@ -640,8 +640,8 @@ export class WssCrdtProvider {
     return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}`);
   }
   /** Ask what the change would do.  Nothing here can make it happen. */
-  planStack(graphId: string, nodeId: string, replace = false, action = 'apply'): Promise<any> {
-    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/plan`, { method: "POST", body: JSON.stringify({replace,action}) });
+  planStack(graphId: string, nodeId: string, replace = false, action = 'apply', retryOf?:string): Promise<any> {
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/plan`, { method: "POST", body: JSON.stringify({replace,action,retryOf}) });
   }
   stackTemplate(graphId: string, nodeId: string): Promise<any> {
     return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/template`);
@@ -655,6 +655,17 @@ export class WssCrdtProvider {
   }
   stackOperations(graphId:string,nodeId:string,cursor?:string):Promise<any>{
     return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/operations${cursor ? '?cursor='+encodeURIComponent(cursor) : ''}`);
+  }
+  inspectStack(graphId:string,nodeId:string,operationId?:string):Promise<any>{
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/inspect${operationId ? '?operationId='+encodeURIComponent(operationId) : ''}`);
+  }
+  recoveryPlan(graphId:string,nodeId:string,body:any):Promise<any>{return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/recovery-plan`,{method:'POST',body:JSON.stringify(body)});}
+  approveRecovery(graphId:string,nodeId:string,body:any):Promise<any>{return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/recovery-approve`,{method:'POST',body:JSON.stringify(body)});}
+  stackMaintenance(graphId:string,nodeId:string,body:any):Promise<any>{return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/maintenance`,{method:'POST',body:JSON.stringify(body)});}
+  stackReadiness(graphId:string,nodeId:string,body:any):Promise<any>{return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/readiness`,{method:'POST',body:JSON.stringify(body)});}
+  runtimeLogs(graphId:string,nodeId:string,query:any):Promise<any>{
+    const search=new URLSearchParams(Object.entries(query).filter(([,v])=>v!==undefined).map(([k,v])=>[k,String(v)]));
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/runtime-logs?${search}`);
   }
   applyStack(graphId: string, nodeId: string, approval: any): Promise<any> {
     return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/apply`, {method:'POST',body:JSON.stringify(approval)});
