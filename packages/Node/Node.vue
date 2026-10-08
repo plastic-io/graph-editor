@@ -48,6 +48,7 @@
                     @set="set"
                     :key="renderVersion"
                 />
+                <deployment-progress v-if="localNode.properties?.iac?.stack" :graph-id="currentGraph.id" :node-id="localNode.id"/>
                 <component
                     v-for="(style, index) in styles"
                     :is="'style'"
@@ -85,6 +86,7 @@ import {mapWritableState, mapActions, mapState} from "pinia";
 import NodeField from "./NodeField.vue";
 import NodeComponent from "./NodeComponent.vue";
 import NodeEditor from "./NodeEditor.vue";
+import DeploymentProgress from "../DeploymentStatus/DeploymentProgress.vue";
 
 import {deepEqual} from "@plastic-io/graph-crdt";
 
@@ -95,7 +97,7 @@ const RECOMPILE_DEBOUNCE = 600;
 
 export default {
     name: "node",
-    components: {NodeField, NodeComponent, NodeEditor},
+    components: {NodeField, NodeComponent, NodeEditor, DeploymentProgress},
     props: {
         // These say what the prop is, rather than naming a type where Vue
         // expects a constructor: `node: Node` declared the DOM's Node, because

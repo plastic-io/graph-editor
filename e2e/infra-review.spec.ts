@@ -19,6 +19,8 @@ test('CloudFormation template icon and review approval remain visible through li
     await route.fulfill({json:{status:review}});
   });
   await page.route('**/crdt/'+id+'/iac/'+nodeId+'/review',route=>route.fulfill({json:{status:review}}));
+  await page.route('**/crdt/'+id+'/iac/'+nodeId+'/events?*',route=>route.fulfill({json:{events:[],nextCursor:'cursor',hasMore:false}}));
+  await page.route('**/crdt/'+id+'/iac/'+nodeId+'/operations*',route=>route.fulfill({json:{operations:review?[review]:[],nextCursor:null}}));
   await page.route('**/crdt/'+id+'/iac/'+nodeId+'/apply',route=>{
     approval=route.request().postDataJSON();review={...review,state:'succeeded',outputs:[{key:'RecordsBucket',value:'pio-dev-review-ui'}]};
     return route.fulfill({json:{status:review}});
@@ -53,4 +55,6 @@ test('CloudFormation template icon and review approval remain visible through li
   await dialog.getByRole('button',{name:'Approve and apply',exact:true}).click();
   await expect(dialog).toContainText('Deployment complete');await expect(dialog).toContainText('RecordsBucket');
   expect(approval).toEqual({operationId:'01M4C000000000000000000000',reviewDigest:'exact-review',confirmDestructive:false});
+  await expect(page.locator('#node-'+nodeId).getByTestId('deployment-progress')).toContainText('succeeded');
+  await expect(dialog.getByTestId('deployment-progress')).toContainText('succeeded');
 });

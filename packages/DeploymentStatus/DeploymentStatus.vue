@@ -57,8 +57,9 @@
         <div v-if="reviewBusy || pendingReview" class="mb-3"><v-progress-linear indeterminate class="mb-2"/>{{ reviewStatus?.state === 'applying' || reviewStatus?.state === 'apply-requested' ? 'Applying the approved changes in AWS…' : 'Preparing the CloudFormation review…' }}</div>
         <v-alert v-if="reviewStatus" :type="reviewStatus.state === 'succeeded' ? 'success' : ['failed','rollback-failed','rolled-back'].includes(reviewStatus.state) ? 'error' : 'info'" variant="tonal" class="mb-3">
           <strong>{{ reviewStateLabel }}</strong><div v-if="reviewStatus.reason">{{ reviewStatus.reason }}</div>
-          <div v-if="reviewStatus.manualRecoveryRequired">Check the stack in CloudFormation before retrying. This stack is locked for recovery.</div>
+          <div v-if="reviewStatus.manualRecoveryRequired">Read the resource failures and recovery guidance below before retrying. This stack is locked for recovery.</div>
         </v-alert>
+        <deployment-progress v-if="canReview && selected" :graph-id="graphId()" :node-id="selected.nodeId" @status="reviewStatus = $event"/>
         <v-table v-if="reviewStatus?.plan" density="compact" class="mb-3">
           <thead><tr><th>Change</th><th>Resource</th><th>Type</th><th>Replacement</th><th>Retention</th></tr></thead>
           <tbody><tr v-for="(change,i) in reviewStatus.plan.changes" :key="i"><td>{{ change.action }}</td><td>{{ change.logicalId }}</td><td>{{ change.resourceType }}</td><td>{{ change.replacement || '—' }}</td><td>{{ change.outcome || change.policyAction || (change.replacement && change.replacement !== 'False' ? change.updateReplacePolicy : change.deletionPolicy) || 'See template' }}</td></tr></tbody>
@@ -91,6 +92,7 @@
 </template>
 <script lang="ts">
 import {mapState} from "pinia";
+import DeploymentProgress from "./DeploymentProgress.vue";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
@@ -108,6 +110,7 @@ import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-pre
  */
 export default {
   name: "deployment-status",
+  components:{DeploymentProgress},
   data() {
     return {
       open: false,

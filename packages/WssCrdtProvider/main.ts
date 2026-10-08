@@ -646,8 +646,15 @@ export class WssCrdtProvider {
   stackTemplate(graphId: string, nodeId: string): Promise<any> {
     return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/template`);
   }
-  stackReview(graphId: string, nodeId: string): Promise<any> {
-    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/review`);
+  stackReview(graphId: string, nodeId: string, operationId?:string): Promise<any> {
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/review${operationId ? "?operationId="+encodeURIComponent(operationId) : ""}`);
+  }
+  stackEvents(graphId:string,nodeId:string,query:{operationId:string;cursor?:string;limit?:number}):Promise<any>{
+    const search=new URLSearchParams(Object.entries(query).filter(([,v])=>v!==undefined).map(([k,v])=>[k,String(v)]));
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/events?${search}`);
+  }
+  stackOperations(graphId:string,nodeId:string,cursor?:string):Promise<any>{
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/operations${cursor ? '?cursor='+encodeURIComponent(cursor) : ''}`);
   }
   applyStack(graphId: string, nodeId: string, approval: any): Promise<any> {
     return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/apply`, {method:'POST',body:JSON.stringify(approval)});
