@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { h, defineComponent, onErrorCaptured } from "vue";
+  import { h, defineComponent, onErrorCaptured, onUnmounted } from "vue";
   import type { SetupContext } from "vue";
   import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
   import {useStore as useInputStore} from "@plastic-io/graph-editor-vue3-input";
   import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
   import {useStore as useGraphStore, useGraphSnapshotStore} from "@plastic-io/graph-editor-vue3-graph";
   import {toJSON} from 'flatted';
+  import {browserApplication} from './application';
   export default defineComponent({
     name: 'node-component',
     props: {
@@ -32,7 +33,11 @@
           props.scheduler.instance!.url(props.node.url, val, output.name, props.hostNode);
         };
       });
+      const bridge=browserApplication(props.graph?.id || props.hostGraph?.id);
+      onUnmounted(()=>bridge.dispose());
       const importedProps = {
+        session:bridge.session,
+        application:bridge.application,
         stores: {
           orchestratorStore: useOrchestratorStore(),
           preferencesStore: usePreferencesStore(),

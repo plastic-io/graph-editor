@@ -303,6 +303,7 @@ export class WSSDataProvider {
             return;
         }
         this.events[channelId].splice(idx, 1);
+        if(this.events[channelId].length)return;
         this.send({
             action: "unsubscribe",
             channelId,

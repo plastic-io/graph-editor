@@ -1,5 +1,5 @@
 <template>
-    <div ref="node-root" v-if="localNode && visible">
+    <div ref="node-root" v-if="localNode && mountedForExecution" v-show="visible">
         <node-editor
             v-if="!presentation"
             :style="editorStyle"
@@ -389,6 +389,9 @@ export default {
         nodeComponentName() {
             const name = this.artifactKey((this.node as any).artifact) || this.node.id;
             return name;
+        },
+        mountedForExecution() {
+            return this.visible || !!this.localNode?.properties?.runInBackground;
         },
         visible: function () {
             if (this.presentation && !this.localNode.properties.appearsInPresentation) {

@@ -60,11 +60,18 @@
           <div v-if="reviewStatus.manualRecoveryRequired">Check the stack in CloudFormation before retrying. This stack is locked for recovery.</div>
         </v-alert>
         <v-table v-if="reviewStatus?.plan" density="compact" class="mb-3">
-          <thead><tr><th>Change</th><th>Resource</th><th>Type</th><th>Replacement</th></tr></thead>
-          <tbody><tr v-for="(change,i) in reviewStatus.plan.changes" :key="i"><td>{{ change.action }}</td><td>{{ change.logicalId }}</td><td>{{ change.resourceType }}</td><td>{{ change.replacement || '—' }}</td></tr></tbody>
+          <thead><tr><th>Change</th><th>Resource</th><th>Type</th><th>Replacement</th><th>Retention</th></tr></thead>
+          <tbody><tr v-for="(change,i) in reviewStatus.plan.changes" :key="i"><td>{{ change.action }}</td><td>{{ change.logicalId }}</td><td>{{ change.resourceType }}</td><td>{{ change.replacement || '—' }}</td><td>{{ change.outcome || change.policyAction || (change.replacement && change.replacement !== 'False' ? change.updateReplacePolicy : change.deletionPolicy) || 'See template' }}</td></tr></tbody>
         </v-table>
         <p v-if="reviewStatus?.plan && !reviewStatus.plan.changes.length">The stack already matches; there are no changes to apply.</p>
+        <v-alert v-if="reviewStatus?.preflight" type="info" variant="tonal" class="mb-3">
+          <div>Stack namespace: {{ reviewStatus.preflight.isolation.namespace }}</div>
+          <div>Template checks do not verify AWS permissions or application readiness.</div>
+          <div v-for="(problem,i) in reviewStatus.preflight.problems" :key="i">{{ problem.path }}: {{ problem.message }}</div>
+        </v-alert>
         <v-expansion-panels v-if="reviewStatus?.template" class="mb-3">
+          <v-expansion-panel v-if="accessChanges.length" title="IAM and resource policy changes"><v-expansion-panel-text><pre class="review-template">{{ JSON.stringify(accessChanges, null, 2) }}</pre></v-expansion-panel-text></v-expansion-panel>
+          <v-expansion-panel v-if="reviewStatus?.preflight" title="Deployment permissions and prerequisites"><v-expansion-panel-text><pre class="review-template">{{ JSON.stringify({deploymentRole:reviewStatus.preflight.deploymentRole,permissionsBoundary:reviewStatus.preflight.permissionsBoundary,requirements:reviewStatus.preflight.requirements}, null, 2) }}</pre></v-expansion-panel-text></v-expansion-panel>
           <v-expansion-panel title="Reviewed CloudFormation template"><v-expansion-panel-text><pre class="review-template">{{ reviewStatus.template.text }}</pre></v-expansion-panel-text></v-expansion-panel>
         </v-expansion-panels>
         <v-table v-if="reviewStatus?.outputs?.length" density="compact"><thead><tr><th>Output</th><th>Value</th></tr></thead><tbody><tr v-for="output in reviewStatus.outputs" :key="output.key"><td>{{ output.key }}</td><td class="text-break">{{ output.value }}</td></tr></tbody></v-table>
@@ -75,8 +82,9 @@
       <v-card-actions>
         <v-btn v-if="canReview && ['planning','awaiting-review'].includes(reviewStatus?.state)" :disabled="reviewBusy" @click="discardReview">Discard review</v-btn>
         <v-spacer/>
+        <v-btn v-if="canReview && reviewStatus?.state === 'succeeded' && reviewStatus?.stack?.name?.startsWith('gapp-')" color="warning" @click="plan(selected, true, 'destroy')">Review stack deletion</v-btn>
         <v-btn v-if="!pendingReview && !reviewBusy" @click="plan(selected, true)">Create new review</v-btn>
-        <v-btn v-if="canReview && reviewStatus?.state === 'awaiting-review'" color="primary" variant="flat" :loading="reviewBusy" :disabled="reviewStatus.plan.destructive && !confirmDestructive" @click="applyReview">Approve and apply</v-btn>
+        <v-btn v-if="canReview && reviewStatus?.state === 'awaiting-review'" color="primary" variant="flat" :loading="reviewBusy" :disabled="reviewStatus.plan.destructive && !confirmDestructive" @click="applyReview">{{ reviewStatus?.action === 'destroy' ? 'Approve stack deletion' : 'Approve and apply' }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -140,11 +148,12 @@ export default {
     }
   },
   computed: {
+    accessChanges(): any[] { return (this.reviewStatus?.plan?.changes || []).filter((c: any)=>c.access).map((c: any)=>({logicalId:c.logicalId,action:c.action,resourceType:c.resourceType,...c.access})); },
     pendingReview(): boolean { return ['planning','apply-requested','applying'].includes(this.reviewStatus?.state); },
     reviewStateLabel(): string {
       const labels: any={'awaiting-review':'Ready for your approval',planned:'Preview complete',planning:'Preparing review',
         'apply-requested':'Approval recorded',applying:'Applying changes',succeeded:'Deployment complete',failed:'Deployment failed',
-        'rolled-back':'AWS rolled back the deployment','rollback-failed':'Rollback needs attention',cancelled:'Review discarded',expired:'Review expired','no-changes':'No changes needed'};
+        'rolled-back':'AWS rolled back the deployment','rollback-failed':'Rollback needs attention',cancelled:'Review discarded',expired:'Review expired','no-changes':'No changes needed',destroyed:'Stack deleted'};
       return labels[this.reviewStatus?.state] || this.reviewStatus?.state || '';
     },
     ...mapState(useGraphStore, ["graphLoaded", "graph"]),
@@ -199,7 +208,7 @@ export default {
       }
       this.busy = false;
     },
-    async plan(stack: any, replace = false) {
+    async plan(stack: any, replace = false, action = 'apply') {
       clearTimeout(this.reviewTimer);
       const generation=++this.reviewGeneration, graphId=this.graphId();
       this.selected=stack;this.reviewOpen=true;this.reviewBusy=true;this.reviewMessage='';this.message='';this.confirmDestructive=false;
@@ -208,7 +217,7 @@ export default {
       try {
         const answer=this.canReview && stack.status?.operationId && !replace
           ? await this.provider().stackReview(graphId,stack.nodeId)
-          : await this.provider().planStack(graphId,stack.nodeId,replace);
+          : await this.provider().planStack(graphId,stack.nodeId,replace,action);
         if(generation!==this.reviewGeneration || graphId!==this.graphId())return;
         this.reviewStatus=answer.status || answer;
         stack.status=this.reviewStatus;

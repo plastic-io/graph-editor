@@ -640,8 +640,8 @@ export class WssCrdtProvider {
     return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}`);
   }
   /** Ask what the change would do.  Nothing here can make it happen. */
-  planStack(graphId: string, nodeId: string, replace = false): Promise<any> {
-    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/plan`, { method: "POST", body: JSON.stringify({replace}) });
+  planStack(graphId: string, nodeId: string, replace = false, action = 'apply'): Promise<any> {
+    return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/plan`, { method: "POST", body: JSON.stringify({replace,action}) });
   }
   stackTemplate(graphId: string, nodeId: string): Promise<any> {
     return this.api(`${graphId}/iac/${encodeURIComponent(nodeId)}/template`);

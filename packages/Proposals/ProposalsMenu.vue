@@ -32,6 +32,19 @@
               <div><small>{{ p.state }} · by {{ who(p.principal) }} · base {{ short(p.baseRevision) }}<span v-if="p.requiredDecisions && p.requiredDecisions.length"> · needs {{ p.requiredDecisions.join(', ') }}</span></small></div>
               <div v-if="p.rationale" class="rationale"><small><i>Agent's rationale (untrusted):</i> {{ p.rationale }}</small></div>
               <div v-if="p.diffSummary"><small>{{ describe(p.diffSummary) }}</small></div>
+              <details v-if="p.impact?.infrastructure?.length" class="mt-2">
+                <summary>Infrastructure changes · {{ p.impact.infrastructure.length }} affected nodes</summary>
+                <p class="text-caption">Accepting this graph proposal does not deploy it. Deployment requires a separate review and approval.</p>
+                <div v-for="change in p.impact.infrastructure" :key="change.nodeId" class="mt-2">
+                  <strong>{{ change.stack?.name || change.nodeId }}</strong>
+                  <div v-if="change.lifecycle">{{ change.lifecycle }}</div>
+                  <div v-for="resource in change.resources" :key="resource.logicalId">
+                    <small>{{ resource.action }} {{ resource.logicalId }} · {{ resource.type }} · deletion: {{ resource.deletionPolicy }} · replacement: {{ resource.updateReplacePolicy }}</small>
+                    <details v-if="resource.iam"><summary>IAM changes</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">{{ JSON.stringify(resource.iam, null, 2) }}</pre></details>
+                  </div>
+                  <div v-for="(problem,i) in change.prerequisites?.problems" :key="i" class="text-warning">{{ problem.path }}: {{ problem.message }}</div>
+                </div>
+              </details>
               <div v-if="p.validation && !p.validation.ok"><small class="text-error">{{ p.validation.errors.map((e: any) => e.code + ': ' + e.message).join('; ') }}</small></div>
               <div v-if="p.warnings && p.warnings.length"><small class="text-warning">{{ p.warnings.join('; ') }}</small></div>
               <div v-if="offerRebase === p.proposalId || p.state === 'stale'" class="mt-1">

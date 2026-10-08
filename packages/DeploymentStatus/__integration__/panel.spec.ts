@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import Panel from "../DeploymentStatus.vue";
+import {defineComponent,h} from "vue";
+import {mount} from "@vue/test-utils";
 
 /**
  * What this graph deploys (plan §4.9, PB-094).
@@ -186,4 +188,20 @@ describe('review and apply feedback',()=>{
     self.reviewOpen=false;component.watch.reviewOpen.call(self,false);
     resolve({status:{state:'planned'}});await pending;expect(self.reviewOpen).toBe(false);expect(self.reviewStatus).toBeNull();
   });
+});
+
+
+it('renders the reviewed IAM delta, namespace, prerequisites and retention together',()=>{
+  const passthrough=defineComponent({props:['title'],setup:(props,{slots})=>()=>h('section',[props.title&&h('h2',props.title),slots.default?.()])});
+  const status={state:'awaiting-review',template:{text:'Resources: reviewed'},preflight:{isolation:{namespace:'gapp-owned-'},deploymentRole:'owned-execution-role',permissionsBoundary:'owned-runtime-boundary',requirements:['Only owned resources'],problems:[]},plan:{destructive:false,changes:[{action:'Add',logicalId:'Role',resourceType:'AWS::IAM::Role',access:{before:null,after:{PermissionsBoundary:'owned-runtime-boundary'}}},{action:'Remove',logicalId:'Records',resourceType:'AWS::DynamoDB::Table',deletionPolicy:'Retain'}]}};
+  const Harness=defineComponent({render:component.render,data:()=>({...component.data(),serverMode:false,canReview:true,selected:stack(),reviewOpen:true,reviewStatus:status}),computed:{accessChanges:component.computed.accessChanges,pendingReview:component.computed.pendingReview,reviewStateLabel:component.computed.reviewStateLabel},methods:{plan(){},applyReview(){},discardReview(){}}});
+  const names=['v-menu','v-dialog','v-card','v-card-title','v-card-subtitle','v-card-text','v-card-actions','v-btn','v-spacer','v-alert','v-table','v-expansion-panels','v-expansion-panel','v-expansion-panel-text','v-checkbox','v-progress-linear'];
+  const wrapper=mount(Harness,{global:{stubs:Object.fromEntries(names.map(name=>[name,passthrough]))}});
+  expect(wrapper.text()).toContain('IAM and resource policy changes');
+  expect(wrapper.text()).toContain('owned-runtime-boundary');
+  expect(wrapper.text()).toContain('owned-execution-role');
+  expect(wrapper.text()).toContain('gapp-owned-');
+  expect(wrapper.text()).toContain('Retain');
+  expect(wrapper.text()).toContain('do not verify AWS permissions');
+  wrapper.unmount();
 });

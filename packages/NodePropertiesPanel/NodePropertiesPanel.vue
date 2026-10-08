@@ -88,6 +88,7 @@
                 <v-card class="ma-0 pa-0" flat>
                     <v-card-text class="ma-0 pa-0" help-topic="nodePresentationLocation">
                         <v-checkbox label="Appears In Presentation" v-model="node.properties.appearsInPresentation"></v-checkbox>
+                        <v-checkbox label="Keep component running when hidden" hint="Keep listeners active during presentation." persistent-hint v-model="node.properties.runInBackground"></v-checkbox>
                         <v-checkbox label="Position Absolutely" v-model="node.properties.positionAbsolute"></v-checkbox>
                         <v-text-field label="x" v-model.number="node.properties.presentation.x"></v-text-field>
                         <v-text-field label="y" v-model.number="node.properties.presentation.y"></v-text-field>
