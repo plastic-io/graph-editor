@@ -56,6 +56,19 @@ describe('Graph-native recovery controls',()=>{
   expect(provider.stackMaintenance).toHaveBeenLastCalledWith('g','stack',{operationId:'failed-operation',action:'approve',maintenanceDigest:'maintenance-digest'});
   expect(provider.approveRecovery).not.toHaveBeenCalled();expect(provider.planStack).not.toHaveBeenCalled();
  });
+ it('makes absent-role recovery reviewable without a maintenance administrator and explains record-only maintenance',async()=>{
+  const current={...inspection,blockers:[],roles:[{logicalId:'WorkerRole',exists:false},{logicalId:'ExecutionRole',exists:'unknown'}],recoveryReadiness:{state:'review-available'},historicalFailure:{message:'Old IAM denial'},historicalFailureOperationId:'original'};
+  await open({operationId:'recover',state:'recovery-ready',inspection:current,recoveryPlan:plan,expiresAt:Date.now()+60000,canReviewMaintenance:false,maintenanceConfiguration:{configured:false,blocker:{code:'PLATFORM_ADMIN_NOT_CONFIGURED',message:'No platform-maintenance administrator is configured. Configure PLATFORM_ADMIN_SUBS through the platform release process.'}}});
+  expect(wrapper.get('[data-testid="recovery-available"]').text()).toContain('do not need to exist before recovery approval');
+  expect(wrapper.text()).toContain('WorkerRole: Absent');expect(wrapper.text()).toContain('ExecutionRole: Unknown');
+  expect(wrapper.text()).toContain('not a current permission check');
+  await click('Approve this recovery');expect(provider.approveRecovery).toHaveBeenCalledTimes(1);expect(provider.stackMaintenance).not.toHaveBeenCalled();
+  await wrapper.setProps({status:{...wrapper.props('status'),state:'recovery-blocked',inspection,maintenance:{state:'requested',digest:'maintenance-digest',requirements:inspection.blockers}}});
+  expect(wrapper.get('[data-testid="maintenance-configuration"]').text()).toContain('PLATFORM_ADMIN_SUBS');
+  expect(wrapper.text()).toContain('does not execute AWS changes, trigger a release');
+  expect(wrapper.findAll('button').some((b:any)=>b.text()==='Approve this recovery')).toBe(false);
+  expect(wrapper.findAll('button').some((b:any)=>b.text()==='Approve separate platform maintenance')).toBe(false);
+ });
  it('shows runtime diagnostics and declared readiness separately from deployment completion',async()=>{
   await open({operationId:'deployed',state:'succeeded',resources:[{logicalId:'Backend',resourceType:'AWS::Lambda::Function'}],readinessChecks:[{id:'health',description:'Assert application health.'}]});
   expect(wrapper.text()).toContain('Runtime readiness: Not verified');await wrapper.find('select').setValue('Backend');

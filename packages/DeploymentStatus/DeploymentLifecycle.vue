@@ -7,6 +7,9 @@
       <p>Application: {{ inspection.application.status }} · Guardrails: {{ inspection.guardrail.status }}</p>
       <p>Ownership: application {{ inspection.application.ownership }}, guardrails {{ inspection.guardrail.ownership }}</p>
       <p>Worker role assumption: {{ inspection.assumption?.result }}. Policy analysis does not prove deployment will succeed.</p>
+      <p v-if="inspection.recoveryReadiness?.state === 'review-available'" data-testid="recovery-available">Graph-owned infrastructure recovery is available for human review. Missing deployment roles are restored using platform authority; they do not need to exist before recovery approval.</p>
+      <ul v-if="inspection.roles?.length"><li v-for="role in inspection.roles" :key="role.logicalId">{{ role.logicalId }}: {{ role.exists === false ? 'Absent' : role.exists === true ? 'Present' : 'Unknown — verification required' }}</li></ul>
+      <details v-if="inspection.historicalFailure"><summary>Historical failure · {{ inspection.historicalFailureOperationId }}</summary><p>This is previous failure evidence, not a current permission check.</p><pre>{{ typeof inspection.historicalFailure === 'string' ? inspection.historicalFailure : inspection.historicalFailure.message }}</pre></details>
       <p v-if="inspection.activeOperation">Active operation: {{ inspection.activeOperation.operationId }} · {{ inspection.activeOperation.state }}</p>
       <ul><li v-for="(item,i) in inspection.blockers" :key="i"><strong>{{ item.code }}</strong>: {{ item.message }} <code>{{ item.action }} {{ item.resource }}</code></li></ul>
       <details><summary>Ownership, surviving resources and permission evidence</summary><pre>{{ JSON.stringify(inspection, null, 2) }}</pre></details>
@@ -31,15 +34,18 @@
         <p v-if="recoveryExpired" class="failure">This recovery review expired. Prepare a fresh plan before approving.</p>
         <p>Recovery digest <code>{{ status.recoveryPlan.digest }}</code></p>
         <p>Approving recovery does not approve a new application template.</p>
+        <p>This graph recovery needs a human with infrastructure approval authority. Platform-maintenance administrator membership is not required.</p>
         <label v-if="canApproveRecovery && !status.recoveryPlan.preservesData"><input type="checkbox" v-model="confirmDataLoss"/> I approve the listed data deletions.</label>
         <button v-if="canApproveRecovery" type="button" :disabled="busy || (!status.recoveryPlan.preservesData && !confirmDataLoss)" @click="approveRecovery">Approve this recovery</button>
         <p v-if="status.recoveryApproval">Recovery approved at {{ time(status.recoveryApproval.at) }}. {{ status.state }}</p>
       </details>
       <button v-if="needsMaintenance" type="button" :disabled="busy" @click="maintenance('request')">Request platform maintenance review</button>
+      <p v-if="(needsMaintenance || status.maintenance) && maintenanceConfiguration?.blocker" class="failure" data-testid="maintenance-configuration">{{ maintenanceConfiguration.blocker.message }}</p>
       <details v-if="status.maintenance" open data-testid="maintenance-request">
         <summary>Platform maintenance · {{ status.maintenance.state }}</summary>
         <ul><li v-for="(requirement,i) in status.maintenance.requirements" :key="i">{{ requirement.component }} · {{ requirement.message }}<code>{{ requirement.action }} {{ requirement.resource }}</code></li></ul>
-        <p>Shared platform changes require a separate platform administrator and platform CI release. This request cannot change shared IAM.</p>
+        <p>This request only records and verifies a platform maintenance review. Requesting or approving it does not execute AWS changes, trigger a release, or approve recovery or application deployment.</p>
+        <p>Shared platform changes require a separate platform administrator and platform release.</p>
         <code>{{ status.maintenance.digest }}</code>
         <ol><li v-for="(step,i) in status.maintenance.verification" :key="i">{{ step }}</li></ol>
         <template v-if="status.canReviewMaintenance">
@@ -83,6 +89,7 @@ export default {
   data(){return {busy:false,error:'',currentInspection:null as any,allowDataLoss:false,confirmDataLoss:false,logicalId:'',requestId:'',correlationId:'',logPage:null as any,keys:{} as Record<string,string>,generation:0};},
   computed:{
     inspection():any{return this.currentInspection||this.status?.inspection;},
+    maintenanceConfiguration():any{return this.status?.maintenanceConfiguration || this.inspection?.maintenanceConfiguration || this.status?.maintenance?.administration;},
     functions():any[]{return (this.status?.resources||[]).filter((r:any)=>r.resourceType==='AWS::Lambda::Function');},
     canPrepareRecovery():boolean{return !this.status?.supersededBy && (this.status?.nextActions?.actions?.find((a:any)=>a.tool==='iac.recovery.plan')?.allowed ?? ['failed','rolled-back','rollback-failed','cancelled','expired','stale','recovered','recovery-blocked','recovery-ready','no-changes','succeeded'].includes(this.status?.state));},
     recoveryExpired():boolean{return this.status?.state==='recovery-ready' && this.status.expiresAt<Date.now();},

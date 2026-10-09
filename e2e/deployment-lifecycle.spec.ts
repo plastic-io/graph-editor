@@ -3,8 +3,8 @@ import {randomUUID} from 'node:crypto';
 test('CF node restores recovery review after reload, requires its human digest, and keeps long evidence scrollable',async({page})=>{
  const graphId=randomUUID(),nodeId='stack',root='**/crdt/'+graphId+'/iac/'+nodeId;
  const stack={name:'gapp-browser-stack',account:'230639770018',region:'us-west-1',environment:'dev'};
- const inspection={checkedAt:new Date().toISOString(),application:{status:'NOT_CREATED',ownership:'absent'},guardrail:{status:'ROLLBACK_FAILED',ownership:'verified'},assumption:{result:'not-tested'},blockers:[{code:'RECOVERY_REQUIRED',kind:'recovery',message:'Retained boundary needs recovery.'}]};
- let status:any={operationId:'01M4C000000000000000000000',state:'failed',revisionId:'rev_accepted',updatedAt:Date.now(),inspection,progress:{resources:[]}},approval:any=null,reviewRequest:any=null;
+ const inspection={checkedAt:new Date().toISOString(),application:{status:'NOT_CREATED',ownership:'absent'},guardrail:{status:'ROLLBACK_FAILED',ownership:'verified'},roles:[{logicalId:'WorkerRole',exists:false},{logicalId:'ExecutionRole',exists:false}],recoveryReadiness:{state:'review-available'},historicalFailure:{message:'Historical permission denial'},historicalFailureOperationId:'original-failed-operation',assumption:{result:'not-tested'},blockers:[{code:'RECOVERY_REQUIRED',kind:'recovery',message:'Retained boundary needs recovery.'}]};
+ let status:any={operationId:'01M4C000000000000000000000',state:'failed',revisionId:'rev_accepted',updatedAt:Date.now(),inspection,canReviewMaintenance:false,maintenanceConfiguration:{configured:false,mode:'record-and-verify-only',executesAws:false},progress:{resources:[]}},approval:any=null,reviewRequest:any=null;
  await page.addInitScript(()=>localStorage.setItem('plastic-user-preferences',JSON.stringify({userName:'Reviewer',userId:'reviewer',email:'',avatar:'',workstationId:'lifecycle-test',graphHTTPServer:'http://localhost:3030/',graphWSSServer:'ws://localhost:3030/',useLocalStorage:false,showMap:false,newNodeHelp:false})));
  await page.route(root+'/review*',route=>route.fulfill({json:{status}}));
  await page.route(root+'/events*',route=>route.fulfill({json:{events:[],nextCursor:'cursor',hasMore:false}}));
@@ -25,8 +25,8 @@ test('CF node restores recovery review after reload, requires its human digest, 
   await graph.updateGraphFromSnapshot('Lifecycle browser fixture');
  },{nodeId,stack});
  const node=page.locator('#node-'+nodeId),lifecycle=node.getByTestId('deployment-lifecycle');
- await expect(lifecycle).toContainText('ROLLBACK_FAILED');await lifecycle.getByRole('button',{name:'Prepare recovery plan',exact:true}).click();
- await expect(lifecycle).toContainText('exact-recovery-digest');expect(approval).toBeNull();
+ await expect(lifecycle).toContainText('ROLLBACK_FAILED');await expect(lifecycle).toContainText('WorkerRole: Absent');await expect(lifecycle).toContainText('not a current permission check');await expect(lifecycle.getByTestId('recovery-available')).toBeVisible();await lifecycle.getByRole('button',{name:'Prepare recovery plan',exact:true}).click();
+ await expect(lifecycle).toContainText('exact-recovery-digest');await expect(lifecycle).toContainText('Platform-maintenance administrator membership is not required');expect(approval).toBeNull();
  const dimensions=await node.evaluate((el:any)=>({height:el.clientHeight,width:el.clientWidth,scroll:el.scrollHeight,overflow:getComputedStyle(el).overflowY}));
  expect(dimensions.height).toBeLessThanOrEqual(480);expect(dimensions.width).toBeLessThanOrEqual(640);expect(dimensions.scroll).toBeGreaterThan(dimensions.height);expect(dimensions.overflow).toBe('auto');
  await page.reload();await expect(lifecycle).toContainText('exact-recovery-digest');expect(approval).toBeNull();
