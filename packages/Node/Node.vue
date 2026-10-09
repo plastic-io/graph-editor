@@ -28,6 +28,7 @@
                     'no-select': translating && mouse.lmb,
                     'cloudformation-node-content': !!localNode.properties?.iac?.stack,
                 }"
+                :style="localNode.properties?.iac?.stack ? cfPanelStyle : undefined"
                 @wheel="localNode.properties?.iac?.stack && $event.stopPropagation()"
             >
                 <v-card v-if="broken">
@@ -52,7 +53,7 @@
                     @set="set"
                     :key="renderVersion"
                 />
-                <deployment-progress v-if="localNode.properties?.iac?.stack" :graph-id="currentGraph.id" :node-id="localNode.id"/>
+                <deployment-progress v-if="localNode.properties?.iac?.stack" :graph-id="currentGraph.id" :node-id="localNode.id" :recovery-controls="false"/>
                 <component
                     v-for="(style, index) in styles"
                     :is="'style'"
@@ -60,6 +61,7 @@
                     :key="index"
                 />
             </div>
+            <button v-if="localNode.properties?.iac?.stack && !presentation && !readOnly" class="cf-resize-handle no-graph-target" type="button" aria-label="Resize CloudFormation node" title="Drag to resize; arrow keys resize, Shift for larger steps" @pointerdown.stop.prevent="startCfResize" @pointermove.stop="moveCfResize" @pointerup.stop="finishCfResize" @pointercancel.stop="cancelCfResize" @mousedown.stop @mouseup.stop @keydown.stop.prevent="keyCfResize"><v-icon icon="mdi-resize-bottom-right" size="small"/></button>
             <div class="node-outputs" v-if="!hostNode">
                 <node-field
                     v-for="field in outputs"
@@ -223,6 +225,8 @@ export default {
             stateVersion: 0,
             renderVersion: 0,
             contextId: null,
+            cfResize: null as any,
+            cfDraftSize: null as any,
             artifactNodes: {} as Record<string, any>,
             styles: [] as any[],
             gaphReferences: {} as Record<string, any>,
@@ -255,12 +259,40 @@ export default {
         }, { deep: true });
     },
     methods: {
+        boundCfSize(width: number, height: number) { return {width:Math.round(Math.max(300,Math.min(1600,width))),height:Math.round(Math.max(200,Math.min(960,height)))}; },
+        startCfResize(event: PointerEvent) {
+            if(event.button!==0 || this.readOnly)return;
+            const panel=document.getElementById('node-'+this.localNode.id)!;
+            this.cfResize={x:event.clientX,y:event.clientY,width:panel.offsetWidth,height:panel.offsetHeight,scale:panel.getBoundingClientRect().width/panel.offsetWidth};
+            (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+        },
+        moveCfResize(event: PointerEvent) {
+            if(!this.cfResize)return;
+            const r=this.cfResize;this.cfDraftSize=this.boundCfSize(r.width+(event.clientX-r.x)/r.scale,r.height+(event.clientY-r.y)/r.scale);
+            this.redrawConnectorVersion++;
+        },
+        finishCfResize(event: PointerEvent) {
+            if(!this.cfResize)return;this.moveCfResize(event);this.saveCfSize(this.cfDraftSize);this.cfResize=null;this.cfDraftSize=null;
+            (event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
+        },
+        cancelCfResize(){this.cfResize=null;this.cfDraftSize=null;},
+        keyCfResize(event: KeyboardEvent){
+            const delta=event.shiftKey?50:10,keys:any={ArrowLeft:[-delta,0],ArrowRight:[delta,0],ArrowUp:[0,-delta],ArrowDown:[0,delta]};
+            if(keys[event.key])this.saveCfSize(this.boundCfSize(this.cfPanelSize.width+keys[event.key][0],this.cfPanelSize.height+keys[event.key][1]));
+        },
+        saveCfSize(size:any){
+            if(this.readOnly||!size)return;
+            const current=this.getNodeById(this.localNode.id);
+            if(current)this.updateNodeProperties({nodeId:current.id,properties:{...current.properties,cfPanelSize:size}});
+            this.redrawConnectorVersion++;
+        },
         ...mapActions(useOrchestratorStore, [
             "clearErrors",
             "raiseError",
         ]),
         ...mapActions(useGraphStore, [
             "getNodeById",
+            "updateNodeProperties",
             "updateNodeData",
             "clearArtifact",
         ]),
@@ -385,7 +417,10 @@ export default {
             'translating',
             'view',
             'movingNodes',
+            'readOnly',
         ]),
+        cfPanelSize():any { const size=this.cfDraftSize||this.node?.properties?.cfPanelSize;return this.boundCfSize(Number(size?.width)||600,Number(size?.height)||480); },
+        cfPanelStyle():any { return {width:this.cfPanelSize.width+'px',height:this.cfPanelSize.height+'px'}; },
         isLinked() {
             return !!(this.localNode.linkedGraph || this.localNode.linkedNode);
         },
@@ -470,12 +505,15 @@ export default {
 <style>
     .cloudformation-node-content {
         box-sizing: border-box;
-        max-width: 640px;
-        max-height: 480px;
+        width: 600px;
+        height: 480px;
+        max-width: 1600px;
+        max-height: 960px;
         overflow: auto;
         overscroll-behavior: contain;
         scrollbar-gutter: stable;
     }
+    .cf-resize-handle {position:absolute;right:0;bottom:0;z-index:5;cursor:nwse-resize;touch-action:none;background:rgb(var(--v-theme-surface));border:1px solid #8888;border-radius:4px;width:24px;height:24px;}
     .node-inputs {
         position: absolute;
         left: -15px;

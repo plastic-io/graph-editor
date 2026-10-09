@@ -7,7 +7,7 @@
       <p>Application: {{ inspection.application.status }} · Guardrails: {{ inspection.guardrail.status }}</p>
       <p>Ownership: application {{ inspection.application.ownership }}, guardrails {{ inspection.guardrail.ownership }}</p>
       <p>Worker role assumption: {{ inspection.assumption?.result }}. Policy analysis does not prove deployment will succeed.</p>
-      <p v-if="inspection.recoveryReadiness?.state === 'review-available'" data-testid="recovery-available">Graph-owned infrastructure recovery is available for human review. Missing deployment roles are restored using platform authority; they do not need to exist before recovery approval.</p>
+      <p v-if="inspection.recoveryReadiness?.state === 'review-available'" data-testid="recovery-available">Graph-owned infrastructure recovery is available for human review.<template v-if="inspection.recoveryReadiness.missingRoles?.length"> Missing deployment roles are restored using platform authority; they do not need to exist before recovery approval.</template></p>
       <ul v-if="inspection.roles?.length"><li v-for="role in inspection.roles" :key="role.logicalId">{{ role.logicalId }}: {{ role.exists === false ? 'Absent' : role.exists === true ? 'Present' : 'Unknown — verification required' }}</li></ul>
       <details v-if="inspection.historicalFailure"><summary>Historical failure · {{ inspection.historicalFailureOperationId }}</summary><p>This is previous failure evidence, not a current permission check.</p><pre>{{ typeof inspection.historicalFailure === 'string' ? inspection.historicalFailure : inspection.historicalFailure.message }}</pre></details>
       <p v-if="inspection.activeOperation">Active operation: {{ inspection.activeOperation.operationId }} · {{ inspection.activeOperation.state }}</p>
@@ -16,15 +16,16 @@
     </details>
     <template v-if="status">
       <p v-if="status.state === 'recovered'">Recovery completed. The next application deployment needs a fresh review and a separate human approval.</p>
-      <template v-if="canPrepareRecovery">
+      <template v-if="canPrepareRecovery && recoveryControls">
         <button type="button" :disabled="busy" @click="prepareRecovery">Prepare recovery plan</button>
         <details><summary>Data-loss exception</summary><label><input type="checkbox" v-model="allowDataLoss"/> Include data deletion in the plan if safe recovery cannot preserve it. Execution still requires explicit approval of the listed deletions.</label></details>
       </template>
+      <p v-if="!recoveryControls && (canPrepareRecovery || status.recoveryPlan)">Open Recovery beside the cloud notifications in the lower system bar to review and approve recovery.</p>
       <details v-if="status.recoveryPlan" open data-testid="recovery-plan">
         <summary>Recovery review · {{ status.state }}</summary>
         <p>{{ status.recoveryPlan.preservesData ? 'Preserves retained resources and application data.' : 'This plan includes data loss.' }}</p>
         <p>Source operation: {{ status.recoveryPlan.sourceOperationId }}</p>
-        <ol><li v-for="(action,i) in status.recoveryPlan.actions" :key="i"><strong>{{ action.kind }}</strong> · {{ action.target }}<div>{{ action.reason }}</div>
+        <ol><li v-for="(action,i) in status.recoveryPlan.actions" :key="i"><strong>{{ action.kind }}</strong> · {{ action.target }}<div>{{ action.reason }}</div><code v-if="action.stackId" data-testid="recovery-stack-target">{{ action.stackId }}</code>
           <div v-if="action.dataLoss?.length" class="failure">Data deletion: {{ action.dataLoss.join(', ') }}</div>
           <ul v-if="action.resources?.length"><li v-for="resource in action.resources" :key="resource.logicalId">{{ resource.logicalId }} · {{ resource.physicalId }} · {{ resource.outcome || 'Import and retain' }}</li></ul>
           <p v-if="status.recoveryOutcomes?.[i]">{{ status.recoveryOutcomes[i].status || (status.recoveryOutcomes[i].done ? 'Complete' : 'In progress') }}</p>
@@ -35,9 +36,9 @@
         <p>Recovery digest <code>{{ status.recoveryPlan.digest }}</code></p>
         <p>Approving recovery does not approve a new application template.</p>
         <p>This graph recovery needs a human with infrastructure approval authority. Platform-maintenance administrator membership is not required.</p>
-        <label v-if="canApproveRecovery && !status.recoveryPlan.preservesData"><input type="checkbox" v-model="confirmDataLoss"/> I approve the listed data deletions.</label>
-        <button v-if="canApproveRecovery" type="button" :disabled="busy || (!status.recoveryPlan.preservesData && !confirmDataLoss)" @click="approveRecovery">Approve this recovery</button>
-        <p v-if="status.recoveryApproval">Recovery approved at {{ time(status.recoveryApproval.at) }}. {{ status.state }}</p>
+        <label v-if="canApproveRecovery && recoveryControls && !status.recoveryPlan.preservesData"><input type="checkbox" v-model="confirmDataLoss"/> I approve the listed data deletions.</label>
+        <button v-if="canApproveRecovery && recoveryControls" type="button" :disabled="busy || (!status.recoveryPlan.preservesData && !confirmDataLoss)" @click="approveRecovery">Approve this recovery</button>
+        <p v-if="status.recoveryApproval">Recovery {{ status.recoveryApproval.mode === 'automatic' ? 'automatically approved' : 'approved' }} at {{ time(status.recoveryApproval.at) }}. {{ status.state }}</p>
       </details>
       <button v-if="needsMaintenance" type="button" :disabled="busy" @click="maintenance('request')">Request platform maintenance review</button>
       <p v-if="(needsMaintenance || status.maintenance) && maintenanceConfiguration?.blocker" class="failure" data-testid="maintenance-configuration">{{ maintenanceConfiguration.blocker.message }}</p>
@@ -85,7 +86,7 @@
 <script lang="ts">
 import {useStore as orchestratorStore} from '@plastic-io/graph-editor-vue3-orchestrator';
 export default {
-  name:'deployment-lifecycle',props:{graphId:{type:String,required:true},nodeId:{type:String,required:true},status:{type:Object as any,default:null}},emits:['refresh'],
+  name:'deployment-lifecycle',props:{graphId:{type:String,required:true},nodeId:{type:String,required:true},status:{type:Object as any,default:null},recoveryControls:{type:Boolean,default:true}},emits:['refresh'],
   data(){return {busy:false,error:'',currentInspection:null as any,allowDataLoss:false,confirmDataLoss:false,logicalId:'',requestId:'',correlationId:'',logPage:null as any,keys:{} as Record<string,string>,generation:0};},
   computed:{
     inspection():any{return this.currentInspection||this.status?.inspection;},

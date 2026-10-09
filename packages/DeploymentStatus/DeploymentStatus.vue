@@ -47,6 +47,27 @@
       </v-card-text>
     </v-card>
   </v-menu>
+  <v-btn v-if="serverMode && canReview" data-testid="infra-auto-approve" size="small" :color="autoApprove ? 'warning' : undefined" :variant="autoApprove ? 'tonal' : 'text'" :aria-pressed="autoApprove" @click="toggleAutoApproval">Auto-approve: {{ autoApprove ? 'on' : 'off' }}</v-btn>
+  <v-dialog v-model="autoWarningOpen" max-width="580">
+    <v-card data-testid="auto-approve-warning"><v-card-title>Enable infrastructure auto-approval?</v-card-title><v-card-text>
+      <v-alert type="warning" variant="tonal">This editor will approve eligible infrastructure reviews as you, without a confirmation for each digest. This can create billable resources and change IAM permissions.</v-alert>
+      <p>Stack deletion is never auto-approved. Resource removals, replacements, rollback actions and data-loss recovery plans also require manual review.</p>
+      <p>This applies only to the current graph while this editor is open. It turns off on reload or graph change. Turning it off does not cancel operations already approved.</p>
+    </v-card-text><v-card-actions><v-btn @click="autoWarningOpen=false">Keep off</v-btn><v-spacer/><v-btn color="warning" variant="flat" @click="enableAutoApproval">Enable auto-approval</v-btn></v-card-actions></v-card>
+  </v-dialog>
+  <v-menu v-if="serverMode && canReview && stacks.length" v-model="recoveryMenuOpen" :close-on-content-click="false" location="top">
+    <template #activator="{props}"><v-btn v-bind="props" variant="text" size="small" prepend-icon="mdi-lifebuoy" data-testid="recovery-system-action" @click="refresh">Recovery<v-badge v-if="recoveryCount" inline :content="recoveryCount" color="warning"/></v-btn></template>
+    <v-list density="compact" max-height="60vh" style="overflow-y:auto" aria-label="Infrastructure recovery">
+      <v-list-item v-for="s in stacks" :key="s.nodeId" :title="s.name" :subtitle="stateOf(s)" @click="openRecovery(s)"><template #append><v-btn variant="text" size="small" @click.stop="openRecovery(s)">Review recovery</v-btn></template></v-list-item>
+    </v-list>
+  </v-menu>
+  <v-dialog v-model="recoveryOpen" max-width="900" scrollable>
+    <v-card v-if="recoverySelected" data-testid="system-recovery-review">
+      <v-card-title class="d-flex align-center">Infrastructure recovery · {{ recoverySelected.name }}<v-spacer/><v-btn icon="mdi-close" variant="text" aria-label="Close recovery review" @click="recoveryOpen=false"/></v-card-title>
+      <v-card-subtitle>{{ recoverySelected.stack.name }} · {{ recoverySelected.stack.account }} · {{ recoverySelected.stack.region }}</v-card-subtitle>
+      <v-card-text><p v-if="recoveryError" role="alert">{{ recoveryError }}</p><deployment-lifecycle :graph-id="graphId()" :node-id="recoverySelected.nodeId" :status="recoveryStatus" @refresh="refreshRecovery"/></v-card-text>
+    </v-card>
+  </v-dialog>
   <v-dialog v-model="reviewOpen" max-width="900" scrollable>
     <v-card v-if="selected" data-testid="infrastructure-review">
       <v-card-title class="d-flex align-center">Review infrastructure · {{ selected.name }}<v-spacer/><v-btn icon="mdi-close" variant="text" aria-label="Close infrastructure review" @click="reviewOpen = false"/></v-card-title>
@@ -59,7 +80,7 @@
           <strong>{{ reviewStateLabel }}</strong><div v-if="reviewStatus.reason">{{ reviewStatus.reason }}</div>
           <div v-if="reviewStatus.manualRecoveryRequired">Read the resource failures and recovery guidance below before retrying. This stack is locked for recovery.</div>
         </v-alert>
-        <deployment-progress v-if="canReview && selected" :graph-id="graphId()" :node-id="selected.nodeId" @status="reviewStatus = $event"/>
+        <deployment-progress :recovery-controls="false" v-if="canReview && selected" :graph-id="graphId()" :node-id="selected.nodeId" @status="reviewStatus = $event"/>
         <v-table v-if="reviewStatus?.plan" density="compact" class="mb-3">
           <thead><tr><th>Change</th><th>Resource</th><th>Type</th><th>Replacement</th><th>Retention</th></tr></thead>
           <tbody><tr v-for="(change,i) in reviewStatus.plan.changes" :key="i"><td>{{ change.action }}</td><td>{{ change.logicalId }}</td><td>{{ change.resourceType }}</td><td>{{ change.replacement || '—' }}</td><td>{{ change.outcome || change.policyAction || (change.replacement && change.replacement !== 'False' ? change.updateReplacePolicy : change.deletionPolicy) || 'See template' }}</td></tr></tbody>
@@ -93,6 +114,7 @@
 <script lang="ts">
 import {mapState} from "pinia";
 import DeploymentProgress from "./DeploymentProgress.vue";
+import DeploymentLifecycle from "./DeploymentLifecycle.vue";
 import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
@@ -110,10 +132,12 @@ import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-pre
  */
 export default {
   name: "deployment-status",
-  components:{DeploymentProgress},
+  components:{DeploymentProgress,DeploymentLifecycle},
   data() {
     return {
       open: false,
+      autoApprove:false,autoWarningOpen:false,autoBusy:false,autoTimer:null as any,autoGeneration:0,autoAttempts:{} as Record<string,boolean>,
+      recoveryMenuOpen:false,recoveryOpen:false,recoverySelected:null as any,recoveryStatus:null as any,recoveryError:'',recoveryTimer:null as any,detachBus:null as any,busTimer:null as any,
       busy: false,
       planning: "",
       message: "",
@@ -130,10 +154,11 @@ export default {
       reviewGeneration: 0,
     };
   },
-  beforeUnmount() { clearTimeout(this.reviewTimer); this.reviewGeneration++; },
+  beforeUnmount() { clearTimeout(this.reviewTimer);clearTimeout(this.recoveryTimer);clearTimeout(this.busTimer);this.disableAutoApproval();this.detachBus?.(); this.reviewGeneration++; },
   watch: {
+    recoveryOpen(value:boolean){if(!value)clearTimeout(this.recoveryTimer);},
     reviewOpen(value: boolean) { if (!value) { clearTimeout(this.reviewTimer); this.reviewGeneration++; this.planning=""; this.reviewBusy=false; } },
-    'graph.id'() { this.reviewOpen=false; this.selected=null; this.reviewStatus=null; this.refresh(); },
+    'graph.id'() { this.disableAutoApproval();this.autoWarningOpen=false;this.reviewOpen=false; this.selected=null; this.reviewStatus=null; this.refresh(); },
     open(isOpen: boolean) {
       if (isOpen) {
         this.refresh();
@@ -146,11 +171,13 @@ export default {
     },
   },
   mounted() {
+    this.listen();
     if ((this as any).graphLoaded) {
       this.refresh();
     }
   },
   computed: {
+    recoveryCount():number{return this.stacks.filter((s:any)=>s.status?.manualRecoveryRequired || ['recovery-ready','recovery-blocked','recovery-requested','recovering','failed','rolled-back','rollback-failed'].includes(s.status?.state)).length;},
     accessChanges(): any[] { return (this.reviewStatus?.plan?.changes || []).filter((c: any)=>c.access).map((c: any)=>({logicalId:c.logicalId,action:c.action,resourceType:c.resourceType,...c.access})); },
     pendingReview(): boolean { return ['planning','apply-requested','applying'].includes(this.reviewStatus?.state); },
     reviewStateLabel(): string {
@@ -172,6 +199,45 @@ export default {
     },
   },
   methods: {
+    disableAutoApproval(){this.autoApprove=false;this.autoGeneration++;clearTimeout(this.autoTimer);},
+    toggleAutoApproval(){if(this.autoApprove)this.disableAutoApproval();else this.autoWarningOpen=true;},
+    enableAutoApproval(){this.autoWarningOpen=false;this.autoApprove=true;this.autoAttempts={};this.autoGeneration++;this.autoTick();},
+    async autoTick(){
+      clearTimeout(this.autoTimer);if(!this.autoApprove||!this.serverMode)return;
+      await this.refresh();
+      if(this.autoApprove)this.autoTimer=setTimeout(()=>this.autoTick(),5000);
+    },
+    async maybeAutoApprove(){
+      if(!this.autoApprove||this.autoBusy)return;this.autoBusy=true;const generation=this.autoGeneration,graphId=this.graphId();
+      try{
+        for(const stack of this.stacks){
+          if(!['awaiting-review','recovery-ready'].includes(stack.status?.state))continue;
+          const answer=await this.provider().stackReview(graphId,stack.nodeId),status=answer.status;
+          if(!this.autoApprove||this.autoGeneration!==generation||this.graphId()!==graphId)return;
+          if(status?.automaticApproval?.allowed!==true)continue;
+          const recovery=status.action==='recover',digest=recovery?status.recoveryPlan?.digest:status.reviewDigest,key=stack.nodeId+':'+status.operationId+':'+digest;
+          if(!digest||this.autoAttempts[key])continue;
+          // The server repeats eligibility, ownership, expiry and exact-digest checks.
+          this.autoAttempts[key]=true;
+          const result=recovery?await this.provider().approveRecovery(graphId,stack.nodeId,{operationId:status.operationId,recoveryDigest:digest,approvalMode:'automatic',confirmDataLoss:false}):await this.provider().applyStack(graphId,stack.nodeId,{operationId:status.operationId,reviewDigest:digest,approvalMode:'automatic',confirmDestructive:false});
+          if(this.graphId()===graphId){stack.status=result.status;if(this.recoverySelected?.nodeId===stack.nodeId)this.recoveryStatus=result.status;}
+        }
+      }catch(error:any){if(this.autoGeneration===generation){this.disableAutoApproval();this.message='Auto-approval stopped: '+(error.message||'Approval was refused.');}}
+      finally{this.autoBusy=false;}
+    },
+    listen(){
+      this.detachBus?.();const bus:any=(useOrchestratorStore() as any).dataProviders.graph,graphId=this.graphId(),channel='graph-notify-'+graphId;
+      if(!bus?.subscribe||!graphId)return;
+      const receive=(wrapped:any)=>{const event=wrapped?.response||wrapped;if(event?.eventType!=='deployment.progress'||event.provenance!=='server'||event.graphId!==graphId)return;clearTimeout(this.busTimer);this.busTimer=setTimeout(()=>{this.refresh();if(this.recoveryOpen)this.refreshRecovery();},300);};
+      bus.subscribe(channel,receive);const off=bus.onOpen?.(()=>{this.refresh();if(this.recoveryOpen)this.refreshRecovery();});this.detachBus=()=>{bus.unsubscribe(channel,receive);off?.();};
+    },
+    async openRecovery(stack:any){this.recoveryMenuOpen=false;this.recoverySelected=stack;this.recoveryStatus=stack.status;this.recoveryError='';this.recoveryOpen=true;await this.refreshRecovery();},
+    async refreshRecovery(){
+      clearTimeout(this.recoveryTimer);const graphId=this.graphId(),nodeId=this.recoverySelected?.nodeId;if(!this.recoveryOpen||!nodeId)return;
+      try{const answer=await this.provider().stackReview(graphId,nodeId);if(!this.recoveryOpen||this.graphId()!==graphId||this.recoverySelected?.nodeId!==nodeId)return;this.recoveryStatus=answer.status;this.recoveryError='';}
+      catch(error:any){if(this.recoveryOpen&&this.graphId()===graphId)this.recoveryError=error.message;}
+      if(this.recoveryOpen&&this.graphId()===graphId)this.recoveryTimer=setTimeout(()=>this.refreshRecovery(),5000);
+    },
     /**
      * The provider that speaks to the graph server's own routes.  Not
      * `dataProviders.graph` — that one syncs the document and knows nothing
@@ -210,6 +276,7 @@ export default {
         this.message = err.message || String(err);
       }
       this.busy = false;
+      await this.maybeAutoApprove();
     },
     async plan(stack: any, replace = false, action = 'apply') {
       clearTimeout(this.reviewTimer);

@@ -5,7 +5,7 @@ const mock=vi.hoisted(()=>({store:null as any}));
 vi.mock('@plastic-io/graph-editor-vue3-orchestrator',()=>({useStore:()=>mock.store}));
 const inspection={checkedAt:'2026-10-08T04:00:00Z',application:{status:'NOT_CREATED',ownership:'absent'},guardrail:{status:'ROLLBACK_FAILED',ownership:'verified'},assumption:{result:'not-tested'},blockers:[{code:'PLATFORM_PERMISSION_REQUIRED',kind:'platform-permission',message:'Missing cleanup permission',action:'iam:DeleteRolePolicy',resource:'owned-role'}]};
 const failed={operationId:'failed-operation',state:'failed',inspection};
-const plan={sourceOperationId:'failed-operation',digest:'exact-recovery-digest',preservesData:true,prerequisites:[],actions:[{kind:'delete-stack',target:'guardrail',resources:[{logicalId:'RuntimeBoundary',physicalId:'owned-policy',outcome:'Retain'}],dataLoss:[]},{kind:'import-retained',target:'guardrail',resources:[{logicalId:'RuntimeBoundary',physicalId:'owned-policy'}],dataLoss:[]}]};
+const plan={sourceOperationId:'failed-operation',digest:'exact-recovery-digest',preservesData:true,prerequisites:[],actions:[{kind:'delete-stack',target:'guardrail',stackId:'arn:aws:cloudformation:us-west-1:230639770018:stack/graph-guardrails-test/owned',resources:[{logicalId:'RuntimeBoundary',physicalId:'owned-policy',outcome:'Retain'}],dataLoss:[]},{kind:'import-retained',target:'guardrail',resources:[{logicalId:'RuntimeBoundary',physicalId:'owned-policy'}],dataLoss:[]}]};
 let wrapper:any,provider:any;
 beforeEach(()=>{
  let id=0;vi.stubGlobal('crypto',{randomUUID:()=>`request-${++id}`});
@@ -22,7 +22,7 @@ describe('Graph-native recovery controls',()=>{
   await click('Prepare recovery plan');expect(provider.recoveryPlan).toHaveBeenCalledWith('g','stack',{operationId:'failed-operation',idempotencyKey:'request-1',allowDataLoss:false});
   expect(provider.approveRecovery).not.toHaveBeenCalled();expect(provider.planStack).not.toHaveBeenCalled();
   await wrapper.setProps({status:{...failed,operationId:'recovery',state:'recovery-ready',recoveryPlan:plan,expiresAt:Date.now()+60000}});
-  expect(wrapper.text()).toContain('owned-policy');expect(wrapper.text()).toContain('Approving recovery does not approve a new application template.');
+  expect(wrapper.get('[data-testid="recovery-stack-target"]').text()).toBe(plan.actions[0].stackId);expect(wrapper.text()).toContain('owned-policy');expect(wrapper.text()).toContain('Approving recovery does not approve a new application template.');
   await click('Approve this recovery');expect(provider.approveRecovery).toHaveBeenCalledWith('g','stack',{operationId:'recovery',recoveryDigest:plan.digest,confirmDataLoss:false});
   expect(provider.planStack).not.toHaveBeenCalled();
   await wrapper.setProps({status:{...failed,operationId:'recovery',state:'recovered',nextActions:{actions:[{tool:'iac.review',allowed:true}]}}});
@@ -57,10 +57,10 @@ describe('Graph-native recovery controls',()=>{
   expect(provider.approveRecovery).not.toHaveBeenCalled();expect(provider.planStack).not.toHaveBeenCalled();
  });
  it('makes absent-role recovery reviewable without a maintenance administrator and explains record-only maintenance',async()=>{
-  const current={...inspection,blockers:[],roles:[{logicalId:'WorkerRole',exists:false},{logicalId:'ExecutionRole',exists:'unknown'}],recoveryReadiness:{state:'review-available'},historicalFailure:{message:'Old IAM denial'},historicalFailureOperationId:'original'};
+  const current={...inspection,blockers:[],roles:[{logicalId:'WorkerRole',exists:false},{logicalId:'ExecutionRole',exists:false}],recoveryReadiness:{state:'review-available',missingRoles:['WorkerRole','ExecutionRole']},historicalFailure:{message:'Old IAM denial'},historicalFailureOperationId:'original'};
   await open({operationId:'recover',state:'recovery-ready',inspection:current,recoveryPlan:plan,expiresAt:Date.now()+60000,canReviewMaintenance:false,maintenanceConfiguration:{configured:false,blocker:{code:'PLATFORM_ADMIN_NOT_CONFIGURED',message:'No platform-maintenance administrator is configured. Configure PLATFORM_ADMIN_SUBS through the platform release process.'}}});
   expect(wrapper.get('[data-testid="recovery-available"]').text()).toContain('do not need to exist before recovery approval');
-  expect(wrapper.text()).toContain('WorkerRole: Absent');expect(wrapper.text()).toContain('ExecutionRole: Unknown');
+  expect(wrapper.text()).toContain('WorkerRole: Absent');expect(wrapper.text()).toContain('ExecutionRole: Absent');
   expect(wrapper.text()).toContain('not a current permission check');
   await click('Approve this recovery');expect(provider.approveRecovery).toHaveBeenCalledTimes(1);expect(provider.stackMaintenance).not.toHaveBeenCalled();
   await wrapper.setProps({status:{...wrapper.props('status'),state:'recovery-blocked',inspection,maintenance:{state:'requested',digest:'maintenance-digest',requirements:inspection.blockers}}});

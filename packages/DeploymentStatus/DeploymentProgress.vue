@@ -4,12 +4,12 @@
     <p v-if="error" role="alert">{{ error }}</p>
     <p v-if="!status && !busy">No deployment review yet. Accepting graph changes does not deploy infrastructure.</p>
     <template v-if="status">
-      <p class="milestones">Graph revision: {{ status.revisionId || 'live' }}<br/>Deployment approval: {{ status.approval ? 'Recorded for this review digest' : 'Not recorded' }}<br/>Deployment: {{ status.state }}</p>
+      <p class="milestones">Graph revision: {{ status.revisionId || 'live' }}<br/>Deployment approval: {{ status.approval ? (status.approval.mode === 'automatic' ? 'Automatically approved for this review digest' : 'Recorded for this review digest') : 'Not recorded' }}<br/>Deployment: {{ status.state }}</p>
       <p v-if="latest?.reason">{{ latest.reason }}</p>
       <p v-if="status.reason" :class="failed ? 'failure' : ''">{{ status.reason }}</p>
       <p v-if="status.error" class="failure">{{ status.error.code }}: {{ status.error.message }}</p>
       <p v-if="status.recovery" class="recovery"><strong>{{ status.recovery.category }}</strong>: {{ status.recovery.message }}</p>
-      <p v-if="status.manualRecoveryRequired">Recovery is required. Check current readiness and prepare a separately approved recovery plan below.</p>
+      <p v-if="status.manualRecoveryRequired">Recovery is required. Open Recovery beside the cloud notifications in the lower system bar for a separate recovery review.</p>
       <p v-if="status.progress?.collectionWarning" role="status">{{ status.progress.collectionWarning.reason }}</p>
       <small>Operation {{ status.operationId }} · updated {{ time(status.updatedAt) }}</small>
       <details>
@@ -26,14 +26,14 @@
 {{ entry.error.trace.join('\n') }}</template></pre><p v-if="!logs.length">No diagnostic log entries have been collected.</p></details>
       <p class="milestones">A validated proposal or accepted graph is not deployment approval. Only the exact reviewed digest can be approved in the infrastructure review.</p>
     </template>
-    <deployment-lifecycle :graph-id="graphId" :node-id="nodeId" :status="status" @refresh="refresh"/>
+    <deployment-lifecycle :graph-id="graphId" :node-id="nodeId" :status="status" :recovery-controls="recoveryControls" @refresh="refresh"/>
   </section>
 </template>
 <script lang="ts">
 import DeploymentLifecycle from './DeploymentLifecycle.vue';
 import {useStore as orchestratorStore} from '@plastic-io/graph-editor-vue3-orchestrator';
 export default {
-  name:'deployment-progress',components:{DeploymentLifecycle},props:{graphId:{type:String,required:true},nodeId:{type:String,required:true}},emits:['status'],
+  name:'deployment-progress',components:{DeploymentLifecycle},props:{graphId:{type:String,required:true},nodeId:{type:String,required:true},recoveryControls:{type:Boolean,default:true}},emits:['status'],
   data(){return {status:null as any,events:[] as any[],operations:[] as any[],cursor:'',historyCursor:'',hasMore:false,selectedOperation:'',error:'',busy:false,timer:null as any,detach:null as any,generation:0,clipped:false};},
   computed:{
     latest():any{return this.status?.progress?.latest;},
