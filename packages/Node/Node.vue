@@ -53,7 +53,7 @@
                     @set="set"
                     :key="renderVersion"
                 />
-                <deployment-progress v-if="localNode.properties?.iac?.stack" :graph-id="currentGraph.id" :node-id="localNode.id" :recovery-controls="false"/>
+                <deployment-progress v-if="localNode.properties?.iac?.stack" :graph-id="currentGraph.id" :node-id="localNode.id" :stack="localNode.properties.iac.stack" :recovery-controls="false"/>
                 <component
                     v-for="(style, index) in styles"
                     :is="'style'"
@@ -419,7 +419,7 @@ export default {
             'movingNodes',
             'readOnly',
         ]),
-        cfPanelSize():any { const size=this.cfDraftSize||this.node?.properties?.cfPanelSize;return this.boundCfSize(Number(size?.width)||600,Number(size?.height)||480); },
+        cfPanelSize():any { const size=this.cfDraftSize||this.node?.properties?.cfPanelSize;return this.boundCfSize(Number(size?.width)||600,Number(size?.height)||400); },
         cfPanelStyle():any { return {width:this.cfPanelSize.width+'px',height:this.cfPanelSize.height+'px'}; },
         isLinked() {
             return !!(this.localNode.linkedGraph || this.localNode.linkedNode);
@@ -506,12 +506,14 @@ export default {
     .cloudformation-node-content {
         box-sizing: border-box;
         width: 600px;
-        height: 480px;
+        height: 400px;
         max-width: 1600px;
         max-height: 960px;
         overflow: auto;
         overscroll-behavior: contain;
         scrollbar-gutter: stable;
+        border-radius: 8px;
+        background: rgb(var(--v-theme-surface));
     }
     .cf-resize-handle {position:absolute;right:0;bottom:0;z-index:5;cursor:nwse-resize;touch-action:none;background:rgb(var(--v-theme-surface));border:1px solid #8888;border-radius:4px;width:24px;height:24px;}
     .node-inputs {

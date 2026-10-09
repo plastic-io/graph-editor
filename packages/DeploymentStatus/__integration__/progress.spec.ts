@@ -22,7 +22,7 @@ describe('CloudFormation node diagnostics',()=>{
   status={...status,state:'failed',reason:failed.reason,progress:{phase:'terminal',resources:[failed]},recovery:{category:'platform-intervention',message:'Correct the named action and complete guardrail cleanup.'},manualRecoveryRequired:true};
   pages.push({events:[failed,event({id:'log',source:'cloudwatch',kind:'deployment.log',logicalId:undefined,reason:undefined,message:'Original guardrail failure',error:{code:'AccessDenied',message:'Original guardrail failure',trace:['worker.js:42']}})],nextCursor:'after-failure',hasMore:false});
   await vi.advanceTimersByTimeAsync(300);await flushPromises();
-  expect(wrapper.text()).toContain('Failed');expect(wrapper.text()).toContain('Deployment approval: Not recorded');expect(wrapper.text()).toContain('Correct the named action');expect(wrapper.text()).toContain('worker.js:42');
+  expect(wrapper.text()).toContain('Deployment failed');expect(wrapper.find('.cf-milestones').text()).toContain('Pending');expect(wrapper.text()).toContain('Correct the named action');expect(wrapper.text()).toContain('worker.js:42');
   expect(wrapper.findAll('tbody tr')).toHaveLength(1);expect(wrapper.findAll('ol.events li').filter((row:any)=>row.text().includes('iam:GetRole'))).toHaveLength(1);
   expect(wrapper.text()).toContain('accepted graph is not deployment approval');
  });
@@ -36,12 +36,12 @@ describe('CloudFormation node diagnostics',()=>{
   expect(wrapper.findAll('ol.events li')).toHaveLength(2);expect(provider.stackEvents).toHaveBeenLastCalledWith('g','stack',{operationId,cursor:undefined,limit:50});
  });
  it('does not approve deployments while progressing from planning through rollback and completion',async()=>{
-  await open();for(const [state,phase,label]of [['awaiting-review','awaiting-approval','Awaiting deployment approval'],['applying','deploying','Deploying'],['applying','rolling-back','Rolling back'],['succeeded','terminal','succeeded']]){
+  await open();for(const [state,phase,label]of [['awaiting-review','awaiting-approval','Awaiting deployment approval'],['applying','deploying','Deploying'],['applying','rolling-back','Rolling back'],['succeeded','terminal','Deployment complete'],['recovery-ready','guardrails','Awaiting recovery approval']]){
    status={...status,state,approval:state==='awaiting-review'?undefined:{reviewDigest:'exact'},progress:{phase,resources:[]}};
    await wrapper.vm.refresh();expect(wrapper.text()).toContain(label);
   }
   expect(Object.keys(provider)).toEqual(['stackReview','stackEvents','stackOperations']);
-  expect(wrapper.text()).toContain('Recorded for this review digest');
+  expect(wrapper.text()).toContain('Recorded for this review digest');expect(wrapper.find('.cf-milestones').text()).toContain('Recovery approval');expect(wrapper.find('.cf-milestones').text()).toContain('Pending');
  });
  it('isolates other graph/node events and discards a stale refresh when navigating between graphs',async()=>{
   await open();listener(event({graphId:'other'}));listener(event({nodeId:'other'}));listener(event({provenance:'browser-report'}));await flushPromises();expect(wrapper.findAll('ol.events li')).toHaveLength(0);

@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
-test('system bar restores the exact recovery review; the CF node resizes and preserves bounded scrollable dimensions',async({page})=>{
+test('system bar restores the exact recovery review; the CF node resizes and preserves bounded scrollable dimensions',async({page},testInfo)=>{
  const graphId=randomUUID(),nodeId='stack',root='**/crdt/'+graphId+'/iac/'+nodeId;
  const stack={name:'gapp-browser-stack',account:'230639770018',region:'us-west-1',environment:'dev'};
  const inspection={checkedAt:new Date().toISOString(),application:{status:'NOT_CREATED',ownership:'absent'},guardrail:{status:'ROLLBACK_FAILED',ownership:'verified'},roles:[{logicalId:'WorkerRole',exists:false},{logicalId:'ExecutionRole',exists:false}],recoveryReadiness:{state:'review-available'},historicalFailure:{message:'Historical permission denial'},historicalFailureOperationId:'original-failed-operation',assumption:{result:'not-tested'},blockers:[{code:'RECOVERY_REQUIRED',kind:'recovery',message:'Retained boundary needs recovery.'}]};
@@ -27,17 +27,20 @@ test('system bar restores the exact recovery review; the CF node resizes and pre
  },{nodeId,stack});
  await expect(page.getByTestId('infra-auto-approve')).toHaveText('Auto-approve: off');await page.getByTestId('infra-auto-approve').click();const warning=page.getByTestId('auto-approve-warning');await expect(warning).toContainText('Stack deletion is never auto-approved');await expect(warning).toContainText('billable resources');await warning.getByRole('button',{name:'Keep off',exact:true}).click();await expect(warning).not.toBeVisible();
  const node=page.locator('#node-'+nodeId),lifecycle=node.getByTestId('deployment-lifecycle');
+ await expect(node.getByTestId('cf-readiness')).not.toHaveAttribute('open','');
+ await node.screenshot({path:testInfo.outputPath('cloudformation-compact.png')});
+ await node.getByTestId('cf-readiness').locator(':scope > summary').click();
  await expect(lifecycle).toContainText('ROLLBACK_FAILED');await expect(lifecycle).toContainText('WorkerRole: Absent');await expect(lifecycle).toContainText('not a current permission check');await expect(lifecycle.getByTestId('recovery-available')).toBeVisible();await expect(lifecycle.getByRole('button',{name:'Prepare recovery plan',exact:true})).toHaveCount(0);
  const openRecovery=async()=>{await page.getByTestId('recovery-system-action').click();await page.getByRole('button',{name:'Review recovery',exact:true}).click();};
  await openRecovery();const review=page.getByTestId('system-recovery-review');await review.getByRole('button',{name:'Prepare recovery plan',exact:true}).click();
  await expect(review).toContainText('exact-recovery-digest');await expect(review).toContainText('Platform-maintenance administrator membership is not required');expect(approval).toBeNull();
  const dimensions=await node.evaluate((el:any)=>({height:el.clientHeight,width:el.clientWidth,scroll:el.scrollHeight,overflow:getComputedStyle(el).overflowY}));
- expect(dimensions.height).toBe(480);expect(dimensions.width).toBe(600);expect(dimensions.scroll).toBeGreaterThan(dimensions.height);expect(dimensions.overflow).toBe('auto');
+ expect(dimensions.height).toBe(400);expect(dimensions.width).toBe(600);expect(dimensions.scroll).toBeGreaterThan(dimensions.height);expect(dimensions.overflow).toBe('auto');
  await page.getByRole('button',{name:'Close recovery review',exact:true}).click();await expect(review).not.toBeVisible();
  const handle=page.getByRole('button',{name:'Resize CloudFormation node',exact:true});await handle.click({trial:true});const box=(await handle.boundingBox())!;
  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+100,box.y+box.height/2+60,{steps:8});await page.mouse.up();
- await expect.poll(()=>node.evaluate(el=>el.clientWidth)).toBe(700);await expect.poll(()=>node.evaluate(el=>el.clientHeight)).toBe(540);
- await page.reload();await expect.poll(()=>node.evaluate(el=>el.clientWidth)).toBe(700);await expect.poll(()=>node.evaluate(el=>el.clientHeight)).toBe(540);await openRecovery();await expect(review).toContainText('exact-recovery-digest');expect(approval).toBeNull();
+ await expect.poll(()=>node.evaluate(el=>el.clientWidth)).toBe(700);await expect.poll(()=>node.evaluate(el=>el.clientHeight)).toBe(460);
+ await page.reload();await expect.poll(()=>node.evaluate(el=>el.clientWidth)).toBe(700);await expect.poll(()=>node.evaluate(el=>el.clientHeight)).toBe(460);await openRecovery();await expect(review).toContainText('exact-recovery-digest');expect(approval).toBeNull();
  await review.getByRole('button',{name:'Approve this recovery',exact:true}).click();
  expect(approval).toEqual({operationId:'01M4C000000000000000000001',recoveryDigest:'exact-recovery-digest',confirmDataLoss:false});
  await expect(review).toContainText('next application deployment needs a fresh review');expect(reviewRequest).toBeNull();
