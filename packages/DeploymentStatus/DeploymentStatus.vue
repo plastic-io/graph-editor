@@ -61,11 +61,15 @@
       <v-list-item v-for="s in stacks" :key="s.nodeId" :title="s.name" :subtitle="stateOf(s)" @click="openRecovery(s)"><template #append><v-btn variant="text" size="small" @click.stop="openRecovery(s)">Review recovery</v-btn></template></v-list-item>
     </v-list>
   </v-menu>
-  <v-dialog v-model="recoveryOpen" max-width="900" scrollable>
-    <v-card v-if="recoverySelected" data-testid="system-recovery-review">
-      <v-card-title class="d-flex align-center">Infrastructure recovery · {{ recoverySelected.name }}<v-spacer/><v-btn icon="mdi-close" variant="text" aria-label="Close recovery review" @click="recoveryOpen=false"/></v-card-title>
-      <v-card-subtitle>{{ recoverySelected.stack.name }} · {{ recoverySelected.stack.account }} · {{ recoverySelected.stack.region }}</v-card-subtitle>
-      <v-card-text><p v-if="recoveryError" role="alert">{{ recoveryError }}</p><deployment-lifecycle :graph-id="graphId()" :node-id="recoverySelected.nodeId" :status="recoveryStatus" @refresh="refreshRecovery"/></v-card-text>
+  <v-dialog v-model="recoveryOpen" max-width="860" aria-labelledby="recovery-dialog-title">
+    <v-card v-if="recoverySelected" class="recovery-dialog" data-testid="system-recovery-review">
+      <header class="recovery-dialog-header">
+        <span class="recovery-dialog-icon"><v-icon icon="mdi-lifebuoy" size="21"/></span>
+        <div class="recovery-dialog-heading"><h2 id="recovery-dialog-title">Infrastructure recovery</h2><p>{{ recoverySelected.name }} <span>· {{ recoverySelected.stack.name }}</span></p><small>{{ recoverySelected.stack.account }} · {{ recoverySelected.stack.region }}</small></div>
+        <v-btn icon="mdi-close" size="small" variant="text" aria-label="Close recovery review" @click="recoveryOpen=false"/>
+      </header>
+      <p v-if="recoveryError" role="alert" class="recovery-dialog-error">{{ recoveryError }}</p>
+      <deployment-lifecycle modal :graph-id="graphId()" :node-id="recoverySelected.nodeId" :status="recoveryStatus" @refresh="refreshRecovery"/>
     </v-card>
   </v-dialog>
   <v-dialog v-model="reviewOpen" max-width="900" scrollable>
@@ -390,4 +394,7 @@ export default {
 };
 </script>
 
-<style scoped>.review-template {white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:360px;overflow:auto;}</style>
+<style scoped>.review-template {white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:360px;overflow:auto;}
+.recovery-dialog{background:rgb(var(--v-theme-surface))!important;color:rgb(var(--v-theme-on-surface));display:flex;flex-direction:column;max-height:min(780px,calc(100dvh - 48px));overflow:hidden!important;border:1px solid rgba(var(--v-theme-on-surface),.12);border-radius:10px!important}.recovery-dialog-header{display:flex;align-items:center;gap:11px;padding:16px 18px 13px;border-bottom:1px solid rgba(var(--v-theme-on-surface),.10);flex-shrink:0}.recovery-dialog-icon{display:grid;place-items:center;flex:0 0 36px;height:36px;border-radius:8px;background:rgba(var(--v-theme-warning),.10);color:rgb(var(--v-theme-warning))}.recovery-dialog-heading{flex:1;min-width:0}.recovery-dialog-heading h2{font-size:15px;font-weight:600;line-height:1.4;margin:0}.recovery-dialog-heading p{font-size:11px;line-height:1.5;margin:2px 0;overflow-wrap:anywhere}.recovery-dialog-heading p span{color:rgba(var(--v-theme-on-surface),.62);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:10px}.recovery-dialog-heading small{font-size:10px;color:rgba(var(--v-theme-on-surface),.62);font-variant-numeric:tabular-nums}.recovery-dialog-error{padding:9px 18px;margin:0;font-size:12px;color:rgb(var(--v-theme-error));border-bottom:1px solid rgba(var(--v-theme-error),.2);flex-shrink:0;max-height:100px;overflow:auto}
+@media(max-width:480px){.recovery-dialog-header{padding:12px;gap:8px}.recovery-dialog-icon{flex-basis:30px;height:30px}.recovery-dialog-heading h2{font-size:14px}.recovery-dialog-heading p span{display:block}}
+</style>
