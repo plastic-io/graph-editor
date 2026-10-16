@@ -782,3 +782,27 @@ chat. `@opus` opens a private conversation bound to that user and graph; follow-
 messages use the same thread. Proposals follow the AI Permissions menu, and
 infrastructure approval remains a separate review. The server's deployment
 configuration enables Bedrock; no browser API key is needed.
+
+
+## CloudFormation deployment review
+
+With server 2.8.0 (`author-template-v1`), an explicit inline template is submitted
+unchanged; connected resource fragments are assembled only when no inline template
+is supplied. Omitted properties stay omitted and use CloudFormation defaults.
+Retention, lifecycle, billing, deletion and replacement choices belong to the
+author and the reviewed deployment. Static validation does not prove AWS
+permissions or application readiness.
+
+The CF node and infrastructure review modal show current and reviewed retention,
+lifecycle and resource consequences. Consequential changes require explicit human
+confirmation; automatic modes defer them to manual review. Template SHA-256,
+graph revision and exact review digest remain bound to approval. Older reviews
+must be recreated after the contract change.
+
+The legacy `preservation: "strict"` option constrains separate stack deletion and
+recovery fallback, not resource expiry, removal or replacement declared in the
+application template. Deployment and recovery approvals remain separate. The
+same consequence report is available through MCP status and the graph bus.
+
+These editor changes require the paired server release. They do not deploy an
+application or establish that its Lambda execution or S3 logging works.

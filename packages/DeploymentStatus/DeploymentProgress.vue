@@ -30,6 +30,7 @@
         </div>
       </div>
 
+      <deployment-consequences :review="status.plan?.consequences"/>
       <div class="cf-sections">
         <details class="cf-section" data-testid="cf-resources">
           <summary><v-icon class="cf-chevron" icon="mdi-chevron-right" size="16"/><span>Resources</span><span v-if="failedResources" class="cf-count tone-error">{{ failedResources }} failed</span><span class="cf-count">{{ resources.length }}</span></summary>
@@ -72,10 +73,11 @@
   </section>
 </template>
 <script lang="ts">
+import DeploymentConsequences from './DeploymentConsequences.vue';
 import DeploymentLifecycle from './DeploymentLifecycle.vue';
 import {useStore as orchestratorStore} from '@plastic-io/graph-editor-vue3-orchestrator';
 export default {
-  name:'deployment-progress',components:{DeploymentLifecycle},props:{graphId:{type:String,required:true},nodeId:{type:String,required:true},stack:{type:Object as any,default:null},recoveryControls:{type:Boolean,default:true}},emits:['status'],
+  name:'deployment-progress',components:{DeploymentLifecycle,DeploymentConsequences},props:{graphId:{type:String,required:true},nodeId:{type:String,required:true},stack:{type:Object as any,default:null},recoveryControls:{type:Boolean,default:true}},emits:['status'],
   data(){return {status:null as any,events:[] as any[],operations:[] as any[],cursor:'',historyCursor:'',hasMore:false,selectedOperation:'',error:'',busy:false,timer:null as any,detach:null as any,generation:0,clipped:false,expandNotice:false};},
   computed:{
     latest():any{return this.status?.progress?.latest;},

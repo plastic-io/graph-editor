@@ -82,21 +82,24 @@
           <thead><tr><th>Change</th><th>Resource</th><th>Type</th><th>Replacement</th><th>Retention</th></tr></thead>
           <tbody><tr v-for="(change,i) in reviewStatus.plan.changes" :key="i"><td>{{ change.action }}</td><td>{{ change.logicalId }}</td><td>{{ change.resourceType }}</td><td>{{ change.replacement || '—' }}</td><td>{{ change.outcome || change.policyAction || (change.replacement && change.replacement !== 'False' ? change.updateReplacePolicy : change.deletionPolicy) || 'See template' }}</td></tr></tbody>
         </v-table>
-        <p v-if="reviewStatus?.plan && !reviewStatus.plan.changes.length">The stack already matches; there are no changes to apply.</p>
+        <deployment-consequences :review="reviewStatus?.plan?.consequences"/>
+        <p v-if="reviewStatus?.plan && !reviewStatus.plan.changes.length">AWS reports no resource changes. Review any template or readiness metadata before approval.</p>
         <v-alert v-if="reviewStatus?.preflight" type="info" variant="tonal" class="mb-3">
           <div>Stack namespace: {{ reviewStatus.preflight.isolation.namespace }}</div>
           <div>Template checks do not verify AWS permissions or application readiness.</div>
+          <div v-if="reviewStatus.preservation === 'strict' && reviewStatus.templateContract">Strict limits separate stack deletion and recovery fallback. Authored template settings can still expire data or remove or replace resources.</div>
+          <div v-for="(dependency,i) in reviewStatus.preflight.effectivePermissions?.permissionDependencies || []" :key="'permission-'+i">{{ dependency.logicalId }}: {{ dependency.message }} Required actions: {{ dependency.actions.join(', ') }}</div>
           <div v-for="(problem,i) in reviewStatus.preflight.problems" :key="i">{{ problem.path }}: {{ problem.message }}</div>
         </v-alert>
         <v-expansion-panels v-if="reviewStatus?.template" class="mb-3">
           <v-expansion-panel v-if="accessChanges.length" title="IAM and resource policy changes"><v-expansion-panel-text><pre class="review-template">{{ JSON.stringify(accessChanges, null, 2) }}</pre></v-expansion-panel-text></v-expansion-panel>
           <v-expansion-panel v-if="reviewStatus?.preflight" title="Deployment permissions and prerequisites"><v-expansion-panel-text><pre class="review-template">{{ JSON.stringify({deploymentRole:reviewStatus.preflight.deploymentRole,permissionsBoundary:reviewStatus.preflight.permissionsBoundary,requirements:reviewStatus.preflight.requirements}, null, 2) }}</pre></v-expansion-panel-text></v-expansion-panel>
-          <v-expansion-panel title="Reviewed CloudFormation template"><v-expansion-panel-text><pre class="review-template">{{ reviewStatus.template.text }}</pre></v-expansion-panel-text></v-expansion-panel>
+          <v-expansion-panel title="Reviewed CloudFormation template"><v-expansion-panel-text><p class="text-caption">Submitted unchanged · SHA-256 {{ reviewStatus.template.sha256 || 'not recorded' }}</p><pre class="review-template">{{ reviewStatus.template.text }}</pre></v-expansion-panel-text></v-expansion-panel>
         </v-expansion-panels>
         <v-table v-if="reviewStatus?.outputs?.length" density="compact"><thead><tr><th>Output</th><th>Value</th></tr></thead><tbody><tr v-for="output in reviewStatus.outputs" :key="output.key"><td>{{ output.key }}</td><td class="text-break">{{ output.value }}</td></tr></tbody></v-table>
-        <v-alert v-if="reviewStatus?.plan?.destructive && reviewStatus?.state === 'awaiting-review'" type="warning" variant="tonal" class="mt-3">This change removes or replaces resources. Review the affected resources before applying.</v-alert>
-        <v-checkbox v-if="reviewStatus?.plan?.destructive && reviewStatus?.state === 'awaiting-review'" v-model="confirmDestructive" label="I approve the listed resource removals or replacements" hide-details/>
-        <p v-if="reviewStatus?.state === 'awaiting-review'" class="mt-3 text-caption">Approval applies exactly this review. Editing the template or stack settings requires a new review.</p>
+        <v-alert v-if="reviewStatus?.plan?.destructive && reviewStatus?.state === 'awaiting-review'" type="warning" variant="tonal" class="mt-3">This review includes resource or data consequences. Check removals, replacements, retention and lifecycle settings before applying.</v-alert>
+        <v-checkbox v-if="reviewStatus?.plan?.destructive && reviewStatus?.state === 'awaiting-review'" v-model="confirmDestructive" label="I approve the listed resource and data consequences" hide-details/>
+        <p v-if="reviewStatus?.state === 'awaiting-review'" class="mt-3 text-caption">Approval applies to this graph revision and exact template. Authored settings and omissions are preserved. Editing the graph requires a new review.</p>
       </v-card-text>
       <v-card-actions>
         <v-btn v-if="canReview && ['planning','awaiting-review'].includes(reviewStatus?.state)" :disabled="reviewBusy" @click="discardReview">Discard review</v-btn>
@@ -111,6 +114,7 @@
 <script lang="ts">
 import {mapState} from "pinia";
 import AiPermissionsMenu from "./AiPermissionsMenu.vue";
+import DeploymentConsequences from "./DeploymentConsequences.vue";
 import DeploymentProgress from "./DeploymentProgress.vue";
 import DeploymentLifecycle from "./DeploymentLifecycle.vue";
 import {useStore as useGraphStore,useAiPermissions} from "@plastic-io/graph-editor-vue3-graph";
@@ -130,7 +134,7 @@ import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-pre
  */
 export default {
   name: "deployment-status",
-  components:{DeploymentProgress,DeploymentLifecycle,AiPermissionsMenu},
+  components:{DeploymentProgress,DeploymentLifecycle,AiPermissionsMenu,DeploymentConsequences},
   data() {
     return {
       open: false,
