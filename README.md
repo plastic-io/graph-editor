@@ -540,6 +540,22 @@ Two ways to use somebody's work:
 
 # Agents
 
+The lower system bar has an **AI Permissions** menu for this graph:
+
+- **Manual** (default): review each graph proposal, deployment and recovery.
+- **Safe Actions**: accept names, descriptions and layout, plus retained storage
+  additions without access-policy changes. Other infrastructure stays manual.
+- **Fully Automatic**: also accept validated code, wiring and infrastructure
+  definitions, and approve eligible non-destructive deployments and recovery.
+
+Both automatic modes require confirmation and reset on reload or graph change.
+Stack deletion is excluded; resource removals, replacements and data-loss recovery
+are never automatic. The server repeats the mode eligibility and exact-digest
+checks. Failures return the editor to Manual. Existing agent delegations remain
+separate, and graph acceptance does not itself approve deployment. This requires
+a server advertising mode-specific `automaticApproval.modes`; older servers
+remain manual. Modes never create infrastructure reviews or rebase proposals.
+
 The graph server speaks [MCP](https://modelcontextprotocol.io/) at `POST /mcp`, so an agent can read a graph and propose changes to it with the same services the editor uses — nothing reaches the store or the scheduler directly.
 
 * **Reading:** `graph.summary`, `graph.expand`, `component.search`, `component.consumers`, `observations.query`, and resources for graphs, revisions, nodes, history, diffs, executions, proposals, published components and their consumers.
@@ -760,3 +776,9 @@ operations an agent may propose are all in [`packages/GraphCrdt`](packages/Graph
 published as `@plastic-io/graph-crdt` and imported by the graph server as an
 ordinary dependency.  It must never depend on Vue, Pinia, the DOM or Node
 built-ins: it is the one place the two sides agree on what a graph is.
+
+The optional server-side Opus assistant appears as **Ask Opus** in a saved graph's
+chat. `@opus` opens a private conversation bound to that user and graph; follow-up
+messages use the same thread. Proposals follow the AI Permissions menu, and
+infrastructure approval remains a separate review. The server's deployment
+configuration enables Bedrock; no browser API key is needed.

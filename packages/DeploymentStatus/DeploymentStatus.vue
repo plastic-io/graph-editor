@@ -47,14 +47,7 @@
       </v-card-text>
     </v-card>
   </v-menu>
-  <v-btn v-if="serverMode && canReview" data-testid="infra-auto-approve" size="small" :color="autoApprove ? 'warning' : undefined" :variant="autoApprove ? 'tonal' : 'text'" :aria-pressed="autoApprove" @click="toggleAutoApproval">Auto-approve: {{ autoApprove ? 'on' : 'off' }}</v-btn>
-  <v-dialog v-model="autoWarningOpen" max-width="580">
-    <v-card data-testid="auto-approve-warning"><v-card-title>Enable infrastructure auto-approval?</v-card-title><v-card-text>
-      <v-alert type="warning" variant="tonal">This editor will approve eligible infrastructure reviews as you, without a confirmation for each digest. This can create billable resources and change IAM permissions.</v-alert>
-      <p>Stack deletion is never auto-approved. Resource removals, replacements, rollback actions and data-loss recovery plans also require manual review.</p>
-      <p>This applies only to the current graph while this editor is open. It turns off on reload or graph change. Turning it off does not cancel operations already approved.</p>
-    </v-card-text><v-card-actions><v-btn @click="autoWarningOpen=false">Keep off</v-btn><v-spacer/><v-btn color="warning" variant="flat" @click="enableAutoApproval">Enable auto-approval</v-btn></v-card-actions></v-card>
-  </v-dialog>
+  <ai-permissions-menu v-if="serverMode" :graph-id="graphLoaded ? graphId() : ''"/>
   <v-menu v-if="serverMode && canReview && stacks.length" v-model="recoveryMenuOpen" :close-on-content-click="false" location="top">
     <template #activator="{props}"><v-btn v-bind="props" variant="text" size="small" prepend-icon="mdi-lifebuoy" data-testid="recovery-system-action" @click="refresh">Recovery<v-badge v-if="recoveryCount" inline :content="recoveryCount" color="warning"/></v-btn></template>
     <v-list density="compact" max-height="60vh" style="overflow-y:auto" aria-label="Infrastructure recovery">
@@ -117,9 +110,10 @@
 </template>
 <script lang="ts">
 import {mapState} from "pinia";
+import AiPermissionsMenu from "./AiPermissionsMenu.vue";
 import DeploymentProgress from "./DeploymentProgress.vue";
 import DeploymentLifecycle from "./DeploymentLifecycle.vue";
-import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
+import {useStore as useGraphStore,useAiPermissions} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 
@@ -136,11 +130,11 @@ import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-pre
  */
 export default {
   name: "deployment-status",
-  components:{DeploymentProgress,DeploymentLifecycle},
+  components:{DeploymentProgress,DeploymentLifecycle,AiPermissionsMenu},
   data() {
     return {
       open: false,
-      autoApprove:false,autoWarningOpen:false,autoBusy:false,autoTimer:null as any,autoGeneration:0,autoAttempts:{} as Record<string,boolean>,
+      autoBusy:false,autoTimer:null as any,autoAttempts:{} as Record<string,boolean>,
       recoveryMenuOpen:false,recoveryOpen:false,recoverySelected:null as any,recoveryStatus:null as any,recoveryError:'',recoveryTimer:null as any,detachBus:null as any,busTimer:null as any,
       busy: false,
       planning: "",
@@ -158,11 +152,12 @@ export default {
       reviewGeneration: 0,
     };
   },
-  beforeUnmount() { clearTimeout(this.reviewTimer);clearTimeout(this.recoveryTimer);clearTimeout(this.busTimer);this.disableAutoApproval();this.detachBus?.(); this.reviewGeneration++; },
+  beforeUnmount() { clearTimeout(this.autoTimer);clearTimeout(this.reviewTimer);clearTimeout(this.recoveryTimer);clearTimeout(this.busTimer);this.permissions.stop();this.detachBus?.(); this.reviewGeneration++; },
   watch: {
+    permissionMode(){this.autoTick();},
     recoveryOpen(value:boolean){if(!value)clearTimeout(this.recoveryTimer);},
     reviewOpen(value: boolean) { if (!value) { clearTimeout(this.reviewTimer); this.reviewGeneration++; this.planning=""; this.reviewBusy=false; } },
-    'graph.id'() { this.disableAutoApproval();this.autoWarningOpen=false;this.reviewOpen=false; this.selected=null; this.reviewStatus=null; this.refresh(); },
+    'graph.id'() { this.permissions.bindGraph(this.graphId());this.autoAttempts={};this.listen();this.reviewOpen=false; this.selected=null; this.reviewStatus=null; this.refresh(); },
     open(isOpen: boolean) {
       if (isOpen) {
         this.refresh();
@@ -181,6 +176,8 @@ export default {
     }
   },
   computed: {
+    permissions():ReturnType<typeof useAiPermissions>{return useAiPermissions();},
+    permissionMode():string{return this.permissions.graphId===this.graphId()?this.permissions.mode:'manual';},
     recoveryCount():number{return this.stacks.filter((s:any)=>s.status?.manualRecoveryRequired || ['recovery-ready','recovery-blocked','recovery-requested','recovering','failed','rolled-back','rollback-failed'].includes(s.status?.state)).length;},
     accessChanges(): any[] { return (this.reviewStatus?.plan?.changes || []).filter((c: any)=>c.access).map((c: any)=>({logicalId:c.logicalId,action:c.action,resourceType:c.resourceType,...c.access})); },
     pendingReview(): boolean { return ['planning','apply-requested','applying'].includes(this.reviewStatus?.state); },
@@ -203,30 +200,33 @@ export default {
     },
   },
   methods: {
-    disableAutoApproval(){this.autoApprove=false;this.autoGeneration++;clearTimeout(this.autoTimer);},
-    toggleAutoApproval(){if(this.autoApprove)this.disableAutoApproval();else this.autoWarningOpen=true;},
-    enableAutoApproval(){this.autoWarningOpen=false;this.autoApprove=true;this.autoAttempts={};this.autoGeneration++;this.autoTick();},
     async autoTick(){
-      clearTimeout(this.autoTimer);if(!this.autoApprove||!this.serverMode)return;
+      clearTimeout(this.autoTimer);if(this.permissionMode==='manual'||!this.serverMode)return;
+      const generation=this.permissions.generation,graphId=this.graphId();
       await this.refresh();
-      if(this.autoApprove)this.autoTimer=setTimeout(()=>this.autoTick(),5000);
+      if(this.permissions.current(graphId,generation))this.autoTimer=setTimeout(()=>this.autoTick(),5000);
     },
     async maybeAutoApprove(){
-      if(!this.autoApprove||this.autoBusy)return;this.autoBusy=true;const generation=this.autoGeneration,graphId=this.graphId();
+      if(this.permissionMode==='manual'||this.autoBusy||!this.serverMode)return;
+      this.autoBusy=true;
+      const generation=this.permissions.generation,graphId=this.graphId(),mode=this.permissionMode;
       try{
         for(const stack of this.stacks){
           if(!['awaiting-review','recovery-ready'].includes(stack.status?.state))continue;
           const answer=await this.provider().stackReview(graphId,stack.nodeId),status=answer.status;
-          if(!this.autoApprove||this.autoGeneration!==generation||this.graphId()!==graphId)return;
-          if(status?.automaticApproval?.allowed!==true)continue;
-          const recovery=status.action==='recover',digest=recovery?status.recoveryPlan?.digest:status.reviewDigest,key=stack.nodeId+':'+status.operationId+':'+digest;
+          if(!this.permissions.current(graphId,generation)||this.graphId()!==graphId)return;
+          // Fail closed against older servers without mode-specific eligibility.
+          if(status?.automaticApproval?.modes?.[mode]?.allowed!==true)continue;
+          const recovery=status.action==='recover',digest=recovery?status.recoveryPlan?.digest:status.reviewDigest,key=graphId+':'+stack.nodeId+':'+status.operationId+':'+digest;
           if(!digest||this.autoAttempts[key])continue;
-          // The server repeats eligibility, ownership, expiry and exact-digest checks.
           this.autoAttempts[key]=true;
-          const result=recovery?await this.provider().approveRecovery(graphId,stack.nodeId,{operationId:status.operationId,recoveryDigest:digest,approvalMode:'automatic',confirmDataLoss:false}):await this.provider().applyStack(graphId,stack.nodeId,{operationId:status.operationId,reviewDigest:digest,approvalMode:'automatic',confirmDestructive:false});
+          const approval={operationId:status.operationId,approvalMode:'automatic',aiPermissionMode:mode};
+          const result=recovery
+            ?await this.provider().approveRecovery(graphId,stack.nodeId,{...approval,recoveryDigest:digest,confirmDataLoss:false})
+            :await this.provider().applyStack(graphId,stack.nodeId,{...approval,reviewDigest:digest,confirmDestructive:false});
           if(this.graphId()===graphId){stack.status=result.status;if(this.recoverySelected?.nodeId===stack.nodeId)this.recoveryStatus=result.status;}
         }
-      }catch(error:any){if(this.autoGeneration===generation){this.disableAutoApproval();this.message='Auto-approval stopped: '+(error.message||'Approval was refused.');}}
+      }catch(error:any){if(this.permissions.current(graphId,generation)){this.permissions.stop(error.message||'Approval was refused.');this.message='AI Permissions returned to Manual: '+(error.message||'Approval was refused.');}}
       finally{this.autoBusy=false;}
     },
     listen(){
@@ -257,7 +257,7 @@ export default {
       return (this as any).graph && (this as any).graph.id;
     },
     async refresh() {
-      const graphId = this.graphId();
+      const graphId = this.graphId(),generation=this.permissions.generation;
       if (!graphId) {
         return;
       }
@@ -273,13 +273,15 @@ export default {
       this.busy = true;
       try {
         const answer = await provider.listStacks(graphId);
+        if(this.graphId()!==graphId)return;
         this.stacks = (answer && answer.stacks) || [];
         this.canPlan = !!(answer && answer.canPlan);
         this.canReview = !!answer?.canReview;
       } catch (err: any) {
+        if(this.graphId()!==graphId)return;
         this.message = err.message || String(err);
-      }
-      this.busy = false;
+        if(this.permissions.current(graphId,generation))this.permissions.stop(this.message);
+      } finally { this.busy = false; }
       await this.maybeAutoApprove();
     },
     async plan(stack: any, replace = false, action = 'apply') {

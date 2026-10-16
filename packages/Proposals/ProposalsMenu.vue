@@ -70,13 +70,14 @@
 </template>
 <script lang="ts">
 import {mapState, mapActions} from "pinia";
-import {useStore as useGraphStore} from "@plastic-io/graph-editor-vue3-graph";
+import {useStore as useGraphStore,useAiPermissions} from "@plastic-io/graph-editor-vue3-graph";
 import {useStore as useOrchestratorStore} from "@plastic-io/graph-editor-vue3-orchestrator";
 import {useStore as usePreferencesStore} from "@plastic-io/graph-editor-vue3-preferences-provider";
 export default {
   name: "proposals-menu",
   data() {
     return {
+      autoBusy:false,autoTimer:null as any,autoAttempts:{} as Record<string,boolean>,
       open: false,
       busy: false,
       message: "",
@@ -91,6 +92,8 @@ export default {
     };
   },
   watch: {
+    permissionMode(){this.autoTick();},
+    'graph.id'(){this.permissions.bindGraph((this as any).graph?.id||'');this.autoAttempts={};this.proposals=[];this.subscribe();this.refresh();},
     open(isOpen: boolean) {
       if (isOpen) {
         this.refresh();
@@ -110,9 +113,12 @@ export default {
     }
   },
   unmounted() {
+    clearTimeout(this.autoTimer);
     this.unsubscribe();
   },
   computed: {
+    permissions():ReturnType<typeof useAiPermissions>{return useAiPermissions();},
+    permissionMode():string{return this.permissions.graphId===(this as any).graph?.id?this.permissions.mode:'manual';},
     ...mapState(useGraphStore, ["inRewindMode", "graphLoaded", "graph"]),
     serverMode(): boolean {
       const prefs = (usePreferencesStore() as any).preferences;
@@ -153,13 +159,39 @@ export default {
       this.subscribedTo = "";
     },
     async refresh() {
+      const graphId=(this as any).graph?.id,generation=this.permissions.generation;
       try {
         const [list, activity] = await Promise.all([(this as any).listProposals(), (this as any).agentActivity(50)]);
+        if((this as any).graph?.id!==graphId)return;
         this.proposals = list.proposals || [];
         this.activity = (activity.records || []).filter((r: any) => /^(mcp\.|proposal\.)/.test(r.kind) || (r.principal && r.principal.kind === "agent"));
+        await this.maybeAutoApprove();
       } catch (err: any) {
+        if((this as any).graph?.id!==graphId)return;
+        if(this.permissions.current(graphId,generation))this.permissions.stop(err.message||'Cannot load proposals.');
         this.say(`Cannot load proposals: ${err.message}`, "error");
       }
+    },
+    async autoTick(){
+      clearTimeout(this.autoTimer);if(this.permissionMode==='manual'||!this.serverMode)return;
+      const generation=this.permissions.generation,graphId=(this as any).graph?.id;
+      await this.refresh();
+      if(this.permissions.current(graphId,generation))this.autoTimer=setTimeout(()=>this.autoTick(),5000);
+    },
+    async maybeAutoApprove(){
+      if(this.permissionMode==='manual'||this.autoBusy||this.busy||this.inRewindMode||!this.serverMode)return;
+      const graphId=(this as any).graph?.id,generation=this.permissions.generation,mode=this.permissionMode;
+      this.autoBusy=true;
+      try{
+        // One commit per refresh: it changes the base for every remaining proposal.
+        const proposal=this.proposals.find((p:any)=>this.isCommittable(p)&&p.automaticApproval?.modes?.[mode]?.allowed===true&&!this.autoAttempts[graphId+':'+p.proposalId+':'+p.proposalDigest]);
+        if(!proposal?.proposalDigest||!this.permissions.current(graphId,generation))return;
+        this.autoAttempts[graphId+':'+proposal.proposalId+':'+proposal.proposalDigest]=true;
+        const result=await (this as any).commitProposal(proposal,{proposalDigest:proposal.proposalDigest,aiPermissionMode:mode});
+        if((this as any).graph?.id===graphId&&result?.proposal){Object.assign(proposal,result.proposal);this.say(`Accepted "${proposal.description}" through AI Permissions.`, 'success');}
+      }catch(error:any){
+        if(this.permissions.current(graphId,generation)){this.permissions.stop(error.message||'Proposal approval was refused.');this.say('AI Permissions returned to Manual: '+error.message,'warning');}
+      }finally{this.autoBusy=false;}
     },
     say(text: string, type: "info" | "warning" | "error" | "success" = "info") {
       this.message = text;

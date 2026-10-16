@@ -589,8 +589,8 @@ export class WssCrdtProvider {
   decideProposal(graphId: string, proposalId: string, decision: "approve" | "reject", proposalDigest?: string, rationale = ""): Promise<any> {
     return this.api(`${graphId}/proposals/${proposalId}/decide`, { method: "POST", body: JSON.stringify({ decision, proposalDigest, rationale }) });
   }
-  commitProposal(graphId: string, proposalId: string): Promise<any> {
-    return this.api(`${graphId}/proposals/${proposalId}/commit`, { method: "POST" });
+  commitProposal(graphId: string, proposalId: string, approval?: any): Promise<any> {
+    return this.api(`${graphId}/proposals/${proposalId}/commit`, { method: "POST", ...(approval ? {body:JSON.stringify(approval)} : {}) });
   }
   /**
    * Report a browser execution and everything it observed (plan §4.5.3).  The

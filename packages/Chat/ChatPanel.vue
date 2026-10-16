@@ -12,9 +12,14 @@
           <v-btn icon="mdi-close" variant="text" size="small" aria-label="Close chat" @click="close"/>
         </div>
         <div class="chat-controls">
+          <div v-if="opus" class="opus-entry">
+            <div><strong>Opus</strong><span>Bedrock · this graph</span></div>
+            <v-btn size="small" variant="tonal" prepend-icon="mdi-creation" @click="openDirect(opus?.id || null)">Ask Opus</v-btn>
+          </div>
+          <p v-if="selectedAssistant" class="text-caption mb-2">Private AI conversation for graph {{ selectedAssistant.graphId.slice(0, 8) }}. Opus can inspect and propose changes; your AI Permissions setting controls acceptance. Up to 20 requests per hour.</p>
           <p v-if="state.me" class="text-caption mb-2">Your handle: <strong>@{{ state.me.handle }}</strong></p>
           <v-select :model-value="state.peerId" :items="conversations" label="Conversation" density="compact" hide-details @update:model-value="select"/>
-          <v-autocomplete v-model="newPeer" :items="people" item-title="title" item-value="id" label="Message a person (@handle)" density="compact" hide-details class="mt-2" @update:model-value="openDirect"/>
+          <v-autocomplete v-model="newPeer" :items="people" item-title="title" item-value="id" label="Message a person or Opus (@handle)" density="compact" hide-details class="mt-2" @update:model-value="openDirect"/>
           <p class="text-caption mt-2">{{ state.peerId ? 'Only these two accounts can read this conversation.' : graphId ? 'Shared with people and agents who can access this graph. Use @here to address the room.' : 'Choose a person to start a private conversation.' }}</p>
           <v-alert v-if="state.error" type="warning" density="compact" variant="tonal" class="mt-2">{{ state.error }}</v-alert>
         </div>
@@ -72,10 +77,14 @@ let retryId = '', retryPayload = '';
 const bytes = computed(() => new TextEncoder().encode(draft.value).length);
 const messages = computed(() => (state.value?.peerId ? state.value.directMessages : state.value?.graphMessages) || []);
 const hasOlder = computed(() => state.value?.peerId ? state.value.directHasOlder : state.value?.graphHasOlder);
+const opus = computed(() => state.value?.people.find(p => p.assistant?.graphId === graphId.value));
+const selectedPerson = computed(() => state.value?.people.find(p => p.id === state.value?.peerId) || state.value?.threads.find(t => t.peer.id === state.value?.peerId)?.peer);
+const selectedAssistant = computed(() => selectedPerson.value?.assistant);
 const people = computed(() => (state.value?.people || []).map(p => ({...p, title:`@${p.handle} — ${p.name}${p.online ? ' · online' : ''}`})));
 const conversations = computed(() => [
   ...(graphId.value ? [{title:`Graph room${state.value?.unreadGraph ? ' (' + state.value.unreadGraph + ')' : ''}`, value:''}] : []),
-  ...(state.value?.threads || []).map(t => ({title:`@${t.peer.handle}${state.value?.unreadDirect[t.peer.id] ? ' (' + state.value.unreadDirect[t.peer.id] + ')' : ''}`, value:t.peer.id})),
+  ...(selectedPerson.value && !state.value?.threads.some(t => t.peer.id === selectedPerson.value?.id) ? [{title: '@' + selectedPerson.value.handle, value: selectedPerson.value.id}] : []),
+  ...(state.value?.threads || []).filter(t => !t.peer.assistant || !graphId.value || t.peer.assistant.graphId === graphId.value).map(t => ({title:`@${t.peer.handle}${t.peer.assistant ? " · " + t.peer.assistant.graphId.slice(0, 8) : ""}${state.value?.unreadDirect[t.peer.id] ? ' (' + state.value.unreadDirect[t.peer.id] + ')' : ''}`, value:t.peer.id})),
 ]);
 const mentionTarget = computed(() => {try {return recipientFor(draft.value, state.value?.people || []);} catch {return undefined;}});
 const suggestions = computed(() => {
@@ -110,6 +119,9 @@ watch(() => messages.value[messages.value.length - 1]?.id, () => {
 .chat-drawer {max-width: 100vw; z-index: 1005 !important; text-transform: none; white-space: normal;}
 .chat-shell {height: 100%; display: flex; flex-direction: column; min-height: 0;}
 .chat-header {display: flex; align-items: center; gap: .5rem; padding: .5rem 1rem; border-bottom: 1px solid rgba(127,127,127,.25);}
+.opus-entry {display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .6rem;}
+.opus-entry strong {display: block; font-size: .85rem;}
+.opus-entry span {font-size: .7rem; opacity: .65;}
 .chat-controls {padding: .75rem 1rem; flex-shrink: 0;}
 .chat-timeline {flex: 1; min-height: 80px; overflow-y: auto; padding: .25rem 1rem; overscroll-behavior: contain;}
 .chat-message {margin: .5rem 0; padding: .7rem; background: rgba(127,127,127,.1); border-radius: .5rem; border-left: 3px solid transparent;}

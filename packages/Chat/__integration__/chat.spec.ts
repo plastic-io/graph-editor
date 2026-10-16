@@ -91,3 +91,25 @@ describe('chat delivery and private recipient selection', () => {
     socket.opened.forEach(f=>f()); await flush(); expect(socket.events['chat-user-alice-id']).toHaveLength(1);
   });
 });
+
+
+describe('graph-bound Opus conversations', () => {
+  it('resolves the reserved exact handle before another person named Opus', () => {
+    const opus = {id:'opus-g1',handle:'opus',name:'Opus',assistant:{graphId:'g1',ownerId:me.id}};
+    expect(recipientFor('@opus help', [opus,{id:'person',name:'Opus',handle:'opus-person'}])).toBe(opus);
+  });
+  it('requests the graph directory and preserves the assistant graph when posting privately', async () => {
+    const socket=new Socket(), c=create(socket); await flush();
+    await c.setGraph('g1'); await flush(); await c.refresh();
+    expect(socket.sent.some(f=>f.operation==='directory' && f.args.graphId==='g1')).toBe(true);
+    const opus={id:'opus-g1',handle:'opus',name:'Opus',assistant:{graphId:'g1',ownerId:me.id}};
+    c.state.people=[me,opus];
+    const original=socket.send.bind(socket);
+    socket.send=frame=>{if(frame.operation==='post'){const m=message(1);socket.events[frame.messageId]({...sync([m]),message:m,room:'direct-opus'});}else original(frame);};
+    await c.post('request','@opus Explain',false);
+    expect(socket.sent.find(f=>f.operation==='directory' && f.args.graphId==='g1')).toBeTruthy();
+    expect(c.state.peerId).toBe(opus.id);
+    c.state.graphId='g2';
+    await expect(c.post('bad','Hi',false)).rejects.toThrow('Open the graph');
+  });
+});

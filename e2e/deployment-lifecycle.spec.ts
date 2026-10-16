@@ -6,6 +6,8 @@ test('system bar restores the exact recovery review; the CF node resizes and pre
  const inspection={checkedAt:new Date().toISOString(),application:{status:'NOT_CREATED',ownership:'absent'},guardrail:{status:'ROLLBACK_FAILED',ownership:'verified'},roles:[{logicalId:'WorkerRole',exists:false},{logicalId:'ExecutionRole',exists:false}],recoveryReadiness:{state:'review-available'},historicalFailure:{message:'Historical permission denial'},historicalFailureOperationId:'original-failed-operation',assumption:{result:'not-tested'},blockers:[{code:'RECOVERY_REQUIRED',kind:'recovery',message:'Retained boundary needs recovery.'}]};
  let status:any={operationId:'01M4C000000000000000000000',state:'failed',revisionId:'rev_accepted',updatedAt:Date.now(),inspection,canReviewMaintenance:false,maintenanceConfiguration:{configured:false,mode:'record-and-verify-only',executesAws:false},progress:{resources:[]}},approval:any=null,reviewRequest:any=null;
  await page.addInitScript(()=>localStorage.setItem('plastic-user-preferences',JSON.stringify({userName:'Reviewer',userId:'reviewer',email:'',avatar:'',workstationId:'lifecycle-test',graphHTTPServer:'http://localhost:3030/',graphWSSServer:'ws://localhost:3030/',useLocalStorage:false,showMap:false,newNodeHelp:false})));
+ await page.route('**/crdt/'+graphId+'/proposals',route=>route.fulfill({json:{proposals:[]}}));
+ await page.route('**/crdt/'+graphId+'/audit*',route=>route.fulfill({json:{records:[]}}));
  await page.route('**/crdt/'+graphId+'/stacks',route=>route.fulfill({json:{canReview:true,canPlan:true,stacks:[{nodeId,name:'Application stack',stack,validation:{ok:true,problems:[],counts:{resources:1}},status}]}}));
  await page.route(root+'/review*',route=>route.fulfill({json:{status}}));
  await page.route(root+'/events*',route=>route.fulfill({json:{events:[],nextCursor:'cursor',hasMore:false}}));
@@ -25,7 +27,21 @@ test('system bar restores the exact recovery review; the CF node resizes and pre
   graph.graphSnapshot.nodes.push({id:nodeId,url:nodeId,version:0,graphId:graph.graphSnapshot.id,data:null,artifact:null,edges:[],properties:{name:'Application stack',inputs:[],outputs:[],groups:[],tags:[],x:200,y:100,z:0,createdOn:Date.now(),presentation:{x:200,y:100,z:0},iac:{stack,template:{format:'json',text:'{"Resources":{}}'}}},template:{set:'',vue:''}});
   await graph.updateGraphFromSnapshot('Lifecycle browser fixture');
  },{nodeId,stack});
- await expect(page.getByTestId('infra-auto-approve')).toHaveText('Auto-approve: off');await page.getByTestId('infra-auto-approve').click();const warning=page.getByTestId('auto-approve-warning');await expect(warning).toContainText('Stack deletion is never auto-approved');await expect(warning).toContainText('billable resources');await warning.getByRole('button',{name:'Keep off',exact:true}).click();await expect(warning).not.toBeVisible();
+ await expect(page.getByTestId('ai-permissions')).toContainText('Manual');
+ await page.getByTestId('ai-permissions').click();
+ const permissionsMenu=page.getByTestId('ai-permissions-menu');
+ await expect(permissionsMenu.getByRole('menuitemradio')).toHaveCount(3);
+ await permissionsMenu.screenshot({path:testInfo.outputPath('ai-permissions-menu.png'),animations:'disabled'});
+ await page.getByTestId('ai-mode-fully-automatic').click();
+ const warning=page.getByTestId('ai-permissions-warning');
+ await expect(warning).toContainText('Stack deletion is never allowed');await expect(warning).toContainText('billable resources');
+ await warning.getByRole('button',{name:'Cancel',exact:true}).click();await expect(warning).not.toBeVisible();
+ await expect(page.getByTestId('ai-permissions')).toContainText('Manual');
+ await page.getByTestId('ai-permissions').click();await page.getByTestId('ai-mode-safe-actions').click();
+ await warning.getByRole('button',{name:'Enable Safe Actions',exact:true}).click();
+ await expect(page.getByTestId('ai-permissions')).toContainText('Safe Actions');
+ await page.reload();await expect(page.getByTestId('ai-permissions')).toContainText('Manual');
+
  const node=page.locator('#node-'+nodeId),lifecycle=node.getByTestId('deployment-lifecycle');
  await expect(node.getByTestId('cf-readiness')).not.toHaveAttribute('open','');
  await node.screenshot({path:testInfo.outputPath('cloudformation-compact.png')});

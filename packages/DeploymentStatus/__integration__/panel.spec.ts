@@ -1,4 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import {createPinia,setActivePinia} from "pinia";
+import {useAiPermissions} from "../../Graph/aiPermissions";
+beforeEach(()=>{setActivePinia(createPinia());});
 import Panel from "../DeploymentStatus.vue";
 import {defineComponent,h} from "vue";
 import {mount} from "@vue/test-utils";
@@ -23,7 +26,8 @@ const stack = (over: any = {}) => ({
 });
 /** the component's own methods, bound to just enough of an instance */
 const on = (data: any = {}) => {
-  const self: any = { ...component.data(), canPlan: true, ...data };
+  const self: any = { ...component.data(), canPlan: true, serverMode:true, permissions:useAiPermissions(), ...data };
+  Object.defineProperty(self,"permissionMode",{get:()=>self.permissions.mode});
   Object.keys(methods).forEach((key) => { self[key] = methods[key].bind(self); });
   return self;
 };
@@ -207,26 +211,36 @@ it('renders the reviewed IAM delta, namespace, prerequisites and retention toget
 });
 
 
-describe('session-only infrastructure auto-approval',()=>{
- it('is off by default, requires the warning confirmation, and resets on graph change',()=>{
-  const self=on();self.autoTick=vi.fn();self.refresh=vi.fn();self.listen=vi.fn();
-  expect(self.autoApprove).toBe(false);self.toggleAutoApproval();expect(self.autoWarningOpen).toBe(true);expect(self.autoApprove).toBe(false);
-  self.enableAutoApproval();expect(self.autoApprove).toBe(true);expect(self.autoTick).toHaveBeenCalledOnce();
-  component.watch['graph.id'].call(self);expect(self.autoApprove).toBe(false);expect(self.autoWarningOpen).toBe(false);
- });
- it('sends the exact fresh digest once and never opts into destructive confirmation',async()=>{
-  const provider:any=new FakeProvider();provider.stackReview=vi.fn(async()=>({status:{operationId:'review',state:'awaiting-review',action:'apply',reviewDigest:'fresh-digest',automaticApproval:{allowed:true}}}));provider.applyStack=vi.fn(async()=>({status:{state:'applying'}}));
-  const self=withProvider(provider,{autoApprove:true,stacks:[stack({status:{state:'awaiting-review'}})]});
-  await self.maybeAutoApprove();expect(provider.applyStack).toHaveBeenCalledWith('g1','stack',{operationId:'review',reviewDigest:'fresh-digest',approvalMode:'automatic',confirmDestructive:false});
+describe('AI Permissions infrastructure approval',()=>{
+ const enable=(mode:'safe-actions'|'fully-automatic'='fully-automatic')=>{const p=useAiPermissions();p.bindGraph('g1');p.setMode(mode);return p;};
+ const eligibility=(safe=false,full=true)=>({modes:{'safe-actions':{allowed:safe},'fully-automatic':{allowed:full}}});
+ it('sends the exact fresh digest and selected mode once, without destructive confirmation',async()=>{
+  enable();
+  const provider:any=new FakeProvider();provider.stackReview=vi.fn(async()=>({status:{operationId:'review',state:'awaiting-review',action:'apply',reviewDigest:'fresh-digest',automaticApproval:eligibility()}}));provider.applyStack=vi.fn(async()=>({status:{state:'applying'}}));
+  const self=withProvider(provider,{stacks:[stack({status:{state:'awaiting-review'}})]});
+  await self.maybeAutoApprove();expect(provider.applyStack).toHaveBeenCalledWith('g1','stack',{operationId:'review',reviewDigest:'fresh-digest',approvalMode:'automatic',aiPermissionMode:'fully-automatic',confirmDestructive:false});
   self.stacks[0].status={state:'awaiting-review'};await self.maybeAutoApprove();expect(provider.applyStack).toHaveBeenCalledOnce();
  });
- it('leaves deletion and data-loss recovery reviews pending and accepts only explicit server eligibility',async()=>{
-  const provider:any=new FakeProvider();provider.stackReview=vi.fn(async()=>({status:{operationId:'recover',action:'recover',state:'recovery-ready',recoveryPlan:{digest:'exact'},automaticApproval:{allowed:false,reason:'Stack deletion is never eligible'}}}));provider.approveRecovery=vi.fn();provider.applyStack=vi.fn();
-  const self=withProvider(provider,{autoApprove:true,stacks:[stack({status:{state:'recovery-ready'}})]});await self.maybeAutoApprove();expect(provider.approveRecovery).not.toHaveBeenCalled();expect(provider.applyStack).not.toHaveBeenCalled();
+ it('honors mode-specific eligibility and fails closed on older server responses',async()=>{
+  enable('safe-actions');let status:any={operationId:'review',state:'awaiting-review',action:'apply',reviewDigest:'exact',automaticApproval:eligibility(false,true)};
+  const provider={stackReview:vi.fn(async()=>({status})),applyStack:vi.fn(async()=>({status:{state:'applying'}}))};
+  const self=withProvider(provider,{stacks:[stack({status})]});await self.maybeAutoApprove();expect(provider.applyStack).not.toHaveBeenCalled();
+  status.automaticApproval={allowed:true};await self.maybeAutoApprove();expect(provider.applyStack).not.toHaveBeenCalled();
+  status.automaticApproval=eligibility(true);await self.maybeAutoApprove();expect(provider.applyStack).toHaveBeenCalledWith('g1','stack',expect.objectContaining({aiPermissionMode:'safe-actions'}));
  });
- it('turning the mode off while a read is pending prevents approval',async()=>{
-  let resolve:any;const provider:any=new FakeProvider();provider.stackReview=()=>new Promise(r=>resolve=r);provider.applyStack=vi.fn();
-  const self=withProvider(provider,{autoApprove:true,stacks:[stack({status:{state:'awaiting-review'}})]}),pending=self.maybeAutoApprove();
-  self.disableAutoApproval();resolve({status:{operationId:'review',action:'apply',reviewDigest:'exact',automaticApproval:{allowed:true}}});await pending;expect(provider.applyStack).not.toHaveBeenCalled();
+ it('leaves deletion and data-loss recovery reviews pending',async()=>{
+  enable();const provider:any=new FakeProvider();provider.stackReview=vi.fn(async()=>({status:{operationId:'recover',action:'recover',state:'recovery-ready',recoveryPlan:{digest:'exact'},automaticApproval:eligibility(false,false)}}));provider.approveRecovery=vi.fn();provider.applyStack=vi.fn();
+  const self=withProvider(provider,{stacks:[stack({status:{state:'recovery-ready'}})]});await self.maybeAutoApprove();expect(provider.approveRecovery).not.toHaveBeenCalled();expect(provider.applyStack).not.toHaveBeenCalled();
+ });
+ it.each(['manual','safe-actions','graph-change'])('changing to %s during a pending read prevents its approval',async(change)=>{
+  const permissions=enable();let resolve:any;const provider:any=new FakeProvider();provider.stackReview=()=>new Promise(r=>resolve=r);provider.applyStack=vi.fn();
+  const self=withProvider(provider,{stacks:[stack({status:{state:'awaiting-review'}})]}),pending=self.maybeAutoApprove();
+  if(change==='graph-change')permissions.bindGraph('g2');else permissions.setMode(change as any);
+  resolve({status:{operationId:'review',action:'apply',reviewDigest:'exact',automaticApproval:eligibility(true)}});await pending;expect(provider.applyStack).not.toHaveBeenCalled();
+ });
+ it('approval failure stops all automatic work with an explanation',async()=>{
+  const permissions=enable();const provider={stackReview:vi.fn(async()=>{throw new Error('Review expired');})};
+  const self=withProvider(provider,{stacks:[stack({status:{state:'awaiting-review'}})]});await self.maybeAutoApprove();
+  expect(permissions.mode).toBe('manual');expect(permissions.stoppedReason).toBe('Review expired');
  });
 });

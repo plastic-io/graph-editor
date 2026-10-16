@@ -69,7 +69,7 @@ export default {
   },
 
   /** The server admits the proposal's bytes as this user; the change arrives like anyone else's. */
-  async commitProposal(proposal: any) {
+  async commitProposal(proposal: any, approval?: any) {
     const provider = this.proposalsProvider();
     if (!provider || !this.crdtSession || !proposal) {
       return null;
@@ -77,7 +77,7 @@ export default {
     if (this.inRewindMode) {
       await this.leaveProposalPreview();
     }
-    return provider.commitProposal(this.crdtSession.graphId, proposal.proposalId);
+    return provider.commitProposal(this.crdtSession.graphId, proposal.proposalId, approval);
   },
 
   async decideProposal(proposal: any, decision: "approve" | "reject", rationale = "") {

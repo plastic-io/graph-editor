@@ -1,6 +1,8 @@
 import type {App} from "vue";
 import type {Router} from "vue-router";
 import GraphCanvas from "./GraphCanvas.vue";
+export {useAiPermissions,aiPermissionModes} from './aiPermissions';
+export type {AiPermissionMode} from './aiPermissions';
 export {useStore, useGraphSnapshotStore} from "./store";
 import EditorModule from "@plastic-io/graph-editor-vue3-editor-module";
 export default class Graph extends EditorModule {

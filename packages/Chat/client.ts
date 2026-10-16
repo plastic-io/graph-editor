@@ -1,7 +1,7 @@
 import {reactive} from 'vue';
 import {ChatDocument} from './document';
 
-export interface Person {id: string; name: string; handle: string; online?: boolean}
+export interface Person {id: string; name: string; handle: string; online?: boolean; assistant?: {graphId: string; ownerId: string}}
 export interface Message {id: string; seq: number; at: string; text: string; phase: string; interrupt: boolean; acknowledges: string[]; sender: {id: string; userId: string; name: string; role: string}}
 interface Thread {peer: Person; room: string; latestSeq: number; at: string}
 interface Socket {
@@ -17,7 +17,8 @@ export function recipientFor(text: string, people: Person[], selected?: Person):
   const direct = [...new Set(handles.filter(h => h !== 'here'))];
   if (direct.length > 1) throw new Error('Send a private message to one person at a time.');
   if (direct.length) {
-    const found = people.filter(p => p.handle.toLowerCase() === direct[0] || p.name.toLowerCase() === direct[0]);
+    const exact = people.filter(p => p.handle.toLowerCase() === direct[0]);
+    const found = exact.length ? exact : people.filter(p => p.name.toLowerCase() === direct[0]);
     if (found.length !== 1) throw new Error('Choose an exact @handle from the people list.');
     if (selected && selected.id !== found[0].id) throw new Error('This mention names someone outside the selected private conversation.');
     if (handles.includes('here')) throw new Error('Use @here for the graph room or @handle for a private message.');
@@ -104,9 +105,10 @@ export class ChatClient {
     this.refreshing = true;
     const epoch = this.epoch;
     try {
-      const directory = await this.request('directory');
+      const directoryGraph = this.state.graphId;
+      const directory = await this.request('directory', directoryGraph ? {graphId: directoryGraph} : {});
       if (epoch !== this.epoch) return;
-      this.state.me = directory.me; this.state.people = directory.people;
+      this.state.me = directory.me; if (directoryGraph === this.state.graphId) this.state.people = directory.people;
       const channel = `chat-user-${directory.me.id}`;
       if (channel !== this.personal) {
         if (this.personal) this.socket.unsubscribe(this.personal, this.onDirect);
@@ -127,7 +129,11 @@ export class ChatClient {
     if (graphId === this.state.graphId) return;
     if (this.state.graphId) this.socket.unsubscribe(`graph-chat-${this.state.graphId}`, this.onGraph);
     this.graphEpoch++; this.graphDoc.reset(); this.state.graphId = graphId; this.graphCursor = 0; this.graphLoaded = false; this.state.graphMessages = []; this.state.unreadGraph = 0; this.state.graphHasOlder = false;
+    this.state.people = this.state.people.filter(p => !p.assistant);
+    const selected = this.state.threads.find(t => t.peer.id === this.state.peerId)?.peer;
+    if (selected?.assistant && graphId && selected.assistant.graphId !== graphId) await this.select('');
     if (graphId) {this.socket.subscribe(`graph-chat-${graphId}`, this.onGraph); await this.loadGraph().catch(err => {this.state.error = err.message;});}
+    await this.refresh();
   }
   async select(peerId: string) {
     this.directEpoch++; this.directDoc.reset(); this.state.peerId = peerId; this.state.directMessages = []; this.directCursor = 0; this.directLoaded = false; this.state.directHasOlder = false; this.state.error = '';
@@ -183,7 +189,8 @@ export class ChatClient {
     const selected = this.state.people.find(p => p.id === this.state.peerId) || this.state.threads.find(t => t.peer.id === this.state.peerId)?.peer;
     const recipient = recipientFor(text, this.state.people, selected);
     if (!recipient && !this.state.graphId) throw new Error('Choose a person for a private conversation.');
-    const args = {messageId, text, interrupt, ...(recipient ? {peerId: recipient.id} : {graphId: this.state.graphId})};
+    if (recipient?.assistant && this.state.graphId && recipient.assistant.graphId !== this.state.graphId) throw new Error('Open the graph that belongs to this Opus conversation.');
+    const args = {messageId, text, interrupt, ...(recipient ? {peerId: recipient.id, ...(recipient.assistant ? {graphId: recipient.assistant.graphId} : {})} : {graphId: this.state.graphId})};
     const session = this.epoch, selection = this.directEpoch;
     const result = await this.request('post', args);
     if (session !== this.epoch) return;
