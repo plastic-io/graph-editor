@@ -11,7 +11,7 @@
         <div><dt>Worker role assumption</dt><dd>{{ inspection.assumption?.result || 'Not checked' }}</dd><small>Checked {{ time(inspection.checkedAt) }}</small></div>
       </dl>
       <p v-if="!inspection" class="muted">Check current readiness to inspect stack ownership and deployment prerequisites.</p>
-      <p v-if="status?.state === 'recovered'" class="lifecycle-notice tone-success">Recovery completed. The next application deployment needs a fresh review and a separate human approval.</p>
+      <p v-if="status?.state === 'recovered'" class="lifecycle-notice tone-success">Recovery completed. <template v-if="status.runtimeDeployment?.retainedAfterRecovery">The existing approved application is available for invocation and readiness checks. </template>The next application deployment needs a fresh review and a separate human approval.</p>
       <p v-else-if="status?.error?.message || status?.reason" class="lifecycle-notice" :class="'tone-'+stateTone">{{ status.error?.message || status.reason }}</p>
 
       <section v-if="status?.recoveryPlan" class="recovery-plan" data-testid="recovery-plan">
@@ -78,7 +78,7 @@
       </section>
       <p v-if="status?.state === 'awaiting-review'" class="lifecycle-notice">Deployment approval is pending. Open the graph’s infrastructure review (cloud icon) to review the template and approve its exact digest.</p>
       <button v-if="canRetry && !recoveryControls" type="button" class="lifecycle-button" :disabled="busy" @click="reviewAgain">Prepare fresh deployment review</button>
-      <details v-if="status?.state === 'succeeded'" class="lifecycle-section">
+      <details v-if="runtimeAvailable" class="lifecycle-section">
         <summary>Application runtime diagnostics<span class="summary-note">{{ status.runtimeReadiness?.state || 'Not verified' }}</span></summary>
         <div class="section-body">
           <p>Deployment completed. Runtime readiness: {{ status.runtimeReadiness?.state || 'Not verified' }}.</p>
@@ -138,7 +138,8 @@ export default {
     includesStackDeletion():boolean{return this.status?.recoveryPlan?.actions?.some((action:any)=>action.kind==='delete-stack')||false;},
     inspection():any{return this.currentInspection||this.status?.inspection;},
     maintenanceConfiguration():any{return this.status?.maintenanceConfiguration || this.inspection?.maintenanceConfiguration || this.status?.maintenance?.administration;},
-    functions():any[]{return (this.status?.resources||[]).filter((r:any)=>r.resourceType==='AWS::Lambda::Function');},
+    runtimeAvailable():boolean{return this.status?.state==='succeeded'||this.status?.runtimeDeployment?.retainedAfterRecovery===true;},
+    functions():any[]{return (this.status?.runtimeDeployment?.resources||this.status?.resources||[]).filter((r:any)=>r.resourceType==='AWS::Lambda::Function');},
     canPrepareRecovery():boolean{return !this.status?.supersededBy && (this.status?.nextActions?.actions?.find((a:any)=>a.tool==='iac.recovery.plan')?.allowed ?? ['failed','rolled-back','rollback-failed','cancelled','expired','stale','recovered','recovery-blocked','recovery-ready','no-changes','succeeded'].includes(this.status?.state));},
     recoveryExpired():boolean{return this.status?.state==='recovery-ready' && this.status.expiresAt<Date.now();},
     canApproveRecovery():boolean{return this.status?.state==='recovery-ready' && !!this.status.recoveryPlan && !this.status.supersededBy && !this.recoveryExpired;},
@@ -159,7 +160,7 @@ export default {
     async approveRecovery(){await this.run(async()=>{await this.provider().approveRecovery(this.graphId,this.nodeId,{operationId:this.status.operationId,recoveryDigest:this.status.recoveryPlan.digest,confirmDataLoss:this.confirmDataLoss});});},
     async maintenance(action:string){await this.run(async()=>{await this.provider().stackMaintenance(this.graphId,this.nodeId,{operationId:this.status.operationId,action,maintenanceDigest:this.status.maintenance?.digest});});},
     async reviewAgain(){await this.run(async()=>{await this.provider().planStack(this.graphId,this.nodeId,false,'apply',this.status.operationId);});},
-    async logs(more:boolean){const generation=this.generation;await this.run(async()=>{const answer=await this.provider().runtimeLogs(this.graphId,this.nodeId,{operationId:this.status.operationId,logicalId:this.logicalId,correlationId:this.correlationId||undefined,requestId:this.requestId||undefined,cursor:more?this.logPage?.nextCursor:undefined});if(generation===this.generation)this.logPage=answer;});},
+    async logs(more:boolean){const generation=this.generation;await this.run(async()=>{const answer=await this.provider().runtimeLogs(this.graphId,this.nodeId,{operationId:this.status.runtimeDeployment?.operationId||this.status.operationId,logicalId:this.logicalId,correlationId:this.correlationId||undefined,requestId:this.requestId||undefined,cursor:more?this.logPage?.nextCursor:undefined});if(generation===this.generation)this.logPage=answer;});},
     async readiness(checkId:string){await this.run(async()=>{const result=await this.provider().stackReadiness(this.graphId,this.nodeId,{checkId,idempotencyKey:this.key('readiness:'+checkId)});if(result.state!=='running')delete this.keys[this.status.operationId+':readiness:'+checkId];});},
   },
 };

@@ -76,4 +76,17 @@ describe('Graph-native recovery controls',()=>{
   await click('Run health');expect(provider.stackReadiness).toHaveBeenCalledWith('g','stack',{checkId:'health',idempotencyKey:'request-1'});
   expect(wrapper.props('status').state).toBe('succeeded');expect(provider.approveRecovery).not.toHaveBeenCalled();
  });
+ it('resumes the preserved deployment after verified guardrail recovery and keeps later application approval separate',async()=>{
+  await open({operationId:'recovery',state:'recovered',runtimeDeployment:{operationId:'deployed',retainedAfterRecovery:true,resources:[{logicalId:'Backend',resourceType:'AWS::Lambda::Function'}]},readinessChecks:[{id:'health'}],runtimeReadiness:{state:'verified',checks:{health:{state:'verified'}}}});
+  expect(wrapper.text()).toContain('existing approved application is available');
+  expect(wrapper.text()).toContain('separate human approval');
+  expect(wrapper.text()).toContain('Runtime readiness: verified');
+  await wrapper.find('select').setValue('Backend');await click('Read last 15 minutes');
+  expect(provider.runtimeLogs.mock.calls[0][2].operationId).toBe('deployed');
+  await click('Run health');expect(provider.stackReadiness).toHaveBeenCalledTimes(1);
+  await wrapper.setProps({status:{operationId:'recovery',state:'recovered'}});
+  expect(wrapper.text()).not.toContain('Application runtime diagnostics');
+  expect(provider.planStack).not.toHaveBeenCalled();expect(provider.approveRecovery).not.toHaveBeenCalled();
+ });
+
 });
